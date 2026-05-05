@@ -1,0 +1,44 @@
+import { CommandHandler } from '../CommandDispatcher.js';
+import { World } from '../World.js';
+import { SpawnEntityCommand, ChangeSideCommand } from '../Command.js';
+import { EntityManager } from '../EntityManager.js';
+import { logger } from '../Logger.js';
+
+export class SpawnEntityHandler implements CommandHandler<SpawnEntityCommand> {
+    execute(cmd: SpawnEntityCommand, world: World): void {
+        const entityMgr = new EntityManager(world, world.profileRegistry);
+        try {
+            entityMgr.spawn({
+                id: cmd.id,
+                profileId: cmd.profileId,
+                side: cmd.side,
+                pos: [cmd.position.x, cmd.position.y, cmd.position.z],
+                heading: cmd.heading
+            });
+            logger.info(`Entity spawned via command: ${cmd.id}`, { profileId: cmd.profileId, side: cmd.side });
+        } catch (err) {
+            logger.error(`Failed to spawn entity via command: ${cmd.id}`, { error: err });
+        }
+    }
+}
+
+export class ChangeSideHandler implements CommandHandler<ChangeSideCommand> {
+    execute(cmd: ChangeSideCommand, world: World): void {
+        const entity = world.getEntity(cmd.entityId);
+        if (entity) {
+            const oldSide = entity.side;
+            entity.side = cmd.newSide;
+            logger.info(`Entity side changed: ${entity.id}`, { from: oldSide, to: cmd.newSide });
+
+            world.events.emit({
+                type: 'EntitySideChanged',
+                tick: world.currentTick,
+                entityId: entity.id,
+                data: {
+                    oldSide,
+                    newSide: cmd.newSide
+                }
+            });
+        }
+    }
+}

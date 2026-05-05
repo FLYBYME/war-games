@@ -1,0 +1,9 @@
+/* Global button base — used by all components */
+.btn { display:inline-flex; align-items:center; justify-content:center; gap:var(--sp-2); padding:var(--sp-2) var(--sp-4); border-radius:var(--radius-md); font-size:var(--text-sm); font-weight:500; transition:all var(--transition-fast); cursor:pointer; white-space:nowrap; user-select:none; }
+.btn--primary { background:var(--accent-primary); color:#fff; }
+.btn--primary:hover { background:#4f8ff7; }
+.btn--ghost { background:transparent; color:var(--text-muted); border:1px solid var(--border-color); }
+.btn--ghost:hover { background:var(--bg-hover); color:var(--text-main); border-color:var(--border-light); }
+.btn--ghost.is-active { background:var(--bg-active); color:var(--color-friendly); border-color:var(--color-friendly); }
+.btn--danger { background:var(--accent-danger); color:#fff; }
+.btn--sm { padding:2px var(--sp-2); font-size:var(--text-xs); }

@@ -1,0 +1,89 @@
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=JetBrains+Mono:wght@400;500;700&display=swap');
+
+:root {
+    /* ── Base Palette ── */
+    --bg-base:     #020408;
+    --bg-panel:    #0a0f1d;
+    --bg-surface:  #101726;
+    --bg-header:   #161e2e;
+    --bg-hover:    #1e293b;
+    --bg-active:   #25334a;
+    --border-color:#1e293b;
+    --border-light:#334155;
+    --border-bright:#475569;
+
+    /* ── Text ── */
+    --text-main:   #cbd5e1;
+    --text-muted:  #64748b;
+    --text-dim:    #475569;
+    --text-bright: #f8fafc;
+    --text-accent: #38bdf8;
+
+    /* ── Tactical Symbology (MIL-STD-2525D / NTDS) ── */
+    --color-friendly: #00d4ff;
+    --color-hostile:  #ff2d55;
+    --color-neutral:  #30d158;
+    --color-unknown:  #ffd60a;
+    --color-pending:  #bf5af2;
+
+    /* ── Accents ── */
+    --accent-primary:  #3b82f6;
+    --accent-success:  #22c55e;
+    --accent-warning:  #f59e0b;
+    --accent-danger:   #ef4444;
+    --accent-info:     #06b6d4;
+
+    /* ── Glow Effects ── */
+    --glow-friendly: 0 0 8px rgba(0, 212, 255, 0.3);
+    --glow-hostile:  0 0 8px rgba(255, 45, 85, 0.3);
+    --glow-panel:    0 0 1px rgba(59, 130, 246, 0.15);
+
+    /* ── Typography ── */
+    --font-ui:   'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
+    --font-mono: 'JetBrains Mono', 'Cascadia Code', 'Fira Code', monospace;
+
+    --text-xs:  0.6875rem;
+    --text-sm:  0.75rem;
+    --text-md:  0.8125rem;
+    --text-lg:  0.9375rem;
+    --text-xl:  1.125rem;
+    --text-2xl: 1.5rem;
+
+    /* ── Spacing ── */
+    --sp-1: 4px;
+    --sp-2: 8px;
+    --sp-3: 12px;
+    --sp-4: 16px;
+    --sp-5: 20px;
+    --sp-6: 24px;
+
+    /* ── Borders ── */
+    --radius-sm: 4px;
+    --radius-md: 6px;
+    --radius-lg: 8px;
+
+    /* ── Panel sizing ── */
+    --ribbon-height: 40px;
+    --left-panel-width: 280px;
+    --right-panel-width: 320px;
+    --bottom-panel-height: 180px;
+
+    /* ── Transitions ── */
+    --transition-fast: 120ms ease;
+    --transition-med:  200ms ease;
+}
+
+/* Light Theme Override */
+[data-theme="light"] {
+    --bg-base:     #f1f5f9;
+    --bg-panel:    #ffffff;
+    --bg-surface:  #f8fafc;
+    --bg-hover:    #e2e8f0;
+    --bg-active:   #cbd5e1;
+    --border-color:#cbd5e1;
+    --border-light:#e2e8f0;
+    --text-main:   #1e293b;
+    --text-muted:  #64748b;
+    --text-dim:    #94a3b8;
+    --text-bright: #0f172a;
+}

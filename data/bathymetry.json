@@ -1,0 +1,13 @@
+{
+    "type": "FeatureCollection",
+    "features": [
+        {
+            "type": "Feature",
+            "geometry": {
+                "type": "LineString",
+                "coordinates": [[107.5, 20.5], [108.5, 19.5]]
+            },
+            "properties": { "depth": 2500, "name": "Tactical Trench" }
+        }
+    ]
+}

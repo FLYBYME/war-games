@@ -1,0 +1,43 @@
+/**
+ * War Games Engine V3 — Client SDK
+ *
+ * Usage:
+ *   import { WarGamesClient } from 'war-games/sdk';
+ *
+ *   const client = new WarGamesClient({ url: 'ws://localhost:3000' });
+ *   await client.connect();
+ *   client.joinMatch('Blue');
+ *
+ *   // Subscribe to state
+ *   client.events.on('state:viewState', (vs) => console.log(vs.tick));
+ *
+ *   // Issue commands
+ *   await client.nav.setCourse('unit-1', { x: 5000, y: 5000, z: 0 }, 300);
+ *   await client.combat.fireWeapon('unit-1', 0, 'TRK-0001');
+ *   client.scenario.pause();
+ */
+
+export { WarGamesClient, ConnectionState } from './WarGamesClient.js';
+export type { ClientConfig } from './WarGamesClient.js';
+export { NavigationModule, CombatModule, SensorsModule, LogisticsModule, DoctrineModule, ScenarioModule } from './WarGamesClient.js';
+export { EventEmitter } from './EventEmitter.js';
+export { Formatters } from './Formatters.js';
+export { DeltaEncoder } from './DeltaEncoder.js';
+export { DeltaDecoder } from './DeltaDecoder.js';
+export {
+    SDKError,
+    NetworkError,
+    ConnectionTimeoutError,
+    CommandValidationError,
+    CommandRejectedError,
+    SideIsolationError,
+    NotConnectedError,
+    NotJoinedError
+} from './errors.js';
+export * from './schemas/index.js';
+
+// Services
+export * from './services/types.js';
+export { MatchService } from './services/MatchService.js';
+export { ScenarioService } from './services/ScenarioService.js';
+export { TerrainService } from './services/TerrainService.js';
