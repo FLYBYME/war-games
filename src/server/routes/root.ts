@@ -2,6 +2,7 @@ import { FastifyInstance } from 'fastify';
 import { registerDatabaseRoutes } from './api/database.js';
 import { registerMatchRoutes } from './api/matches.js';
 import { registerTerrainRoutes } from './api/terrain.js';
+import { registerSystemRoutes } from './api/system.js';
 import { registerWebSocketPlugin } from '../plugins/websocket.js';
 
 export async function registerRoutes(app: FastifyInstance) {
@@ -53,4 +54,5 @@ export async function registerRoutes(app: FastifyInstance) {
     await app.register(registerDatabaseRoutes, { prefix: '/api/database' });
     await app.register(registerMatchRoutes, { prefix: '/api/matches' });
     await app.register(registerTerrainRoutes, { prefix: '/api/terrain' });
+    await app.register(registerSystemRoutes, { prefix: '/api/system' });
 }

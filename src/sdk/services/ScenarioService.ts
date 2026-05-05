@@ -1,8 +1,9 @@
 import * as demoData from '../../data/index.js';
 import { ScenarioManifest } from '../schemas/index.js';
-import { ServiceConfig, IStorageProvider, ILogger } from './types.js';
+import { ServiceConfig, ILogger } from './types.js';
 
 export interface ScenarioSummary {
+    id: string;
     filename: string;
     name: string;
     description: string;
@@ -32,6 +33,7 @@ export class ScenarioService {
         // 1. Add Built-in Scenarios (Type-Safe)
         for (const manifest of demoData.scenarios) {
             summaries.push({
+                id: manifest.id || manifest.name,
                 filename: `built-in:${manifest.name}.json`,
                 name: `[Built-in] ${manifest.name}`,
                 description: manifest.description || '',
@@ -42,6 +44,7 @@ export class ScenarioService {
         // 2. Add In-Memory Scenarios
         for (const [filename, manifest] of this.inMemoryScenarios) {
             summaries.push({
+                id: manifest.id || filename.replace('.json', ''),
                 filename,
                 name: manifest.name || filename.replace('.json', ''),
                 description: manifest.description || '',
@@ -52,7 +55,7 @@ export class ScenarioService {
         return summaries;
     }
 
-    /** Load a single scenario by filename */
+    /** Load a single scenario by filename or ID */
     async load(filename: string): Promise<ScenarioManifest | null> {
         if (filename.startsWith('built-in:')) {
             const name = filename.replace('built-in:', '').replace('.json', '');
@@ -60,7 +63,20 @@ export class ScenarioService {
             return scenario || null;
         }
 
-        return this.inMemoryScenarios.get(filename) || null;
+        // Try exact filename match first
+        let scenario = this.inMemoryScenarios.get(filename);
+        if (scenario) return scenario;
+
+        // Try ID match (built-in)
+        scenario = demoData.scenarios.find(s => s.id === filename || s.name === filename);
+        if (scenario) return scenario;
+
+        // Try ID match (in-memory)
+        for (const s of this.inMemoryScenarios.values()) {
+            if (s.id === filename) return s;
+        }
+
+        return null;
     }
 
     /** Save a scenario to memory */

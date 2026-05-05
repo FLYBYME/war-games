@@ -3,6 +3,11 @@ import { CommandRegistry } from './core/CommandRegistry.js';
 import { InspectMatchCommand } from './commands/InspectMatchCommand.js';
 import { StudyCommand } from './commands/StudyCommand.js';
 import { StartServerCommand } from './commands/StartServerCommand.js';
+import { LoadScenarioCommand } from './commands/LoadScenarioCommand.js';
+import { SpawnUnitCommand } from './commands/SpawnUnitCommand.js';
+import { SimControlCommand } from './commands/SimControlCommand.js';
+import { ListMatchesCommand } from './commands/ListMatchesCommand.js';
+import { ServerMetricsCommand } from './commands/ServerMetricsCommand.js';
 import { C } from './core/Utils.js';
 
 const program = new Command();
@@ -12,6 +17,11 @@ const registry = new CommandRegistry();
 registry.register(new InspectMatchCommand());
 registry.register(new StudyCommand());
 registry.register(new StartServerCommand());
+registry.register(new LoadScenarioCommand());
+registry.register(new SpawnUnitCommand());
+registry.register(new SimControlCommand());
+registry.register(new ListMatchesCommand());
+registry.register(new ServerMetricsCommand());
 
 program
     .name('war-games')

@@ -228,6 +228,26 @@ export class MatchService {
         return this.matches.get(matchId);
     }
 
+    public listMatches(): any[] {
+        return Array.from(this.matches.entries()).map(([id, world]) => ({
+            id,
+            tick: world.currentTick,
+            entityCount: Array.from(world.getEntities()).length,
+            isPaused: world.clock.isPaused,
+            timeCompression: world.clock.timeCompression
+        }));
+    }
+
+    public getStats(): any {
+        const matches = Array.from(this.matches.values());
+        return {
+            totalMatches: matches.length,
+            totalEntities: matches.reduce((acc, world) => acc + Array.from(world.getEntities()).length, 0),
+            profilesCount: (this.profiles as any).profiles.size,
+            weaponProfilesCount: (this.weaponProfiles as any).profiles.size
+        };
+    }
+
     public deleteMatch(matchId: string): void {
         this.matches.delete(matchId);
         if (this.onMatchDeleted) this.onMatchDeleted(matchId);

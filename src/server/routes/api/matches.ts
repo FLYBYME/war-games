@@ -3,14 +3,7 @@ import { logger } from '../../core/Logger.js';
 
 export async function registerMatchRoutes(app: FastifyInstance) {
     app.get('/', async () => {
-        return Array.from((app.matchService as any).matches.keys()).map((id: any) => {
-            const world = app.matchService.getMatch(id);
-            return {
-                id,
-                tick: world?.currentTick || 0,
-                entityCount: world ? Array.from(world.getEntities()).length : 0
-            };
-        });
+        return app.matchService.listMatches();
     });
 
     app.get('/:matchId/viewstate', async (request, reply) => {

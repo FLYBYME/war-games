@@ -40,7 +40,7 @@ export class TerrainService implements ITileProvider {
         this.storage = config.storage;
         this.logger = config.logger;
         this.image = config.image;
-        
+
         const base = config.baseDir || '';
         this.engineDir = this.storage.join(base, 'data', 'terrain', 'engine');
         this.uiDir = this.storage.join(base, 'data', 'terrain', 'ui');
@@ -53,8 +53,8 @@ export class TerrainService implements ITileProvider {
         });
         this.worker.on('message', (msg) => this.handleWorkerMessage(msg));
         this.worker.on('error', (err) => {
-            this.logger.error('Terrain Worker Startup Error', { 
-                message: err.message, 
+            this.logger.error('Terrain Worker Startup Error', {
+                message: err.message,
                 stack: err.stack,
                 name: err.name
             });
@@ -67,33 +67,13 @@ export class TerrainService implements ITileProvider {
     public async init() {
         if (!(await this.storage.exists(this.engineDir))) await this.storage.mkdir(this.engineDir, { recursive: true });
         if (!(await this.storage.exists(this.uiDir))) await this.storage.mkdir(this.uiDir, { recursive: true });
-        
+
         await this.scanRegions();
         this.logger.info(`TerrainService initialized. Cache: ${this.engineDir}`);
     }
 
     private async scanRegions() {
-        try {
-            const entries = await this.storage.readdir(this.regionsDir);
-            for (const regionId of entries) {
-                const metaPath = this.storage.join(this.regionsDir, regionId, 'metadata.json');
-                if (await this.storage.exists(metaPath)) {
-                    const content = await this.storage.readFile(metaPath, 'utf8') as string;
-                    const meta = JSON.parse(content);
-                    const bounds = { minLat: 20, maxLat: 26, minLon: 118, maxLon: 124 };
-                    this.regions.push({
-                        id: regionId,
-                        name: meta.name || regionId,
-                        bounds,
-                        landPng: this.storage.join(this.regionsDir, regionId, 'land.png'),
-                        oceanPng: this.storage.join(this.regionsDir, regionId, 'ocean.png'),
-                        metadata: meta
-                    });
-                }
-            }
-        } catch (err) {
-            this.logger.warn('Failed to scan regions:', err);
-        }
+        this.logger.warn('Region cache is deprecated.');
     }
 
     public getRegions() { return this.regions; }
