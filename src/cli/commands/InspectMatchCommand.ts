@@ -24,8 +24,10 @@ export class InspectMatchCommand extends BaseCommand {
             .option('-w, --watch', 'Continuously monitor the match state')
             .option('-u, --unit <id>', 'Filter and show details for a specific unit')
             .option('-s, --side <side>', 'Side to join as (Blue, Red, Neutral)', 'Neutral')
-            .option('--url <url>', 'Server URL', 'ws://localhost:3000')
-            .action((matchId, options) => this.execute(matchId, options));
+            .action((matchId, options, command) => {
+                const globalOpts = command.optsWithGlobals();
+                this.execute(matchId, { ...options, url: globalOpts.url });
+            });
     }
 
     protected async execute(matchId: string, options: { watch?: boolean, unit?: string, side: string, url: string }): Promise<void> {
@@ -122,7 +124,12 @@ export class InspectMatchCommand extends BaseCommand {
             if (snapshot.units.length > 0) {
                 console.log(`\n${C.bold}--- Sample Units ---${C.reset}`);
                 snapshot.units.slice(0, 5).forEach((u: any) => {
-                    console.log(` - [${C.blue}${u.side.padEnd(5)}${C.reset}] ${C.cyan}${u.profileId.padEnd(12)}${C.reset} (${u.id.padEnd(10)}) @ ${u.pos.x.toFixed(2)},${u.pos.y.toFixed(2)}`);
+                    const side = (u.side || '???').padEnd(5);
+                    const profileId = (u.profileId || 'unknown').padEnd(12);
+                    const id = (u.id || 'no-id').padEnd(10);
+                    const posX = u.pos?.x?.toFixed(2) || '0.00';
+                    const posY = u.pos?.y?.toFixed(2) || '0.00';
+                    console.log(` - [${C.blue}${side}${C.reset}] ${C.cyan}${profileId}${C.reset} (${id}) @ ${posX},${posY}`);
                 });
             }
         }

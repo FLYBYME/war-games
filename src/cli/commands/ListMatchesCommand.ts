@@ -12,8 +12,10 @@ export class ListMatchesCommand extends BaseCommand {
         program
             .command(this.name)
             .description(this.description)
-            .option('--url <url>', 'Server URL', 'ws://localhost:3000')
-            .action((options) => this.execute(options.url));
+            .action((options, command) => {
+                const globalOpts = command.optsWithGlobals();
+                this.execute(globalOpts.url);
+            });
     }
 
     protected async execute(url: string): Promise<void> {

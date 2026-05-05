@@ -18,8 +18,10 @@ export class SpawnUnitCommand extends BaseCommand {
             .argument('<lat>', 'Latitude', (val) => parseFloat(val))
             .argument('<lon>', 'Longitude', (val) => parseFloat(val))
             .option('-h, --heading <number>', 'Initial heading in degrees', (val) => parseFloat(val), 0)
-            .option('--url <url>', 'Server URL', 'ws://localhost:3000')
-            .action((id, profile, side, lat, lon, options) => this.execute(id, profile, side, lat, lon, options.heading, options.url));
+            .action((id, profile, side, lat, lon, options, command) => {
+                const globalOpts = command.optsWithGlobals();
+                this.execute(id, profile, side, lat, lon, options.heading, globalOpts.url);
+            });
     }
 
     protected async execute(id: string, profile: string, side: string, lat: number, lon: number, heading: number, url: string): Promise<void> {

@@ -15,20 +15,26 @@ export class SimControlCommand extends BaseCommand {
 
         sim.command('pause')
             .description('Pause the simulation')
-            .option('--url <url>', 'Server URL', 'ws://localhost:3000')
-            .action((options) => this.execute('pause', undefined, options.url));
+            .action((options, command) => {
+                const globalOpts = command.optsWithGlobals();
+                this.execute('pause', undefined, globalOpts.url);
+            });
 
         sim.command('resume')
             .description('Resume the simulation')
             .option('-r, --rate <number>', 'Time compression rate', (val) => parseFloat(val), 1)
-            .option('--url <url>', 'Server URL', 'ws://localhost:3000')
-            .action((options) => this.execute('resume', options.rate, options.url));
+            .action((options, command) => {
+                const globalOpts = command.optsWithGlobals();
+                this.execute('resume', options.rate, globalOpts.url);
+            });
 
         sim.command('speed')
             .description('Set time compression rate')
             .argument('<rate>', 'Rate (e.g., 1 for real-time, 10 for 10x)', (val) => parseFloat(val))
-            .option('--url <url>', 'Server URL', 'ws://localhost:3000')
-            .action((rate, options) => this.execute('speed', rate, options.url));
+            .action((rate, options, command) => {
+                const globalOpts = command.optsWithGlobals();
+                this.execute('speed', rate, globalOpts.url);
+            });
     }
 
     protected async execute(action: string, rate?: number, url: string = 'ws://localhost:3000'): Promise<void> {

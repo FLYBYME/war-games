@@ -30,6 +30,9 @@ export class CommandRegistry {
         const groups = this.getCommandsByCategory();
         console.log(`\n${C.magenta}${C.bold}WAR-GAMES CLI${C.reset}\n`);
 
+        console.log(`${C.yellow}${C.bold}Global Options:${C.reset}`);
+        console.log(`  ${C.cyan}${C.bold}${'--url <url>'.padEnd(18)}${C.reset} ${C.dim}Server URL (default: ws://localhost:3000)${C.reset}\n`);
+
         for (const [category, commands] of groups) {
             console.log(`${C.blue}${C.bold}${category}${C.reset}`);
             for (const cmd of commands) {
