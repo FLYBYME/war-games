@@ -4,7 +4,16 @@ import * as readline from 'readline';
 import { Command as CommanderCommand } from 'commander';
 import { BaseCommand } from '../core/BaseCommand.js';
 import { startServer } from '../../server/index.js';
-import { WarGamesClient, Formatters, DeltaDecoder, Side, ScenarioManifest, EngineEvent, ScenarioAssertion } from '../../sdk/index.js';
+import {
+    WarGamesClient,
+    Formatters,
+    DeltaDecoder,
+    Side,
+    ScenarioManifest,
+    EngineEvent,
+    ScenarioAssertion,
+    ViewStatePayload
+} from '../../sdk/index.js';
 import { logger } from '../../server/core/Logger.js';
 import * as data from '../../data/index.js';
 import { C } from '../core/Utils.js';
@@ -25,6 +34,7 @@ export class StudyCommand extends BaseCommand {
             .option('-t, --time-limit <ms>', 'Wall clock time limit in milliseconds', '60000')
             .option('-o, --output-dir <path>', 'Directory to save study results')
             .option('--tick-limit <count>', 'Maximum simulation ticks to run', '5000')
+            .option('--samples <number>', 'Number of movement samples to print per track', '10')
             .action((options) => this.execute(options));
     }
 
@@ -34,6 +44,7 @@ export class StudyCommand extends BaseCommand {
         const logLevel = options.logLevel as any;
         const timeLimit = parseInt(options.timeLimit, 10);
         const tickLimit = parseInt(options.tickLimit, 10);
+        const numSamples = parseInt(options.samples, 10);
 
         logger.setLevel(logLevel);
 
@@ -41,8 +52,8 @@ export class StudyCommand extends BaseCommand {
         if (!isNaN(parseInt(scenarioArg)) && scenarioList[parseInt(scenarioArg)]) {
             selectedScenario = scenarioList[parseInt(scenarioArg)];
         } else {
-            selectedScenario = scenarioList.find(s => 
-                (s.id && s.id.toLowerCase() === scenarioArg.toLowerCase()) || 
+            selectedScenario = scenarioList.find(s =>
+                (s.id && s.id.toLowerCase() === scenarioArg.toLowerCase()) ||
                 s.name.toLowerCase().includes(scenarioArg.toLowerCase())
             ) || null;
         }
@@ -86,7 +97,7 @@ export class StudyCommand extends BaseCommand {
         await client.scenario.importScenario(selectedScenario);
         await client.scenario.setTimeCompression(100);
 
-        let lastVs: any = null;
+        let lastVs: ViewStatePayload | null = null;
         let targetDestroyed = false;
         let maxRss = 0;
         const start = Date.now();
@@ -113,13 +124,13 @@ export class StudyCommand extends BaseCommand {
             if (evt.type === 'state:viewState') {
                 lastVs = evt.payload;
                 if (!trajStream.writableEnded) {
-                    lastVs.units.forEach((u: any) => {
+                    lastVs.units.forEach((u) => {
                         trajStream.write(JSON.stringify({
                             tick, id: u.id, isTrack: false, name: u.profileId,
                             pos: u.pos, lla: u.lla, hp: u.hp
                         }) + '\n');
                     });
-                    lastVs.tracks.forEach((t: any) => {
+                    lastVs.tracks.forEach((t) => {
                         trajStream.write(JSON.stringify({
                             tick, id: t.id, isTrack: true, name: t.classification,
                             pos: t.pos, lla: t.lla
@@ -160,7 +171,7 @@ export class StudyCommand extends BaseCommand {
                 const speed = (client.getTickCount() / 10) / wallElapsed;
                 console.log(`${C.dim}[System] Tick: ${String(client.getTickCount()).padStart(6)} | Speed: ${speed.toFixed(1)}x | Mem: ${Math.round(rss / 1024 / 1024)}MB | Shots: ${stats.weaponFires}${C.reset}`);
                 lastMetricsTime = now;
-                
+
                 if (rss > 1024 * 1024 * 1024) {
                     console.warn(`${C.red}${C.bold}⚠ HIGH MEMORY USAGE DETECTED: ${Math.round(rss / 1024 / 1024)}MB${C.reset}`);
                 }
@@ -181,13 +192,13 @@ export class StudyCommand extends BaseCommand {
         ]);
 
         // ─── Generate Report (Optimized Memory) ──────────────────────────────────
-        await this.generateReport(selectedScenario, trajFile, eventFile, summaryFile, studyDir, stats, maxRss, start, end, client.getTickCount());
+        await this.generateReport(selectedScenario, trajFile, eventFile, summaryFile, studyDir, stats, maxRss, start, end, client.getTickCount(), numSamples);
 
         await server.stop();
         console.log(`\n${C.green}${C.bold}✔ STUDY COMPLETE${C.reset} | Results: ${C.cyan}${studyDir}${C.reset}\n`);
     }
 
-    private async generateReport(scenario: ScenarioManifest, trajFile: string, eventFile: string, summaryFile: string, studyDir: string, stats: any, maxRss: number, start: number, end: number, finalTick: number) {
+    private async generateReport(scenario: ScenarioManifest, trajFile: string, eventFile: string, summaryFile: string, studyDir: string, stats: any, maxRss: number, start: number, end: number, finalTick: number, numSamples: number) {
         const log = (msg: string, colorMsg: string = msg) => {
             console.log(colorMsg);
             fs.appendFileSync(summaryFile, msg.replace(/\x1b\[[0-9;]*m/g, "") + '\n');
@@ -209,7 +220,7 @@ export class StudyCommand extends BaseCommand {
         log(`──────────────────────────────────────────────────`);
 
         const entityMeta = new Map<string, { count: number, name: string, isTrack: boolean, first?: any, last?: any }>();
-        const terminalTruths: any[] = [];
+        const terminalTruths: ViewStatePayload[] = [];
 
         // Pass 1: Scan for metadata and terminal truths
         const trajReader1 = readline.createInterface({ input: fs.createReadStream(trajFile), crlfDelay: Infinity });
@@ -243,8 +254,8 @@ export class StudyCommand extends BaseCommand {
             log(`\n${meta.isTrack ? "Track" : "Entity"} ${id} [${meta.name}]:`);
             log(`  Samples: ${meta.count} | Distance: ${distKm} km | Avg Speed: ${avgSpeed.toFixed(1)} kts`);
 
-            // Pick 10 samples (Pass 2.1)
-            const stride = Math.max(1, Math.floor(meta.count / 10));
+            // Pick samples (Pass 2.1)
+            const stride = Math.max(1, Math.floor(meta.count / numSamples));
             let currentIdx = 0;
             const trajReader2 = readline.createInterface({ input: fs.createReadStream(trajFile), crlfDelay: Infinity });
             for await (const line of trajReader2) {

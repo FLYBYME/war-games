@@ -56,7 +56,7 @@ export class EntityManager {
             throw new Error(`Profile not found: ${params.profileId || 'No profile provided'}`);
         }
 
-        const entity = new Entity(id, params.side, undefined, params.profileId);
+        const entity = new Entity(id, params.side, undefined, params.profileId || profile.name || profile.type || 'custom');
 
         // Normalize position
         let position: Vector3;

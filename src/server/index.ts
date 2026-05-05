@@ -55,9 +55,10 @@ export async function startServer(port?: number, logLevel?: string) {
     // Start Initial Loop for default match
     tickManager.startLoop('default');
 
-    const finalPort = port || serverConfig.port;
-    await app.listen({ port: finalPort, host: '0.0.0.0' });
-    logger.info(`Server listening on port ${finalPort} (Fastify)`);
+    const finalPort = port !== undefined ? port : serverConfig.port;
+    const address = await app.listen({ port: finalPort, host: '0.0.0.0' });
+    const listeningPort = (app.server.address() as any).port;
+    logger.info(`Server listening on port ${listeningPort} (Fastify)`);
 
     return {
         app,
@@ -65,7 +66,7 @@ export async function startServer(port?: number, logLevel?: string) {
             tickManager.stopAll();
             await app.close();
         },
-        port: finalPort
+        port: listeningPort
     };
 }
 
