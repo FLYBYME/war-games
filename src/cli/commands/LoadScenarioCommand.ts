@@ -13,8 +13,10 @@ export class LoadScenarioCommand extends BaseCommand {
             .command(this.name)
             .description(this.description)
             .argument('[filename]', 'Filename of the scenario to load')
-            .option('--url <url>', 'Server URL', 'ws://localhost:3000')
-            .action((filename, options) => this.execute(filename, options.url));
+            .action((filename, options, command) => {
+                const globalOpts = command.optsWithGlobals();
+                this.execute(filename, globalOpts.url);
+            });
     }
 
     protected async execute(filename?: string, url: string = 'ws://localhost:3000'): Promise<void> {
@@ -42,13 +44,12 @@ export class LoadScenarioCommand extends BaseCommand {
                 if (scenarios.length === 0) {
                     console.log(`${C.yellow}No scenarios found on server.${C.reset}`);
                 } else {
-                    console.log(`${C.bold}${'ID (FILENAME)'.padEnd(45)} ${'NAME'.padEnd(30)} ${'UNITS'}${C.reset}`);
-                    console.log(`${C.dim}${'-'.repeat(85)}${C.reset}`);
+                    console.log(`${C.bold}${'ID'.padEnd(25)} ${'NAME'.padEnd(40)} ${'UNITS'}${C.reset}`);
+                    console.log(`${C.dim}${'-'.repeat(75)}${C.reset}`);
 
                     scenarios.forEach(s => {
-                        console.log(`${C.cyan}${s.filename.padEnd(45)}${C.reset} ${s.name.padEnd(30)} ${C.yellow}${s.entityCount}${C.reset}`);
+                        console.log(`${C.cyan}${s.id.padEnd(25)}${C.reset} ${s.name.padEnd(40)} ${C.yellow}${s.entityCount}${C.reset}`);
                     });
-
                     console.log(`\n${C.dim}Use 'load-scenario <id>' to load one of these.${C.reset}`);
                 }
             }

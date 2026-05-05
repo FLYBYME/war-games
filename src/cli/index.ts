@@ -26,7 +26,8 @@ registry.register(new ServerMetricsCommand());
 program
     .name('war-games')
     .description('War-Games Engine CLI')
-    .version('1.0.0');
+    .version('1.0.0')
+    .option('--url <url>', 'Server URL (global)', 'ws://localhost:3000');
 
 // Attach registry commands to program
 registry.attachToProgram(program);

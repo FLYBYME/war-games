@@ -37,8 +37,9 @@ export class ServerMetricsCommand extends BaseCommand {
             console.log(`Sessions:   ${C.green}${metrics.sessions}${C.reset}`);
             
             console.log(`\n${C.bold}Simulation:${C.reset}`);
-            console.log(` Matches:   ${metrics.simulation.activeMatches}`);
+            console.log(` Matches:   ${metrics.simulation.totalMatches}`);
             console.log(` Entities:  ${metrics.simulation.totalEntities}`);
+            console.log(` Profiles:  ${metrics.simulation.profilesCount} platforms, ${metrics.simulation.weaponProfilesCount} weapons`);
             
             console.log(`\n${C.bold}Memory Usage:${C.reset}`);
             console.log(` RSS:        ${this.formatMem(metrics.memory.rss)}`);
