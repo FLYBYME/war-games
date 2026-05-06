@@ -10,6 +10,7 @@ import { ListMatchesCommand } from './commands/ListMatchesCommand.js';
 import { ServerMetricsCommand } from './commands/ServerMetricsCommand.js';
 import { DuelCommand } from './commands/DuelCommand.js';
 import { ViewBugsCommand } from './commands/ViewBugsCommand.js';
+import { DebugAgentCommand } from './commands/DebugAgentCommand.js';
 import { C } from './core/Utils.js';
 
 const program = new Command();
@@ -26,6 +27,7 @@ registry.register(new ListMatchesCommand());
 registry.register(new ServerMetricsCommand());
 registry.register(new DuelCommand());
 registry.register(new ViewBugsCommand());
+registry.register(new DebugAgentCommand());
 
 program
     .name('war-games')

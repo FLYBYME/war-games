@@ -48,7 +48,11 @@ export class ViewBugsCommand extends BaseCommand {
             console.log(`${C.white}${C.bold}ID: ${r.id}${C.reset} | ${C.cyan}${date}${C.reset} | ${severityColor}${C.bold}${r.severity}${C.reset}`);
             console.log(`${C.yellow}${C.bold}Title: ${r.title}${C.reset}`);
             console.log(`${C.white}${r.description}${C.reset}`);
-            
+            console.log(`${C.white}${r.worldState}${C.reset}`);
+            if (r.suggestedFix) {
+                console.log(`${C.dim}Suggested Fix: ${r.suggestedFix}${C.reset}`);
+            }
+
             if (r.reproductionSteps) {
                 console.log(`${C.dim}Reproduction: ${r.reproductionSteps}${C.reset}`);
             }

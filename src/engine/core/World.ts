@@ -248,7 +248,7 @@ export class World implements IWorldView {
         return this.systems.find(s => s instanceof identifier) as T | undefined;
     }
 
-    public async tick(dt: number): Promise<void> {
+    public async tick(dt: number, force: boolean = false): Promise<void> {
         const tickStart = performance.now();
         this.stateSequence++;
 
@@ -271,7 +271,7 @@ export class World implements IWorldView {
         this.resolveCommands(externalCommands);
         phaseTimes['externalCommands'] = performance.now() - extStart;
 
-        if (!this.clock.isPaused) {
+        if (!this.clock.isPaused || force) {
             this.currentTick++;
             this.timestamp += dt;
             if (this.currentTick % 100 === 0) {
@@ -318,11 +318,6 @@ export class World implements IWorldView {
             } catch (err: any) {
                 logger.error(`FATAL CRASH in Simulation Loop (Tick ${this.currentTick}): ${err.message}`, { stack: err.stack });
                 throw err;
-            }
-        } else {
-            // Even if paused, resolve external commands (e.g. SetROE, SetEMCON)
-            if (externalCommands.length > 0) {
-                this.resolveCommands(externalCommands);
             }
         }
 

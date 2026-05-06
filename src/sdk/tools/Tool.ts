@@ -19,7 +19,7 @@ export interface WarGamesTool<
      * @param side The side affiliation of the caller.
      * @param args The validated input arguments.
      */
-    call(matchId: string, side: Side, args: Z.infer<TInput>): Promise<Z.infer<TOutput>>;
+    call(matchId: string | undefined, side: Side | undefined, args: Z.infer<TInput>): Promise<Z.infer<TOutput>>;
 }
 
 /**

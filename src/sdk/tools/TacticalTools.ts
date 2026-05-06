@@ -263,9 +263,9 @@ export function createTacticalTools(client: WarGamesClient) {
         name: "wait",
         description: "Advances the simulation clock by a specific duration. Automatically halts if tactical events occur.",
         inputSchema: z.object({ durationMinutes: z.number() }),
-        outputSchema: z.object({ 
-            success: z.boolean(), 
-            elapsedSeconds: z.number(), 
+        outputSchema: z.object({
+            success: z.boolean(),
+            elapsedSeconds: z.number(),
             interruptedByEvent: z.boolean().optional(),
             currentTick: z.number().optional(),
             elapsedTicks: z.number().optional()
@@ -288,24 +288,6 @@ export function createTacticalTools(client: WarGamesClient) {
         }
     });
 
-    /**
-     * report_bug: Reports an issue discovered during simulation
-     */
-    const report_bug = defineTool({
-        name: "report_bug",
-        description: "Reports a bug or anomaly to the engineering team.",
-        inputSchema: z.object({
-            title: z.string(),
-            description: z.string(),
-            severity: z.enum(['Low', 'Medium', 'High', 'Critical'])
-        }),
-        outputSchema: z.object({ success: z.boolean(), reportId: z.string() }),
-        async call(matchId, side, args) {
-            const reportId = `BUG-${Date.now()}`;
-            fs.appendFileSync('bug_reports.jsonl', JSON.stringify({ id: reportId, matchId, side, ...args }) + '\n');
-            return { success: true, reportId };
-        }
-    });
 
     /**
      * query_profile_data: Returns specifications for a platform type
@@ -323,18 +305,17 @@ export function createTacticalTools(client: WarGamesClient) {
     });
 
     return [
-        get_tactical_status, 
-        set_paused,
-        set_time_compression,
+        get_tactical_status,
+        // set_paused,
+        // set_time_compression,
         get_unit_details,
-        set_unit_course, 
-        assign_mission, 
+        set_unit_course,
+        assign_mission,
         set_emcon,
         engage_target,
         spawn_unit,
         wait,
         list_matches,
-        report_bug,
         query_profile_data
     ];
 }

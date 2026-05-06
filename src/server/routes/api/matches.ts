@@ -145,7 +145,7 @@ export async function registerMatchRoutes(app: FastifyInstance) {
         world.events.on('TacticalEvent', eventHandler);
 
         for(let i=0; i<targetTicks; i++) {
-            await world.tick(0.1);
+            await world.tick(0.1, true);
             if (events.length > 0) {
                 interrupted = true;
                 break;

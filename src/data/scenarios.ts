@@ -199,7 +199,7 @@ export const scenarios: ScenarioManifest[] = [
                 id: "uss-arleigh-burke",
                 profileId: "ddg-destroyer",
                 side: Side.Blue,
-                pos: { x: 0, y: 0, z: 0 },
+                pos: { x: 1000, y: 1000, z: 0 },
                 heading: 90
             },
             {
