@@ -271,7 +271,12 @@ export class SensorSystem implements ISystem {
             effectiveNoiseWatts += this.dbmToWatts(Physics.NOISE_FLOOR_DBM + clutterDb);
         }
         const snrDb = 10 * Math.log10(prWatts / effectiveNoiseWatts);
-        return snrDb >= Physics.RADAR_MIN_SNR_DB;
+        
+        // --- Scientific Pd Curve (Sigmoid Approximation) ---
+        const threshold = Physics.RADAR_MIN_SNR_DB;
+        const pd = 1 / (1 + Math.exp(-1.5 * (snrDb - threshold)));
+        
+        return Math.random() < pd;
     }
 
     private calculateESMDetection(esm: SensorComponent, target: Entity, dist: number): boolean {
@@ -316,7 +321,10 @@ export class SensorSystem implements ISystem {
         const vRel = VectorMath.subtract(tgtVel, obsVel);
         const uLOS = VectorMath.normalize(VectorMath.subtract(tgtPos, obsPos));
         const vRadial = VectorMath.dot(vRel, uLOS);
-        return Math.abs(vRadial) < 15.0;
+        
+        // V3 Fix: 15m/s was too aggressive and notched stationary air units.
+        // Reduced to 2.0m/s for basic clutter rejection without losing slow targets.
+        return Math.abs(vRadial) < 2.0;
     }
 
     private calculateSonarDetection(z1: number, z2: number, env: EnvironmentComponent | undefined, targetEnv: EnvironmentComponent | undefined, dist: number, sl: number): boolean {
@@ -338,8 +346,13 @@ export class SensorSystem implements ISystem {
         }
         const seaState = env?.seaState || targetEnv?.seaState || 0;
         const ambientNoise = Physics.AMBIENT_OCEAN_NOISE_DB + (seaState * 3);
-        const snr = sl - tl - ambientNoise;
-        return snr >= Physics.SONAR_DT_DB;
+        const snrDb = sl - tl - ambientNoise;
+        
+        // --- Sonar Pd Curve ---
+        const threshold = Physics.SONAR_DT_DB;
+        const pd = 1 / (1 + Math.exp(-0.8 * (snrDb - threshold))); 
+        
+        return Math.random() < pd;
     }
 
     private dbmToWatts(dbm: number): number {

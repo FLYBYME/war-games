@@ -76,7 +76,14 @@ export const ViewUnitPayloadSchema = z.object({
     datalink: z.object({ nodes: z.array(z.string()), edges: z.array(z.any()) }).optional(),
     coveragePolygons: z.object({ radar: z.array(z.any()), wez: z.array(z.any()) }).optional(),
     doctrine: z.object({ roe: z.string(), emcon: z.string(), wraRules: z.array(z.any()) }).optional(),
-    mission: z.object({ type: z.string(), status: z.string(), params: z.any() }).optional()
+    mission: z.object({ type: z.string(), status: z.string(), params: z.any() }).optional(),
+    taskGraph: z.object({
+        activeTasks: z.array(z.object({
+            id: z.string(),
+            type: z.string(),
+            status: z.string()
+        }))
+    }).optional()
 });
 export type ViewUnitPayload = z.infer<typeof ViewUnitPayloadSchema>;
 
@@ -210,6 +217,7 @@ export const ClientMessageSchema = z.discriminatedUnion('type', [
     z.object({ type: z.literal('GET_TELEMETRY'), matchId: z.string() }),
     z.object({ type: z.literal('GET_PROFILES'), matchId: z.string(), category: z.string().optional() }),
     z.object({ type: z.literal('EXPORT_SCENARIO'), matchId: z.string() }),
-    z.object({ type: z.literal('IMPORT_SCENARIO'), matchId: z.string(), payload: z.any() })
+    z.object({ type: z.literal('IMPORT_SCENARIO'), matchId: z.string(), payload: z.any() }),
+    z.object({ type: z.literal('SAVE_MATCH'), matchId: z.string(), filename: z.string() })
 ]);
 export type ClientMessage = z.infer<typeof ClientMessageSchema>;

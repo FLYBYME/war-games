@@ -49,13 +49,14 @@ export class MissileHomingSystem implements ISystem {
 
             if (guidance.lastLOS) {
                 // PN Guidance: Rotate the velocity vector N times faster than the LOS rotates
-                // NewDir = Normalize(CurrentDir + N * deltaLOS)
                 const N = 4.0;
                 const deltaLOS = VectorMath.subtract(currentLOS, guidance.lastLOS);
                 
-                // Get current velocity direction (normalize myKin.velocity)
-                const currentVelDir = myKin ? VectorMath.normalize(myKin.velocity) : VectorMath.normalize(VectorMath.subtract(transform.position, {x:0, y:0, z:0})); // Fallback
+                // Get current velocity direction
+                const currentVelDir = myKin ? VectorMath.normalize(myKin.velocity) : VectorMath.normalize(currentLOS); // Fallback to pursuit
                 
+                // V3 Fix: Ensure the correction is applied proportional to the LOS rate
+                // We use deltaLOS directly for the discrete step, but ensure it's normalized to the speed.
                 const desiredDir = VectorMath.normalize(VectorMath.add(currentVelDir, VectorMath.multiplyScalar(deltaLOS, N)));
                 
                 desiredHeading = (Math.atan2(desiredDir.y, desiredDir.x) * Physics.RAD_TO_DEG + 360) % 360;

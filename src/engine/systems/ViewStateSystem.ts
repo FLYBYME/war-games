@@ -19,8 +19,9 @@ import { WeaponProfileRegistry } from '../core/WeaponProfileRegistry.js';
 import { TelemetrySystem } from './TelemetrySystem.js';
 import { EnvironmentSystem } from './EnvironmentSystem.js';
 import { DatalinkSystem } from './DatalinkSystem.js';
+import { ThreatMapSystem } from './ThreatMapSystem.js';
 import { MapDataService } from '../environment/MapDataService.js';
-
+import { TaskGraphComponent } from '../components/TaskGraph.js';
 
 /**
  * ViewStateSystem: Serializes side-specific tactical snapshots.
@@ -37,12 +38,12 @@ export class ViewStateSystem implements ISystem {
         private weaponProfiles?: WeaponProfileRegistry,
         private mapData?: MapDataService
     ) { }
+
     public async process(world: IWorldView, _dt: number): Promise<Command[]> {
         const sides = [Side.Blue, Side.Red, Side.Neutral];
         for (const side of sides) {
             try {
                 const snapshot = await this.generateSnapshot(world, side);
-                //console.log(`[ViewStateSystem] Emitting ViewStateUpdated for ${side} at tick ${world.currentTick}`);
                 world.events.emit({
                     type: 'ViewStateUpdated',
                     tick: world.currentTick,
@@ -52,11 +53,10 @@ export class ViewStateSystem implements ISystem {
                 console.error(`ViewStateSystem: Failed to generate snapshot for ${side} at tick ${world.currentTick}`, err);
             }
         }
-
         return [];
     }
 
-    public async generateSnapshot(world: IWorldView, observerSide: Side): Promise<ViewStateSnapshot> {
+    public async generateSnapshot(world: IWorldView, observerSide: Side): Promise<any> {
         const units: any[] = [];
         const allTracks: any[] = [];
         const weaponBindings: any[] = [];
@@ -68,15 +68,19 @@ export class ViewStateSystem implements ISystem {
             const transform = entity.getComponent(TransformComponent);
             if (!transform) continue;
 
-            // 1. If friendly or God View, include full state
             if (entity.side === observerSide || isGodView) {
                 const health = entity.getComponent(HealthComponent);
                 const log = entity.getComponent(LogisticsComponent);
                 const nav = entity.getComponent(NavigationComponent);
                 const sensors = entity.getComponents(SensorComponent);
-                const combat = entity.getComponent(CombatComponent) as CombatComponent;
-                const detection = entity.getComponent(DetectionComponent) as DetectionComponent;
-                const kinematics = entity.getComponent(KinematicsComponent) as KinematicsComponent;
+                const combat = entity.getComponent(CombatComponent);
+                const detection = entity.getComponent(DetectionComponent);
+                const kinematics = entity.getComponent(KinematicsComponent);
+                const taskGraph = entity.getComponent(TaskGraphComponent);
+                const mission = entity.getComponent(MissionComponent);
+                const fuel = entity.getComponent(FuelComponent);
+                const datalink = entity.getComponent(DatalinkComponent);
+                const doctrine = entity.getComponent(DoctrineComponent);
 
                 const geo = this.projection.project(transform.position);
 
@@ -92,25 +96,37 @@ export class ViewStateSystem implements ISystem {
                     hp: health?.hp || 100,
                     isDestroyed: health?.isDestroyed || false,
                     logState: log?.state || 'None',
-                    doctrine: entity.getComponent(DoctrineComponent) ? {
-                        roe: (entity.getComponent(DoctrineComponent) as DoctrineComponent).roe,
-                        wraRules: (entity.getComponent(DoctrineComponent) as DoctrineComponent).wraRules
+                    mission: mission ? {
+                        type: mission.missionType,
+                        status: mission.status,
+                        params: mission.params
                     } : undefined,
-                    fuel: entity.getComponent(FuelComponent) ? {
-                        current: (entity.getComponent(FuelComponent) as FuelComponent).currentKg,
-                        max: (entity.getComponent(FuelComponent) as FuelComponent).maxKg,
-                        pct: (entity.getComponent(FuelComponent) as FuelComponent).currentKg / (entity.getComponent(FuelComponent) as FuelComponent).maxKg,
-                        burnRate: (entity.getComponent(FuelComponent) as FuelComponent).burnRateKgHr,
-                        isBingo: (entity.getComponent(FuelComponent) as FuelComponent).isBingo,
-                        bingoTicks: (entity.getComponent(FuelComponent) as FuelComponent).bingoTicks
+                    taskGraph: taskGraph ? {
+                        activeTasks: taskGraph.graph.getActiveTasks().map(t => ({
+                            id: t.id,
+                            type: t.task.type,
+                            status: t.status
+                        }))
                     } : undefined,
-                    datalink: entity.getComponent(DatalinkComponent) ? {
-                        networkId: (entity.getComponent(DatalinkComponent) as DatalinkComponent).networkId,
-                        isActive: (entity.getComponent(DatalinkComponent) as DatalinkComponent).isActive,
-                        latency: (entity.getComponent(DatalinkComponent) as DatalinkComponent).latencyTicks
+                    doctrine: doctrine ? {
+                        roe: doctrine.roe,
+                        wraRules: doctrine.wraRules
                     } : undefined,
-                    fuelPct: entity.getComponent(FuelComponent) ? (entity.getComponent(FuelComponent) as FuelComponent).currentKg / (entity.getComponent(FuelComponent) as FuelComponent).maxKg : 1.0,
-                    isBingo: (entity.getComponent(FuelComponent) as FuelComponent)?.isBingo || false,
+                    fuel: fuel ? {
+                        current: fuel.currentKg,
+                        max: fuel.maxKg,
+                        pct: fuel.currentKg / fuel.maxKg,
+                        burnRate: fuel.burnRateKgHr,
+                        isBingo: fuel.isBingo,
+                        bingoTicks: fuel.bingoTicks
+                    } : undefined,
+                    datalink: datalink ? {
+                        networkId: datalink.networkId,
+                        isActive: datalink.isActive,
+                        latency: datalink.latencyTicks
+                    } : undefined,
+                    fuelPct: fuel ? fuel.currentKg / fuel.maxKg : 1.0,
+                    isBingo: fuel?.isBingo || false,
                     sensors: sensors.map(s => ({
                         name: s.name,
                         rangeM: s.maxRangeM,
@@ -125,7 +141,6 @@ export class ViewStateSystem implements ISystem {
                         radar: this.calculateHorizonPolygon(transform.position, sensors),
                         wez: this.calculateWEZPolygon(transform.position, combat)
                     },
-                    // losPolygon: await this.calculateLOSPolygon(transform.position),
                     mounts: combat?.mounts.map((m, idx) => {
                         const magIdx = m.magazineIndices[m.activeMagazineIndex];
                         const magazine = combat?.magazines[magIdx];
@@ -137,7 +152,6 @@ export class ViewStateSystem implements ISystem {
                     }) || []
                 });
 
-                // Collect Weapon Bindings
                 if (combat) {
                     if (combat.currentTargetId) {
                         weaponBindings.push({ shooterId: entity.id, weaponId: 'Global', targetId: combat.currentTargetId });
@@ -149,7 +163,6 @@ export class ViewStateSystem implements ISystem {
                     });
                 }
 
-                // Collect ESM Bearings
                 if (detection && detection.esmBearings) {
                     esmBearings.push(...detection.esmBearings.map((b: any) => ({
                         observerId: entity.id,
@@ -159,7 +172,6 @@ export class ViewStateSystem implements ISystem {
                     })));
                 }
 
-                // Also collect the tactical picture (tracks) from this unit
                 const tms = entity.getComponent(TrackComponent);
                 if (tms) {
                     for (const track of tms.tracks.values()) {
@@ -182,6 +194,7 @@ export class ViewStateSystem implements ISystem {
         const tel = (world as World).getSystem<TelemetrySystem>('TelemetrySystem');
         const envSystem = (world as World).getSystem<EnvironmentSystem>('EnvironmentSystem');
         const dlSystem = (world as World).getSystem<DatalinkSystem>('DatalinkSystem');
+        const threatSystem = (world as World).getSystem<ThreatMapSystem>('ThreatMapSystem');
 
         return {
             tick: world.currentTick,
@@ -203,6 +216,7 @@ export class ViewStateSystem implements ISystem {
                 temperatureC: 15
             },
             datalinkGraph: dlSystem ? dlSystem.getGraph() : { nodes: [], edges: [] },
+            threatMap: threatSystem ? threatSystem.threatZones.get(observerSide) : [],
             weaponBindings,
             esmBearings,
             mapData: this.mapData ? {
@@ -210,42 +224,6 @@ export class ViewStateSystem implements ISystem {
                 borders: this.mapData.getBorders()
             } : undefined
         };
-    }
-
-    private async calculateLOSPolygon(pos: any): Promise<any[] | undefined> {
-        if (!this.terrain) return undefined;
-
-        const points = [];
-        const maxRange = 50000; // 50km LOS check
-        const samples = 36; // Every 10 degrees
-
-        for (let i = 0; i < samples; i++) {
-            const angle = (i * 360 / samples) * (Math.PI / 180);
-            const dir = { x: Math.cos(angle), y: Math.sin(angle), z: 0 };
-
-            // Binary search or iterative step for occlusion point
-            // For efficiency, we'll check fixed distances first
-            let dist = maxRange;
-            const steps = [0.1, 0.25, 0.5, 0.75, 1.0];
-            for (const step of steps) {
-                const checkPos = {
-                    x: pos.x + dir.x * maxRange * step,
-                    y: pos.y + dir.y * maxRange * step,
-                    z: pos.z
-                };
-                const isClear = await this.terrain.isLineOfSightClear(pos, checkPos, this.projection, 5);
-                if (!isClear) {
-                    dist = maxRange * step;
-                    break;
-                }
-            }
-
-            const edgePos = { x: pos.x + dir.x * dist, y: pos.y + dir.y * dist, z: pos.z };
-            // Since we want Pixi coordinates in the UI eventually, but here we return relative or world?
-            // Usually UI wants world coordinates which it then scales.
-            points.push({ x: edgePos.x, y: edgePos.y });
-        }
-        return points;
     }
 
     private calculateMaxWEZ(combat: CombatComponent | undefined): number {
@@ -268,8 +246,6 @@ export class ViewStateSystem implements ISystem {
             const angle = (i * 2 * Math.PI) / 16;
             const dir = { x: Math.cos(angle), y: Math.sin(angle), z: 0 };
             const endPos = { x: pos.x + dir.x * maxRange, y: pos.y + dir.y * maxRange, z: pos.z };
-            // In a real implementation, we'd use terrain.isLineOfSightClear at various points
-            // For now, we'll return the max range LLA
             const geo = this.projection.project(endPos);
             points.push({ lat: geo.lat, lon: geo.lon });
         }
@@ -290,8 +266,6 @@ export class ViewStateSystem implements ISystem {
     }
 
     private deduplicateTracks(tracks: any[]): any[] {
-        // Simplified deduplication: Group by trueEntityId if available, or just use track ID
-        // In a real datalink, we'd fuse these.
         const fused = new Map<string, any>();
         for (const t of tracks) {
             const existing = fused.get(t.id);

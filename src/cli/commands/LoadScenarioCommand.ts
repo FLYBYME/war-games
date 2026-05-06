@@ -48,7 +48,7 @@ export class LoadScenarioCommand extends BaseCommand {
                     console.log(`${C.dim}${'-'.repeat(75)}${C.reset}`);
 
                     scenarios.forEach(s => {
-                        console.log(`${C.cyan}${s.id.padEnd(25)}${C.reset} ${s.name.padEnd(40)} ${C.yellow}${s.entityCount}${C.reset}`);
+                        console.log(`${C.cyan}${s.filename.padEnd(25)}${C.reset} ${s.name.padEnd(40)} ${C.yellow}${s.entityCount}${C.reset}`);
                     });
                     console.log(`\n${C.dim}Use 'load-scenario <id>' to load one of these.${C.reset}`);
                 }

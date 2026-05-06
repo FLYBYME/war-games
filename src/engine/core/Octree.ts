@@ -19,8 +19,8 @@ export class Octree {
 
     constructor(size: number = 20000000) { // Large enough to cover Earth (20,000km)
         this.root = this.createNode(
-            { x: -size/2, y: -size/2, z: -size/2 },
-            { x: size/2, y: size/2, z: size/2 }
+            { x: -size / 2, y: -size / 2, z: -size / 2 },
+            { x: size / 2, y: size / 2, z: size / 2 }
         );
     }
 
@@ -39,8 +39,9 @@ export class Octree {
         const pos = this.entityMap.get(id);
         if (pos) {
             this.remove(this.root, id, pos);
-            this.entityMap.delete(id);
         }
+        // Always delete from map, even if tree removal fails (it will be cleaned up on next subdivision)
+        this.entityMap.delete(id);
     }
 
     private insert(node: OctreeNode, id: EntityId, pos: Vector3, depth: number): void {
@@ -58,7 +59,11 @@ export class Octree {
             node.entities = [];
             for (const eid of entities) {
                 const epos = this.entityMap.get(eid);
-                if (!epos) continue; // Skip phantoms that were removed from map but stuck in tree
+                if (!epos || typeof epos.x !== 'number') {
+                    // This was a "zombie" entity that was in the tree but missing from the map.
+                    // By not re-inserting it, we effectively clean it up.
+                    continue; 
+                }
                 const index = this.getOctantIndex(node.bounds, epos);
                 this.insert(node.children![index], eid, epos, depth + 1);
             }
@@ -107,6 +112,10 @@ export class Octree {
     }
 
     private getOctantIndex(bounds: { min: Vector3, max: Vector3 }, pos: Vector3): number {
+        if (!pos || typeof pos.x !== 'number') {
+            // Safety fallback: if pos is malformed, return first octant
+            return 0;
+        }
         const midX = (bounds.min.x + bounds.max.x) / 2;
         const midY = (bounds.min.y + bounds.max.y) / 2;
         const midZ = (bounds.min.z + bounds.max.z) / 2;

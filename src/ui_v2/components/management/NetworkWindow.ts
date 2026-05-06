@@ -34,96 +34,109 @@ export class NetworkWindow extends Component {
         this.ctx = this.canvas.getContext('2d')!;
 
         const legend = this.el('div', 'dl-legend');
-        legend.appendChild(this.legendItem('#00d4ff', 'Connected'));
-        legend.appendChild(this.legendItem('#ff2d55', 'Isolated'));
-        legend.appendChild(this.legendItem('#ffd60a', 'Relay'));
+        legend.appendChild(this.legendItem('var(--color-friendly)', 'Connected'));
+        legend.appendChild(this.legendItem('var(--color-hostile)', 'Disconnected'));
+        legend.appendChild(this.legendItem('var(--color-unknown)', 'Relay'));
         this.element.appendChild(legend);
 
         this.subscribe(UIStore.viewState, vs => {
             if (!vs) return;
-            this.drawTopology(vs.units);
+            this.drawTopology(vs);
         });
     }
 
-    private drawTopology(units: any[]) {
+    private drawTopology(vs: any) {
         const ctx = this.ctx;
         ctx.clearRect(0, 0, 400, 250);
 
+        const graph = vs.datalinkGraph;
+        if (!graph) return;
+
         const cx = 200, cy = 125;
-        const nodes: { x: number; y: number; id: string; connected: boolean; network: string }[] = [];
+        const nodes: Map<string, { x: number; y: number; id: string; status: 'Connected' | 'Disconnected' | 'Relay' }> = new Map();
 
-        // Assuming all units are blue friendly for this topology for now
-        const dlUnits = units.filter(u => u.side === 'Blue'); 
-        if (dlUnits.length === 0) return;
+        const units = vs.units.filter((u: any) => u.side === 'Blue' || u.side === 'Neutral');
+        if (units.length === 0) return;
 
-        for (let i = 0; i < dlUnits.length; i++) {
-            const angle = (2 * Math.PI * i) / dlUnits.length;
-            const r = 90;
-            const u = dlUnits[i];
-            // Just simulate connection for visual effect if datalink component isn't explicitly active
-            nodes.push({
+        // Position nodes in a circle
+        for (let i = 0; i < units.length; i++) {
+            const angle = (2 * Math.PI * i) / units.length;
+            const r = 85;
+            const u = units[i];
+            const isConnected = graph.nodes.includes(u.id);
+            nodes.set(u.id, {
                 x: cx + Math.cos(angle) * r,
                 y: cy + Math.sin(angle) * r,
                 id: u.id,
-                connected: u.datalink ? u.datalink.isActive : true,
-                network: u.datalink ? u.datalink.networkId : 'Link-16'
+                status: isConnected ? 'Connected' : 'Disconnected'
             });
         }
 
-        // Draw edges
-        ctx.strokeStyle = 'rgba(0,212,255,0.2)';
+        // Draw edges from graph
+        ctx.strokeStyle = 'rgba(0, 212, 255, 0.15)';
         ctx.lineWidth = 1;
-        for (let i = 0; i < nodes.length; i++) {
-            for (let j = i + 1; j < nodes.length; j++) {
-                if (nodes[i].connected && nodes[j].connected) {
+        if (graph.edges) {
+            for (const edge of graph.edges) {
+                const n1 = nodes.get(edge.a);
+                const n2 = nodes.get(edge.b);
+                if (n1 && n2) {
                     ctx.beginPath();
-                    ctx.moveTo(nodes[i].x, nodes[i].y);
-                    ctx.lineTo(nodes[j].x, nodes[j].y);
+                    ctx.moveTo(n1.x, n1.y);
+                    ctx.lineTo(n2.x, n2.y);
                     ctx.stroke();
+                    
+                    // Optional: Draw latency label
+                    if (edge.latencyMs > 0) {
+                        ctx.fillStyle = 'rgba(0, 212, 255, 0.4)';
+                        ctx.font = '8px var(--font-mono)';
+                        ctx.fillText(`${edge.latencyMs}ms`, (n1.x + n2.x) / 2, (n1.y + n2.y) / 2);
+                    }
                 }
             }
         }
 
-        // Draw hub
+        // Draw hub (The Network itself)
         ctx.beginPath();
-        ctx.arc(cx, cy, 12, 0, Math.PI * 2);
-        ctx.fillStyle = 'rgba(0,212,255,0.15)';
+        ctx.arc(cx, cy, 15, 0, Math.PI * 2);
+        ctx.fillStyle = 'rgba(0,212,255,0.05)';
         ctx.fill();
-        ctx.strokeStyle = '#00d4ff';
+        ctx.strokeStyle = 'var(--color-friendly)';
         ctx.lineWidth = 2;
+        ctx.setLineDash([2, 2]);
         ctx.stroke();
-        ctx.fillStyle = '#f8fafc';
-        ctx.font = '10px var(--font-ui)';
+        ctx.setLineDash([]);
+        ctx.fillStyle = 'var(--text-main)';
+        ctx.font = 'bold 9px var(--font-ui)';
         ctx.textAlign = 'center';
-        ctx.fillText('NET', cx, cy + 3);
-
-        // Draw edges from hub to nodes
-        for (const n of nodes) {
-            if (n.connected) {
-                ctx.beginPath();
-                ctx.moveTo(cx, cy);
-                ctx.lineTo(n.x, n.y);
-                ctx.strokeStyle = 'rgba(0,212,255,0.15)';
-                ctx.stroke();
-            }
-        }
+        ctx.fillText('CORE', cx, cy + 4);
 
         // Draw nodes
-        for (const n of nodes) {
+        nodes.forEach((n) => {
+            const color = n.status === 'Connected' ? '#00d4ff' : '#ff2d55';
+            
+            // Halo
             ctx.beginPath();
-            ctx.arc(n.x, n.y, 8, 0, Math.PI * 2);
-            ctx.fillStyle = n.connected ? 'rgba(0,212,255,0.3)' : 'rgba(255,45,85,0.3)';
+            ctx.arc(n.x, n.y, 10, 0, Math.PI * 2);
+            ctx.fillStyle = `${color}22`;
             ctx.fill();
-            ctx.strokeStyle = n.connected ? '#00d4ff' : '#ff2d55';
-            ctx.lineWidth = 2;
+
+            // Node dot
+            ctx.beginPath();
+            ctx.arc(n.x, n.y, 6, 0, Math.PI * 2);
+            ctx.fillStyle = color;
+            ctx.fill();
+            ctx.strokeStyle = 'rgba(255,255,255,0.3)';
+            ctx.lineWidth = 1;
             ctx.stroke();
 
-            ctx.fillStyle = '#94a3b8';
-            ctx.font = '10px var(--font-mono)';
+            // Label
+            ctx.fillStyle = 'var(--text-muted)';
+            ctx.font = '9px var(--font-mono)';
             ctx.textAlign = 'center';
-            ctx.fillText(n.id.substring(0, 8), n.x, n.y + 20);
-        }
+            ctx.fillText(n.id.substring(0, 8), n.x, n.y + 18);
+        });
     }
+
 
     private legendItem(color: string, label: string): HTMLElement {
         const item = this.el('div', 'dl-legend__item');

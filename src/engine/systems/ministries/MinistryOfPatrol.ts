@@ -10,7 +10,11 @@ export class MinistryOfPatrol implements IMinistry<MissionType.Patrol> {
     readonly type = 'Patrol';
 
     public evaluate(entity: Entity, mission: MissionComponent<MissionType.Patrol>, world: IWorldView): DesiredState {
-        const params = mission.params;
+        const params = mission.params || ({} as any);
+        const transform = (entity as any).getComponent('TransformComponent');
+        const center = params.center || transform?.position || { x: 0, y: 0, z: 0 };
+        const radiusM = params.radiusM || 5000;
+        
         const tracks = entity.getComponent(TrackComponent);
         
         // 1. Tactical Awareness: Are there hostiles in my patrol zone?
@@ -21,9 +25,9 @@ export class MinistryOfPatrol implements IMinistry<MissionType.Patrol> {
             let nearestDist = Infinity;
             for (const track of tracks.tracks.values()) {
                 if (track.identification === IdentificationStatus.HOSTILE) {
-                    const distToCenter = VectorMath.distance(track.position as Vector3, params.center);
-                    if (distToCenter <= params.radiusM) {
-                        const distToMe = VectorMath.distance(track.position as Vector3, (entity as any).getComponent('TransformComponent')?.position || params.center);
+                    const distToCenter = VectorMath.distance(track.position as Vector3, center);
+                    if (distToCenter <= radiusM) {
+                        const distToMe = VectorMath.distance(track.position as Vector3, transform?.position || center);
                         if (distToMe < nearestDist) {
                             nearestDist = distToMe;
                             interceptTarget = track.position as Vector3;
@@ -44,14 +48,14 @@ export class MinistryOfPatrol implements IMinistry<MissionType.Patrol> {
         } else {
             // Calculate a point on an orbit around the center
             // Orbit speed depends on tick
-            const orbitRadius = params.radiusM * 0.7; // Patrol at 70% of radius
+            const orbitRadius = radiusM * 0.7; // Patrol at 70% of radius
             const angle = (world.currentTick * 0.01) % (Math.PI * 2);
             targetPos = {
-                x: params.center.x + Math.cos(angle) * orbitRadius,
-                y: params.center.y + Math.sin(angle) * orbitRadius,
-                z: params.center.z
+                x: center.x + Math.cos(angle) * orbitRadius,
+                y: center.y + Math.sin(angle) * orbitRadius,
+                z: center.z
             };
-            objectiveId = `patrol-loiter-${params.center.x}-${params.center.y}`;
+            objectiveId = `patrol-loiter-${center.x}-${center.y}`;
         }
 
         return {

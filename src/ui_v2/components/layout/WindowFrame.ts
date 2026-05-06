@@ -101,11 +101,13 @@ export class WindowFrame extends Component {
         const header = this.el('div', 'window-header', '', 'window-header');
         const title = this.el('div', 'window-title', this.options.title);
         const controls = this.el('div', 'window-controls');
+        const detachBtn = this.el('div', 'window-btn window-detach', '⧉', 'window-detach');
         const closeBtn = this.el('div', 'window-btn window-close', '×', 'window-close');
         
         const body = this.el('div', 'window-body', '', 'window-body');
         const resizer = this.el('div', 'window-resizer', '', 'window-resizer');
 
+        controls.appendChild(detachBtn);
         controls.appendChild(closeBtn);
         header.appendChild(title);
         header.appendChild(controls);
@@ -128,6 +130,7 @@ export class WindowFrame extends Component {
         this.listen(header, 'mousedown', (e) => this.onDragStart(e));
         this.listen(resizer, 'mousedown', (e) => this.onResizeStart(e));
         this.listen(this.element, 'mousedown', () => windowManager.focus(this.options.id));
+        this.listen(detachBtn, 'click', () => windowManager.detach(this.options.id));
         this.listen(closeBtn, 'click', () => windowManager.close(this.options.id));
 
         this.listen(window as any, 'mousemove', (e) => this.onMouseMove(e as MouseEvent));

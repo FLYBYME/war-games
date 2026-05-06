@@ -19,7 +19,7 @@ export class CollisionSystem implements ISystem {
     readonly phase = SystemPhase.Lifecycle;
     readonly dependencies = [];
 
-    constructor(private readonly spatialGrid: Octree) {}
+    constructor(private readonly spatialGrid: Octree) { }
 
     public async process(world: IWorldView, _dt: number): Promise<Command[]> {
         const commands: Command[] = [];
@@ -31,7 +31,7 @@ export class CollisionSystem implements ISystem {
             const collision = entity.getComponent(CollisionComponent);
 
             if (!transform || !collision) continue;
-            
+
             let isDestroyed = false;
 
             // 1. Entity-Entity Collisions
@@ -39,7 +39,7 @@ export class CollisionSystem implements ISystem {
 
             for (const otherId of nearbyIds) {
                 if (entity.id === otherId) continue;
-                
+
                 const otherEntity = world.getEntity(otherId);
                 if (!otherEntity) continue;
 
@@ -49,7 +49,7 @@ export class CollisionSystem implements ISystem {
                 // Ignore collisions if hosted on the same carrier OR if just launched (one tick grace)
                 const logA = entity.getComponent(LogisticsComponent);
                 const logB = otherEntity.getComponent(LogisticsComponent);
-                
+
                 const isRecentlyLaunchedA = logA?.state === TurnaroundState.InFlight && (world.currentTick - (logA?.stateStartTick || 0)) < 100;
                 const isRecentlyLaunchedB = logB?.state === TurnaroundState.InFlight && (world.currentTick - (logB?.stateStartTick || 0)) < 100;
 
@@ -60,8 +60,8 @@ export class CollisionSystem implements ISystem {
                 if (logB?.currentBaseId && (logB.currentBaseId === entity.id)) continue;
 
                 // Self-collision ignore (two-way) and sibling ignore
-                if (collision.ownerId === otherId || otherCollision.ownerId === entity.id || 
-                   (collision.ownerId && collision.ownerId === otherCollision.ownerId)) continue;
+                if (collision.ownerId === otherId || otherCollision.ownerId === entity.id ||
+                    (collision.ownerId && collision.ownerId === otherCollision.ownerId)) continue;
 
                 // Ensure we don't check the same pair twice
                 const pairKey = [entity.id, otherId].sort().join(':');
@@ -72,7 +72,7 @@ export class CollisionSystem implements ISystem {
                 if (!otherTransform) continue;
 
                 // 2. Layer Filtering
-                if (!collision.collidesWith.includes(otherCollision.layer) && 
+                if (!collision.collidesWith.includes(otherCollision.layer) &&
                     !otherCollision.collidesWith.includes(collision.layer)) {
                     continue;
                 }
@@ -93,9 +93,9 @@ export class CollisionSystem implements ISystem {
                         logger.info(`Salvo hit: ${entity.id} -> ${otherId} | Hits: ${hits}/${salvo.quantity}`);
                         // Apply damage for all hits
                         const weaponProfile = entity.profileId ? world.profileRegistry.get(entity.profileId) : undefined;
-                        const damagePerHit = (weaponProfile as any)?.damage || 20; 
+                        const damagePerHit = (weaponProfile as any)?.damage || 20;
                         commands.push(new ApplyDamageCommand(otherId, hits * damagePerHit));
-                        
+
                         // Salvo is partially or fully consumed? 
                         // For now, we destroy the salvo entity on any hit to simplify, 
                         // or we could decrement quantity. Let's destroy for now as it represents a 'snapshot' of fire.
@@ -106,18 +106,18 @@ export class CollisionSystem implements ISystem {
                     }
                 } else {
                     const minDistance = collision.radiusMeters + otherCollision.radiusMeters;
-                    
+
                     if (kinematics && VectorMath.magnitude(kinematics.velocity) > 500) {
                         // Continuous Collision Detection (CCD) for high-velocity shells/missiles
                         const prevPos = VectorMath.subtract(transform.position, VectorMath.multiplyScalar(kinematics.velocity, _dt));
                         const closest = VectorMath.closestPointOnSegment(otherTransform.position, prevPos, transform.position);
                         const distToClosestSq = VectorMath.distanceSq(closest, otherTransform.position);
-                        
+
                         // Proximity Fuse: If missile (layer 'missile') and target is Air, expand hit radius to 15m
                         const isMissile = collision.layer === 'missile';
                         const otherProfile = otherEntity.profileId ? world.profileRegistry.get(otherEntity.profileId) : undefined;
                         const isAirTarget = otherProfile?.type === 'Aircraft' || otherProfile?.type === 'Helicopter';
-                        
+
                         const effectiveMinDist = (isMissile && isAirTarget) ? Math.max(minDistance, 15) : minDistance;
                         hasCollided = distToClosestSq <= effectiveMinDist * effectiveMinDist;
                     } else {
@@ -140,11 +140,11 @@ export class CollisionSystem implements ISystem {
             // 2. Terrain/Surface Collision (Impact)
             const env = entity.getComponent(EnvironmentComponent);
             const profile = entity.profileId ? world.profileRegistry.get(entity.profileId) : undefined;
-            
+
             // Identify Air Entities: Aircraft, Helos, and non-torpedo Weapons
-            const isAirEntity = profile?.type === 'Aircraft' || 
-                               profile?.type === 'Helicopter' || 
-                               (profile?.type === 'Weapon' && !entity.id.includes('torpedo'));
+            const isAirEntity = profile?.type === 'Aircraft' ||
+                profile?.type === 'Helicopter' ||
+                (profile?.type === 'Weapon' && !entity.id.includes('torpedo'));
 
             if (env && isAirEntity) {
                 const logistics = entity.getComponent(LogisticsComponent);
@@ -169,7 +169,7 @@ export class CollisionSystem implements ISystem {
                             }
                         });
                         logger.info(`Surface impact: ${entity.id} hit surface at ${transform.position.z.toFixed(2)}m`);
-                        continue; 
+                        continue;
                     }
                 }
             }
@@ -185,9 +185,9 @@ export class CollisionSystem implements ISystem {
         const targetArea = Math.PI * targetRadius * targetRadius;
         const dispersionRadius = dist * Math.tan(salvo.dispersionDeg * (Math.PI / 180));
         const dispersionArea = Math.PI * Math.max(0.5, dispersionRadius * dispersionRadius);
-        
+
         const hitProb = Math.min(0.8, targetArea / dispersionArea); // Cap at 80% for realism
-        
+
         // Stochastic hit count
         let hits = 0;
         const n = salvo.quantity;
@@ -211,20 +211,20 @@ export class CollisionSystem implements ISystem {
     private calculateBurstCollision(burst: BallisticBurstComponent, burstPos: Vector3, targetPos: Vector3, targetRadius: number, dt: number): boolean {
         const vToTarget = VectorMath.subtract(targetPos, burstPos);
         const dist = VectorMath.magnitude(vToTarget);
-        
+
         // Check if target is within the burst cone
         const uToTarget = VectorMath.normalize(vToTarget);
         const uBurst = VectorMath.normalize(burst.muzzleVelocity);
         const cosTheta = VectorMath.dot(uToTarget, uBurst);
         const angleDeg = Math.acos(Math.max(-1, Math.min(1, cosTheta))) * (180 / Math.PI);
-        
+
         if (angleDeg > burst.dispersionDeg * 2) return false;
 
         // Statistical Hit Probability
         const targetArea = Math.PI * targetRadius * targetRadius;
         const burstRadius = dist * Math.tan(burst.dispersionDeg * (Math.PI / 180));
         const burstArea = Math.PI * burstRadius * burstRadius;
-        
+
         const roundsInTick = burst.roundsPerSecond * dt;
         const hitProb = (targetArea / Math.max(1, burstArea)) * roundsInTick;
 
@@ -232,15 +232,15 @@ export class CollisionSystem implements ISystem {
     }
 
     private handleCollision(
-        idA: EntityId, colA: CollisionComponent, 
-        idB: EntityId, colB: CollisionComponent, 
+        idA: EntityId, colA: CollisionComponent,
+        idB: EntityId, colB: CollisionComponent,
         commands: Command[]
     ): void {
         // High-velocity impact (Missiles)
         if (colA.layer === 'missile' || colB.layer === 'missile') {
             const victimId = colA.layer === 'missile' ? idB : idA;
             const missileId = colA.layer === 'missile' ? idA : idB;
-            
+
             commands.push(new ApplyDamageCommand(victimId, 500)); // Massive damage
             commands.push(new DestroyEntityCommand(missileId));
             return;

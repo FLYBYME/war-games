@@ -5,6 +5,8 @@ import { mockGateway } from './framework/MockGateway';
 import { commandDispatcher } from './framework/CommandDispatcher';
 import { AppShell } from './components/layout/AppShell';
 import { TacticalView } from './views/TacticalView';
+import { ScenarioEditorView } from './views/ScenarioEditorView';
+import { ProfileEditorView } from './views/ProfileEditorView';
 
 // Expose for E2E testing
 (window as any).sdkClient = sdkClient;
@@ -70,6 +72,10 @@ class App {
         let content: Component;
         if (view === 'tactical') {
             content = new TacticalView();
+        } else if (view === 'scenarios') {
+            content = new ScenarioEditorView();
+        } else if (view === 'profiles') {
+            content = new ProfileEditorView();
         } else {
             content = new PlaceholderView(view);
         }

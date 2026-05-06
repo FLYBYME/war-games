@@ -1,15 +1,12 @@
 import { ISystem, IWorldView, SystemPhase } from '../core/ISystem.js';
-import { Command, UpdateLogisticsStateCommand, TransferResourcesCommand } from '../core/Command.js';
-import { LogisticsComponent, TurnaroundState, FacilityComponent } from '../components/Logistics.js';
-import { AeroComponent } from '../components/Aero.js';
-import { RCSComponent } from '../components/Signatures.js';
-import { TransformComponent } from '../components/Physics.js';
+import { Command, UpdateLogisticsStateCommand, ConsumeFuelCommand } from '../core/Command.js';
+import { LogisticsComponent, FacilityComponent, TurnaroundState } from '../components/Logistics.js';
+import { FuelComponent } from '../components/Propulsion.js';
 import { CombatComponent } from '../components/Combat.js';
-import { VectorMath } from '../math/VectorMath.js';
+import { logger } from '../core/Logger.js';
 
 /**
- * LogisticsSystem: Manages turnaround cycles and loadout effects.
- * Also handles Underway Replenishment (UNREP).
+ * LogisticsSystem: Manages base operations, refueling, and rearming.
  */
 export class LogisticsSystem implements ISystem {
     readonly name = 'LogisticsSystem';
@@ -21,92 +18,90 @@ export class LogisticsSystem implements ISystem {
 
         for (const entity of world.getEntities()) {
             const log = entity.getComponent(LogisticsComponent);
-            if (!log) continue;
+            if (!log || log.state === TurnaroundState.InFlight || log.state === TurnaroundState.None) continue;
 
-            // 1. Advance Turnaround States
-            if (log.state !== TurnaroundState.InFlight && log.state !== TurnaroundState.Ready && log.state !== TurnaroundState.None) {
-                const elapsed = world.currentTick - log.stateStartTick;
-                if (elapsed >= log.stateDurationTicks) {
-                    commands.push(this.advanceState(entity.id, log, world.currentTick));
-                }
+            const base = log.currentBaseId ? world.getEntity(log.currentBaseId) : undefined;
+            const facility = base?.getComponent(FacilityComponent);
+
+            if (!base || !facility) {
+                // If base is missing but we're in a ground state, force state change or error
+                continue;
             }
 
-            // 2. Resource Transfer during specific states
-            if (log.currentBaseId) {
-                const base = world.getEntity(log.currentBaseId);
-                if (base) {
-                    if (log.state === TurnaroundState.Refueling) {
-                        // Request fuel transfer from base
-                        commands.push(new TransferResourcesCommand(log.currentBaseId, entity.id, 50, new Map()));
-                    } else if (log.state === TurnaroundState.Rearming) {
-                        // Request ammo transfer from base (simplified: 1 unit per tick)
-                        const ammoRequest = new Map<string, number>();
-                        const combat = entity.getComponent(CombatComponent);
-                        if (combat) {
-                            for (const mag of combat.magazines) {
-                                if (mag.currentCount < mag.capacity) {
-                                    ammoRequest.set(mag.weaponProfileId, 1);
-                                    break; 
+            const elapsed = world.currentTick - log.stateStartTick;
+            const sideLogistics = (world as any).sideLogistics?.get(entity.side);
+
+            // Periodically replenish base from side stockpile
+            if (world.currentTick % 600 === 0 && sideLogistics) {
+                const fuelNeeded = 1000000 - facility.fuelReservesKg;
+                const fuelTaken = Math.min(fuelNeeded, sideLogistics.fuelStockpileKg);
+                facility.fuelReservesKg += fuelTaken;
+                sideLogistics.fuelStockpileKg -= fuelTaken;
+            }
+
+            switch (log.state) {
+                case TurnaroundState.Landing:
+                    if (elapsed >= 100) { // 10s landing
+                        commands.push(new UpdateLogisticsStateCommand(entity.id, TurnaroundState.Taxiing, 50));
+                    }
+                    break;
+
+                case TurnaroundState.Taxiing:
+                    if (elapsed >= log.stateDurationTicks) {
+                        commands.push(new UpdateLogisticsStateCommand(entity.id, TurnaroundState.Refueling, 300));
+                    }
+                    break;
+
+                case TurnaroundState.Refueling:
+                    const fuel = entity.getComponent(FuelComponent);
+                    if (fuel && fuel.currentKg < fuel.maxKg) {
+                        const transferRate = 50; // kg per tick
+                        const amount = Math.min(transferRate, fuel.maxKg - fuel.currentKg, facility.fuelReservesKg);
+                        
+                        if (amount > 0) {
+                            fuel.currentKg += amount;
+                            facility.fuelReservesKg -= amount;
+                        } else if (facility.fuelReservesKg <= 0) {
+                            logger.warn(`Base ${base.id} out of fuel! Logistics halted for ${entity.id}`);
+                        }
+                    }
+
+                    if (!fuel || fuel.currentKg >= fuel.maxKg) {
+                        commands.push(new UpdateLogisticsStateCommand(entity.id, TurnaroundState.Rearming, 600));
+                    }
+                    break;
+
+                case TurnaroundState.Rearming:
+                    const combat = entity.getComponent(CombatComponent);
+                    if (combat) {
+                        // For each magazine, try to pull from facility ammo
+                        combat.magazines.forEach(mag => {
+                            if (mag.currentCount < mag.capacity) {
+                                const needed = mag.capacity - mag.currentCount;
+                                const available = facility.ammoReserves.get(mag.weaponProfileId) || 0;
+                                const amount = Math.min(needed, available);
+                                
+                                if (amount > 0) {
+                                    mag.currentCount += amount;
+                                    facility.ammoReserves.set(mag.weaponProfileId, available - amount);
                                 }
                             }
-                        }
-                        if (ammoRequest.size > 0) {
-                            commands.push(new TransferResourcesCommand(log.currentBaseId, entity.id, 0, ammoRequest));
-                        }
+                        });
                     }
-                }
-            }
+                    
+                    if (elapsed >= log.stateDurationTicks) {
+                        commands.push(new UpdateLogisticsStateCommand(entity.id, TurnaroundState.PreFlight, 200));
+                    }
+                    break;
 
-            // 3. Underway Replenishment (UNREP)
-            // Simplified: If a ship is near a supply vessel (FacilityType.Port/Carrier/MobileSupply)
-            if (log.state === TurnaroundState.InFlight) { // For ships, InFlight just means "Active"
-                const transform = entity.getComponent(TransformComponent);
-                if (transform) {
-                    const nearby = world.getNearbyEntities(transform.position, 1000); // 1km UNREP range
-                    for (const other of nearby) {
-                        if (other.id === entity.id) continue;
-                        const otherFacility = other.getComponent(FacilityComponent);
-                        if (otherFacility && (otherFacility.facilityType === 'Carrier' || otherFacility.facilityType === 'Port')) {
-                            // Transfer resources
-                            commands.push(new TransferResourcesCommand(other.id, entity.id, 10, new Map()));
-                        }
+                case TurnaroundState.PreFlight:
+                    if (elapsed >= log.stateDurationTicks) {
+                        commands.push(new UpdateLogisticsStateCommand(entity.id, TurnaroundState.Ready, 0));
                     }
-                }
+                    break;
             }
         }
 
         return commands;
-    }
-
-    private advanceState(entityId: string, log: LogisticsComponent, currentTick: number): Command {
-        let newState = log.state;
-        let duration = 0;
-
-        switch (log.state) {
-            case TurnaroundState.Landing:
-                newState = TurnaroundState.Taxiing;
-                duration = 300; 
-                break;
-            case TurnaroundState.Taxiing:
-                newState = TurnaroundState.Rearming;
-                duration = 1800; 
-                break;
-            case TurnaroundState.Rearming:
-                newState = TurnaroundState.Refueling;
-                duration = 900; 
-                break;
-            case TurnaroundState.Refueling:
-                newState = TurnaroundState.PreFlight;
-                duration = 900; 
-                break;
-            case TurnaroundState.PreFlight:
-                newState = TurnaroundState.Ready;
-                duration = 0;
-                break;
-            default:
-                break;
-        }
-
-        return new UpdateLogisticsStateCommand(entityId, newState, duration);
     }
 }

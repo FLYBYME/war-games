@@ -21,25 +21,35 @@ export class WeatherWindow extends Component {
     }
 
     protected render() {
+        const vs = UIStore.viewState.get();
+        const weather = vs?.weather || {
+            precipitationRateMMhr: 0,
+            cloudCover: 0,
+            seaState: 0,
+            windSpeedKts: 0,
+            windDirDeg: 0,
+            visibilityNM: 10,
+            temperatureC: 15
+        };
+
         const controls = [
-            { label: 'Precipitation', unit: 'mm/hr', min: 0, max: 100, value: 0, key: 'precipitationRateMMhr' },
-            { label: 'Cloud Cover', unit: '%', min: 0, max: 100, value: 30, key: 'cloudCover' },
-            { label: 'Sea State', unit: '', min: 0, max: 9, value: 3, key: 'seaState' },
-            { label: 'Wind Speed', unit: 'kts', min: 0, max: 100, value: 15, key: 'windSpeedKts' },
-            { label: 'Wind Direction', unit: '°', min: 0, max: 360, value: 220, key: 'windDirDeg' },
-            { label: 'Visibility', unit: 'nm', min: 0, max: 50, value: 20, key: 'visibilityNM' },
-            { label: 'Temperature', unit: '°C', min: -40, max: 50, value: 15, key: 'temperatureC' },
+            { label: 'Precipitation', unit: 'mm/hr', min: 0, max: 100, value: weather.precipitationRateMMhr ?? weather.precipitation ?? 0, key: 'precipitationRateMMhr' },
+            { label: 'Cloud Cover', unit: '%', min: 0, max: 100, value: weather.cloudCover, key: 'cloudCover' },
+            { label: 'Sea State', unit: '', min: 0, max: 9, value: weather.seaState, key: 'seaState' },
+            { label: 'Wind Speed', unit: 'kts', min: 0, max: 100, value: weather.windSpeedKts, key: 'windSpeedKts' },
+            { label: 'Wind Direction', unit: '°', min: 0, max: 360, value: weather.windDirDeg, key: 'windDirDeg' },
+            { label: 'Visibility', unit: 'nm', min: 0, max: 50, value: weather.visibilityNM, key: 'visibilityNM' },
+            { label: 'Temperature', unit: '°C', min: -40, max: 50, value: weather.temperatureC, key: 'temperatureC' },
         ];
 
         this.element.innerHTML = '';
-        const vs = UIStore.viewState.get();
+        this.element.appendChild(this.el('div', 'wi-title', 'WEATHER & ENVIRONMENT'));
 
         for (const c of controls) {
-            // In a real app we'd read current values from vs.environment if exposed
             const group = this.el('div', 'wi-control');
             const label = this.el('div', 'wi-label');
             label.appendChild(this.el('span', undefined, c.label));
-            const valueEl = this.el('span', 'wi-value', `${c.value} ${c.unit}`);
+            const valueEl = this.el('span', 'wi-value', `${Math.round(c.value)} ${c.unit}`);
             label.appendChild(valueEl);
             group.appendChild(label);
 
@@ -63,5 +73,10 @@ export class WeatherWindow extends Component {
             group.appendChild(slider);
             this.element.appendChild(group);
         }
+    }
+
+    protected onMount() {
+        this.render();
+        this.subscribe(UIStore.viewState, () => this.render());
     }
 }

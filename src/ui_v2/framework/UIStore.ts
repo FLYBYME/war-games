@@ -197,18 +197,27 @@ export class UIStore {
 
     private static knownHostileTracks = new Set<string>();
 
-    static setPaused(val: boolean) {
+    static async setPaused(val: boolean) {
         logger.info('UI requesting pause state change', { val });
         this.isPaused.set(val);
         this.isPauseTransitioning = true;
-        this.client.setTimeCompression(val ? 0 : this.timeCompression.get());
+        
+        try {
+            await this.client.tools.execute('set_paused', this.currentMatchId.get(), Side.Blue, { paused: val });
+        } catch (err: any) {
+            logger.error('Failed to set pause state', { err });
+            this.isPauseTransitioning = false;
+        }
     }
 
-    static setTimeCompression(rate: number) {
+    static async setTimeCompression(rate: number) {
         logger.info('UI requesting time compression change', { rate });
         this.timeCompression.set(rate);
-        if (!this.isPaused.get()) {
-            this.client.setTimeCompression(rate);
+        
+        try {
+            await this.client.tools.execute('set_time_compression', this.currentMatchId.get(), Side.Blue, { rate });
+        } catch (err: any) {
+            logger.error('Failed to set time compression', { err });
         }
     }
 }

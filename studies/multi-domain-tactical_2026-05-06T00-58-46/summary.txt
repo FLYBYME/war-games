@@ -1,0 +1,597 @@
+
+STUDY REPORT: Multi-Domain Tactical Engagement Study
+ID: multi-domain-tactical
+Generated: 5/5/2026, 8:59:51 PM
+──────────────────────────────────────────────────
+
+SUMMARY STATS:
+ Weapons Fired:   25
+ Tactical Impacts: 0
+ Terrain Impacts:  15
+ Entities Lost:    0
+
+ENTITY ANALYSIS:
+──────────────────────────────────────────────────
+
+Entity uss-arleigh-burke [ddg-destroyer]:
+  Samples: 167 | Distance: 0.04 km | Avg Speed: 4.7 kts
+    0% | Tick    2 | Lat: 20.6290, Lon: 108.6770 | Alt:     0m
+   10% | Tick   18 | Lat: undefined, Lon: undefined | Alt:     0m
+   19% | Tick   34 | Lat: undefined, Lon: undefined | Alt:     0m
+   29% | Tick   50 | Lat: undefined, Lon: undefined | Alt:     0m
+   39% | Tick   66 | Lat: 20.6290, Lon: 108.6770 | Alt:     0m
+   48% | Tick   82 | Lat: 20.6290, Lon: 108.6770 | Alt:     0m
+   58% | Tick   98 | Lat: 20.6291, Lon: 108.6770 | Alt:     0m
+   67% | Tick  114 | Lat: 20.6291, Lon: 108.6770 | Alt:     0m
+   77% | Tick  130 | Lat: 20.6292, Lon: 108.6770 | Alt:     0m
+   87% | Tick  146 | Lat: 20.6292, Lon: 108.6770 | Alt:     0m
+   96% | Tick  162 | Lat: 20.6293, Lon: 108.6771 | Alt:     0m
+  100% | Tick  168 | Lat: 20.6294, Lon: 108.6771 | Alt:     0m
+
+Entity friendly-f35-1 [f-35a]:
+  Samples: 167 | Distance: 4.47 km | Avg Speed: 523.3 kts
+    0% | Tick    2 | Lat: 20.5842, Lon: 108.6292 | Alt: 10000m
+   10% | Tick   18 | Lat: 20.5876, Lon: 108.6314 | Alt: 10000m
+   19% | Tick   34 | Lat: 20.5911, Lon: 108.6334 | Alt: 10000m
+   29% | Tick   50 | Lat: 20.5946, Lon: 108.6355 | Alt: 10000m
+   39% | Tick   66 | Lat: 20.5980, Lon: 108.6377 | Alt: 10000m
+   48% | Tick   82 | Lat: 20.6015, Lon: 108.6400 | Alt: 10000m
+   58% | Tick   98 | Lat: 20.6047, Lon: 108.6422 | Alt: 10000m
+   67% | Tick  114 | Lat: 20.6078, Lon: 108.6446 | Alt: 10000m
+   77% | Tick  130 | Lat: 20.6108, Lon: 108.6469 | Alt: 10000m
+   87% | Tick  146 | Lat: 20.6138, Lon: 108.6494 | Alt: 10000m
+   96% | Tick  162 | Lat: 20.6167, Lon: 108.6519 | Alt: 10000m
+  100% | Tick  168 | Lat: 20.6178, Lon: 108.6528 | Alt: 10000m
+
+Track TRK-BF1C [Air]:
+  Samples: 166 | Distance: 4.44 km | Avg Speed: 523.5 kts
+    0% | Tick    3 | Lat: 20.5842, Lon: 108.6292 | Alt: 10000m
+   10% | Tick   19 | Lat: 20.5876, Lon: 108.6314 | Alt: 10000m
+   19% | Tick   35 | Lat: 20.5911, Lon: 108.6334 | Alt: 10000m
+   29% | Tick   51 | Lat: 20.5946, Lon: 108.6355 | Alt: 10000m
+   39% | Tick   67 | Lat: 20.5980, Lon: 108.6377 | Alt: 10000m
+   48% | Tick   83 | Lat: 20.6015, Lon: 108.6400 | Alt: 10000m
+   58% | Tick   99 | Lat: 20.6047, Lon: 108.6422 | Alt: 10000m
+   68% | Tick  115 | Lat: 20.6078, Lon: 108.6446 | Alt: 10000m
+   78% | Tick  131 | Lat: 20.6108, Lon: 108.6469 | Alt: 10000m
+   87% | Tick  147 | Lat: 20.6138, Lon: 108.6494 | Alt: 10000m
+   97% | Tick  163 | Lat: 20.6167, Lon: 108.6519 | Alt: 10000m
+  100% | Tick  168 | Lat: 20.6176, Lon: 108.6527 | Alt: 10000m
+
+Track TRK-FD8B [Air]:
+  Samples: 22 | Distance: 0.32 km | Avg Speed: 300.0 kts
+    0% | Tick    3 | Lat: 20.6334, Lon: 108.8882 | Alt:   450m
+   10% | Tick    5 | Lat: 20.6331, Lon: 108.8882 | Alt:   450m
+   19% | Tick    7 | Lat: 20.6328, Lon: 108.8882 | Alt:   450m
+   29% | Tick    9 | Lat: 20.6325, Lon: 108.8882 | Alt:   450m
+   38% | Tick   11 | Lat: 20.6322, Lon: 108.8882 | Alt:   450m
+   48% | Tick   13 | Lat: 20.6320, Lon: 108.8882 | Alt:   450m
+   57% | Tick   15 | Lat: 20.6317, Lon: 108.8882 | Alt:   450m
+   67% | Tick   17 | Lat: 20.6314, Lon: 108.8882 | Alt:   450m
+   76% | Tick   19 | Lat: 20.6311, Lon: 108.8882 | Alt:   450m
+   86% | Tick   21 | Lat: 20.6309, Lon: 108.8882 | Alt:   450m
+   95% | Tick   23 | Lat: 20.6306, Lon: 108.8882 | Alt:   450m
+  100% | Tick   24 | Lat: 20.6304, Lon: 108.8882 | Alt:   450m
+
+Track TRK-82A6 [Surface]:
+  Samples: 166 | Distance: 0.04 km | Avg Speed: 4.6 kts
+    0% | Tick    3 | Lat: 20.6290, Lon: 108.6770 | Alt:     0m
+   10% | Tick   19 | Lat: undefined, Lon: undefined | Alt:     0m
+   19% | Tick   35 | Lat: undefined, Lon: undefined | Alt:     0m
+   29% | Tick   51 | Lat: undefined, Lon: undefined | Alt:     0m
+   39% | Tick   67 | Lat: undefined, Lon: undefined | Alt:     0m
+   48% | Tick   83 | Lat: undefined, Lon: undefined | Alt:     0m
+   58% | Tick   99 | Lat: 20.6291, Lon: 108.6770 | Alt:     0m
+   68% | Tick  115 | Lat: 20.6291, Lon: 108.6770 | Alt:     0m
+   78% | Tick  131 | Lat: 20.6292, Lon: 108.6770 | Alt:     0m
+   87% | Tick  147 | Lat: 20.6292, Lon: 108.6770 | Alt:     0m
+   97% | Tick  163 | Lat: 20.6293, Lon: 108.6771 | Alt:     0m
+  100% | Tick  168 | Lat: 20.6293, Lon: 108.6771 | Alt:     0m
+
+Track TRK-C236 [Surface]:
+  Samples: 166 | Distance: 0.09 km | Avg Speed: 10.1 kts
+    0% | Tick    3 | Lat: 20.7188, Lon: 109.0609 | Alt:     0m
+   10% | Tick   19 | Lat: undefined, Lon: undefined | Alt:     0m
+   19% | Tick   35 | Lat: undefined, Lon: undefined | Alt:     0m
+   29% | Tick   51 | Lat: undefined, Lon: undefined | Alt:     0m
+   39% | Tick   67 | Lat: 20.7188, Lon: 109.0609 | Alt:     0m
+   48% | Tick   83 | Lat: 20.7187, Lon: 109.0609 | Alt:     0m
+   58% | Tick   99 | Lat: 20.7187, Lon: 109.0609 | Alt:     0m
+   68% | Tick  115 | Lat: 20.7186, Lon: 109.0609 | Alt:     0m
+   78% | Tick  131 | Lat: 20.7185, Lon: 109.0609 | Alt:     0m
+   87% | Tick  147 | Lat: 20.7183, Lon: 109.0609 | Alt:     0m
+   97% | Tick  163 | Lat: 20.7181, Lon: 109.0608 | Alt:     0m
+  100% | Tick  168 | Lat: 20.7181, Lon: 109.0608 | Alt:     0m
+
+Track TRK-2BD3 [Air]:
+  Samples: 166 | Distance: 2.55 km | Avg Speed: 300.2 kts
+    0% | Tick    3 | Lat: 20.6289, Lon: 108.8690 | Alt:   500m
+   10% | Tick   19 | Lat: 20.6266, Lon: 108.8690 | Alt:   500m
+   19% | Tick   35 | Lat: 20.6244, Lon: 108.8690 | Alt:   500m
+   29% | Tick   51 | Lat: 20.6222, Lon: 108.8690 | Alt:   500m
+   39% | Tick   67 | Lat: 20.6200, Lon: 108.8690 | Alt:   500m
+   48% | Tick   83 | Lat: 20.6176, Lon: 108.8690 | Alt:   500m
+   58% | Tick   99 | Lat: 20.6154, Lon: 108.8690 | Alt:   500m
+   68% | Tick  115 | Lat: 20.6132, Lon: 108.8690 | Alt:   500m
+   78% | Tick  131 | Lat: 20.6111, Lon: 108.8690 | Alt:   500m
+   87% | Tick  147 | Lat: 20.6089, Lon: 108.8690 | Alt:   500m
+   97% | Tick  163 | Lat: 20.6067, Lon: 108.8690 | Alt:   500m
+  100% | Tick  168 | Lat: 20.6060, Lon: 108.8690 | Alt:   500m
+
+Track TRK-4429 [Air]:
+  Samples: 166 | Distance: 2.55 km | Avg Speed: 300.2 kts
+    0% | Tick    3 | Lat: 20.6334, Lon: 108.8882 | Alt:   450m
+   10% | Tick   19 | Lat: 20.6311, Lon: 108.8882 | Alt:   450m
+   19% | Tick   35 | Lat: 20.6289, Lon: 108.8882 | Alt:   450m
+   29% | Tick   51 | Lat: 20.6267, Lon: 108.8882 | Alt:   450m
+   39% | Tick   67 | Lat: 20.6245, Lon: 108.8882 | Alt:   450m
+   48% | Tick   83 | Lat: 20.6221, Lon: 108.8882 | Alt:   450m
+   58% | Tick   99 | Lat: 20.6199, Lon: 108.8882 | Alt:   450m
+   68% | Tick  115 | Lat: 20.6177, Lon: 108.8882 | Alt:   450m
+   78% | Tick  131 | Lat: 20.6155, Lon: 108.8882 | Alt:   450m
+   87% | Tick  147 | Lat: 20.6133, Lon: 108.8882 | Alt:   450m
+   97% | Tick  163 | Lat: 20.6111, Lon: 108.8882 | Alt:   450m
+  100% | Tick  168 | Lat: 20.6105, Lon: 108.8882 | Alt:   450m
+
+Track TRK-4410 [Weapon]:
+  Samples: 7 | Distance: 0.28 km | Avg Speed: 674.6 kts
+    0% | Tick   22 | Lat: 20.7188, Lon: 109.0618 | Alt:     2m
+   13% | Tick   23 | Lat: 20.7188, Lon: 109.0627 | Alt:     2m
+   25% | Tick   24 | Lat: 20.7188, Lon: 109.0636 | Alt:     1m
+   38% | Tick   25 | Lat: 20.7188, Lon: 109.0645 | Alt:     1m
+   50% | Tick   26 | Lat: 20.7188, Lon: 109.0654 | Alt:     1m
+   63% | Tick   27 | Lat: 20.7188, Lon: 109.0663 | Alt:     0m
+  100% | Tick   30 | Lat: 20.7188, Lon: 109.0645 | Alt:     1m
+
+Entity uss-arleigh-burke-sm-6-1778029131715-796 [sm-6-projectile]:
+  Samples: 137 | Distance: 1.09 km | Avg Speed: 155.8 kts
+    0% | Tick   32 | Lat: 20.6290, Lon: 108.6770 | Alt:     2m
+   10% | Tick   45 | Lat: 20.6289, Lon: 108.6779 | Alt:  1035m
+   19% | Tick   58 | Lat: 20.6288, Lon: 108.6788 | Alt:  2177m
+   29% | Tick   71 | Lat: 20.6286, Lon: 108.6799 | Alt:  3442m
+   38% | Tick   84 | Lat: 20.6285, Lon: 108.6809 | Alt:  4870m
+   48% | Tick   97 | Lat: 20.6284, Lon: 108.6819 | Alt:  6272m
+   57% | Tick  110 | Lat: 20.6282, Lon: 108.6829 | Alt:  7665m
+   67% | Tick  123 | Lat: 20.6281, Lon: 108.6839 | Alt:  9042m
+   76% | Tick  136 | Lat: 20.6280, Lon: 108.6849 | Alt: 10403m
+   86% | Tick  149 | Lat: 20.6278, Lon: 108.6859 | Alt: 11747m
+   96% | Tick  162 | Lat: 20.6277, Lon: 108.6869 | Alt: 13074m
+  100% | Tick  168 | Lat: 20.6276, Lon: 108.6874 | Alt: 13681m
+
+Entity uss-arleigh-burke-sm-6-1778029131776-797 [sm-6-projectile]:
+  Samples: 137 | Distance: 1.09 km | Avg Speed: 155.8 kts
+    0% | Tick   32 | Lat: 20.6290, Lon: 108.6770 | Alt:     2m
+   10% | Tick   45 | Lat: 20.6289, Lon: 108.6779 | Alt:  1035m
+   19% | Tick   58 | Lat: 20.6287, Lon: 108.6788 | Alt:  2177m
+   29% | Tick   71 | Lat: 20.6286, Lon: 108.6799 | Alt:  3442m
+   38% | Tick   84 | Lat: 20.6285, Lon: 108.6809 | Alt:  4870m
+   48% | Tick   97 | Lat: 20.6283, Lon: 108.6819 | Alt:  6272m
+   57% | Tick  110 | Lat: 20.6282, Lon: 108.6829 | Alt:  7665m
+   67% | Tick  123 | Lat: 20.6281, Lon: 108.6839 | Alt:  9042m
+   76% | Tick  136 | Lat: 20.6279, Lon: 108.6849 | Alt: 10403m
+   86% | Tick  149 | Lat: 20.6278, Lon: 108.6859 | Alt: 11747m
+   96% | Tick  162 | Lat: 20.6277, Lon: 108.6869 | Alt: 13074m
+  100% | Tick  168 | Lat: 20.6276, Lon: 108.6873 | Alt: 13681m
+
+Entity uss-arleigh-burke-sm-6-1778029131859-877 [sm-6-projectile]:
+  Samples: 137 | Distance: 1.09 km | Avg Speed: 155.8 kts
+    0% | Tick   32 | Lat: 20.6290, Lon: 108.6770 | Alt:     2m
+   10% | Tick   45 | Lat: 20.6289, Lon: 108.6779 | Alt:  1035m
+   19% | Tick   58 | Lat: 20.6287, Lon: 108.6788 | Alt:  2177m
+   29% | Tick   71 | Lat: 20.6286, Lon: 108.6799 | Alt:  3442m
+   38% | Tick   84 | Lat: 20.6285, Lon: 108.6809 | Alt:  4870m
+   48% | Tick   97 | Lat: 20.6283, Lon: 108.6819 | Alt:  6272m
+   57% | Tick  110 | Lat: 20.6282, Lon: 108.6829 | Alt:  7665m
+   67% | Tick  123 | Lat: 20.6281, Lon: 108.6839 | Alt:  9042m
+   76% | Tick  136 | Lat: 20.6279, Lon: 108.6849 | Alt: 10403m
+   86% | Tick  149 | Lat: 20.6278, Lon: 108.6859 | Alt: 11747m
+   96% | Tick  162 | Lat: 20.6277, Lon: 108.6869 | Alt: 13074m
+  100% | Tick  168 | Lat: 20.6276, Lon: 108.6873 | Alt: 13681m
+
+Track TRK-DC88 [Weapon]:
+  Samples: 7 | Distance: 0.19 km | Avg Speed: 514.0 kts
+    0% | Tick   33 | Lat: 20.7188, Lon: 109.0618 | Alt:     2m
+   14% | Tick   34 | Lat: 20.7188, Lon: 109.0627 | Alt:     2m
+   29% | Tick   35 | Lat: 20.7188, Lon: 109.0636 | Alt:     1m
+   43% | Tick   36 | Lat: 20.7188, Lon: 109.0645 | Alt:     1m
+   57% | Tick   37 | Lat: 20.7188, Lon: 109.0654 | Alt:     1m
+   71% | Tick   38 | Lat: 20.7188, Lon: 109.0663 | Alt:     0m
+  100% | Tick   40 | Lat: 20.7188, Lon: 109.0636 | Alt:     2m
+
+Track TRK-2CC5 [Weapon]:
+  Samples: 7 | Distance: 0.19 km | Avg Speed: 514.0 kts
+    0% | Tick   43 | Lat: 20.7188, Lon: 109.0618 | Alt:     2m
+   14% | Tick   44 | Lat: 20.7188, Lon: 109.0627 | Alt:     2m
+   29% | Tick   45 | Lat: 20.7188, Lon: 109.0636 | Alt:     1m
+   43% | Tick   46 | Lat: 20.7188, Lon: 109.0645 | Alt:     1m
+   57% | Tick   47 | Lat: 20.7188, Lon: 109.0654 | Alt:     1m
+   71% | Tick   48 | Lat: 20.7188, Lon: 109.0663 | Alt:     0m
+  100% | Tick   50 | Lat: 20.7188, Lon: 109.0636 | Alt:     2m
+
+Track TRK-70F7 [Unknown]:
+  Samples: 124 | Distance: 0.99 km | Avg Speed: 157.0 kts
+    0% | Tick   45 | Lat: 20.6290, Lon: 108.6775 | Alt:   546m
+   10% | Tick   57 | Lat: 20.6288, Lon: 108.6783 | Alt:  1543m
+   20% | Tick   69 | Lat: 20.6287, Lon: 108.6792 | Alt:  2638m
+   29% | Tick   81 | Lat: 20.6286, Lon: 108.6803 | Alt:  3934m
+   39% | Tick   93 | Lat: 20.6285, Lon: 108.6811 | Alt:  5187m
+   49% | Tick  105 | Lat: 20.6283, Lon: 108.6821 | Alt:  6487m
+   59% | Tick  117 | Lat: 20.6282, Lon: 108.6830 | Alt:  7773m
+   68% | Tick  129 | Lat: 20.6281, Lon: 108.6839 | Alt:  9044m
+   78% | Tick  141 | Lat: 20.6280, Lon: 108.6848 | Alt: 10299m
+   88% | Tick  153 | Lat: 20.6279, Lon: 108.6857 | Alt: 11542m
+   98% | Tick  165 | Lat: 20.6277, Lon: 108.6867 | Alt: 12769m
+  100% | Tick  168 | Lat: 20.6277, Lon: 108.6869 | Alt: 13075m
+
+Track TRK-BAEA [Unknown]:
+  Samples: 124 | Distance: 0.99 km | Avg Speed: 157.0 kts
+    0% | Tick   45 | Lat: 20.6289, Lon: 108.6774 | Alt:   546m
+   10% | Tick   57 | Lat: 20.6288, Lon: 108.6783 | Alt:  1543m
+   20% | Tick   69 | Lat: 20.6287, Lon: 108.6792 | Alt:  2638m
+   29% | Tick   81 | Lat: 20.6286, Lon: 108.6802 | Alt:  3934m
+   39% | Tick   93 | Lat: 20.6284, Lon: 108.6811 | Alt:  5187m
+   49% | Tick  105 | Lat: 20.6283, Lon: 108.6820 | Alt:  6487m
+   59% | Tick  117 | Lat: 20.6282, Lon: 108.6830 | Alt:  7773m
+   68% | Tick  129 | Lat: 20.6281, Lon: 108.6839 | Alt:  9044m
+   78% | Tick  141 | Lat: 20.6279, Lon: 108.6848 | Alt: 10299m
+   88% | Tick  153 | Lat: 20.6278, Lon: 108.6857 | Alt: 11542m
+   98% | Tick  165 | Lat: 20.6277, Lon: 108.6867 | Alt: 12769m
+  100% | Tick  168 | Lat: 20.6277, Lon: 108.6869 | Alt: 13075m
+
+Track TRK-6C5C [Unknown]:
+  Samples: 124 | Distance: 0.99 km | Avg Speed: 157.0 kts
+    0% | Tick   45 | Lat: 20.6289, Lon: 108.6774 | Alt:   546m
+   10% | Tick   57 | Lat: 20.6288, Lon: 108.6783 | Alt:  1543m
+   20% | Tick   69 | Lat: 20.6287, Lon: 108.6792 | Alt:  2638m
+   29% | Tick   81 | Lat: 20.6285, Lon: 108.6802 | Alt:  3934m
+   39% | Tick   93 | Lat: 20.6284, Lon: 108.6811 | Alt:  5187m
+   49% | Tick  105 | Lat: 20.6283, Lon: 108.6820 | Alt:  6487m
+   59% | Tick  117 | Lat: 20.6282, Lon: 108.6830 | Alt:  7773m
+   68% | Tick  129 | Lat: 20.6281, Lon: 108.6839 | Alt:  9044m
+   78% | Tick  141 | Lat: 20.6279, Lon: 108.6848 | Alt: 10299m
+   88% | Tick  153 | Lat: 20.6278, Lon: 108.6857 | Alt: 11542m
+   98% | Tick  165 | Lat: 20.6277, Lon: 108.6866 | Alt: 12769m
+  100% | Tick  168 | Lat: 20.6277, Lon: 108.6869 | Alt: 13075m
+
+Entity friendly-f35-1-aim-120-1778029134333-591 [aim-120-projectile]:
+  Samples: 118 | Distance: 21.66 km | Avg Speed: 3598.9 kts
+    0% | Tick   51 | Lat: 20.5946, Lon: 108.6355 | Alt: 10002m
+    9% | Tick   62 | Lat: 20.5930, Lon: 108.6479 | Alt:  9512m
+   19% | Tick   73 | Lat: 20.5905, Lon: 108.6668 | Alt:  8761m
+   28% | Tick   84 | Lat: 20.5879, Lon: 108.6868 | Alt:  7956m
+   38% | Tick   95 | Lat: 20.5853, Lon: 108.7071 | Alt:  7132m
+   47% | Tick  106 | Lat: 20.5827, Lon: 108.7273 | Alt:  6296m
+   56% | Tick  117 | Lat: 20.5800, Lon: 108.7476 | Alt:  5448m
+   66% | Tick  128 | Lat: 20.5774, Lon: 108.7678 | Alt:  4588m
+   75% | Tick  139 | Lat: 20.5748, Lon: 108.7880 | Alt:  3717m
+   85% | Tick  150 | Lat: 20.5722, Lon: 108.8083 | Alt:  2833m
+   94% | Tick  161 | Lat: 20.5695, Lon: 108.8285 | Alt:  1938m
+  100% | Tick  168 | Lat: 20.5679, Lon: 108.8414 | Alt:  1362m
+
+Entity friendly-f35-1-aim-120-1778029134348-115 [aim-120-projectile]:
+  Samples: 118 | Distance: 21.66 km | Avg Speed: 3598.9 kts
+    0% | Tick   51 | Lat: 20.5946, Lon: 108.6355 | Alt: 10002m
+    9% | Tick   62 | Lat: 20.5930, Lon: 108.6480 | Alt:  9512m
+   19% | Tick   73 | Lat: 20.5905, Lon: 108.6668 | Alt:  8761m
+   28% | Tick   84 | Lat: 20.5879, Lon: 108.6869 | Alt:  7956m
+   38% | Tick   95 | Lat: 20.5853, Lon: 108.7071 | Alt:  7132m
+   47% | Tick  106 | Lat: 20.5827, Lon: 108.7274 | Alt:  6296m
+   56% | Tick  117 | Lat: 20.5800, Lon: 108.7476 | Alt:  5448m
+   66% | Tick  128 | Lat: 20.5774, Lon: 108.7678 | Alt:  4588m
+   75% | Tick  139 | Lat: 20.5748, Lon: 108.7881 | Alt:  3717m
+   85% | Tick  150 | Lat: 20.5721, Lon: 108.8083 | Alt:  2833m
+   94% | Tick  161 | Lat: 20.5695, Lon: 108.8286 | Alt:  1938m
+  100% | Tick  168 | Lat: 20.5678, Lon: 108.8414 | Alt:  1362m
+
+Entity friendly-f35-1-aim-120-1778029134375-121 [aim-120-projectile]:
+  Samples: 118 | Distance: 21.89 km | Avg Speed: 3636.7 kts
+    0% | Tick   51 | Lat: 20.5946, Lon: 108.6355 | Alt: 10002m
+    9% | Tick   62 | Lat: 20.5931, Lon: 108.6481 | Alt:  9550m
+   19% | Tick   73 | Lat: 20.5909, Lon: 108.6672 | Alt:  8858m
+   28% | Tick   84 | Lat: 20.5885, Lon: 108.6875 | Alt:  8115m
+   38% | Tick   95 | Lat: 20.5861, Lon: 108.7080 | Alt:  7354m
+   47% | Tick  106 | Lat: 20.5837, Lon: 108.7285 | Alt:  6581m
+   56% | Tick  117 | Lat: 20.5813, Lon: 108.7489 | Alt:  5796m
+   66% | Tick  128 | Lat: 20.5789, Lon: 108.7694 | Alt:  4999m
+   75% | Tick  139 | Lat: 20.5765, Lon: 108.7899 | Alt:  4190m
+   85% | Tick  150 | Lat: 20.5741, Lon: 108.8104 | Alt:  3369m
+   94% | Tick  161 | Lat: 20.5717, Lon: 108.8309 | Alt:  2537m
+  100% | Tick  168 | Lat: 20.5702, Lon: 108.8439 | Alt:  2001m
+
+Track TRK-09BE [Weapon]:
+  Samples: 7 | Distance: 0.19 km | Avg Speed: 514.0 kts
+    0% | Tick   53 | Lat: 20.7188, Lon: 109.0618 | Alt:     2m
+   14% | Tick   54 | Lat: 20.7188, Lon: 109.0627 | Alt:     2m
+   29% | Tick   55 | Lat: 20.7188, Lon: 109.0636 | Alt:     1m
+   43% | Tick   56 | Lat: 20.7188, Lon: 109.0645 | Alt:     1m
+   57% | Tick   57 | Lat: 20.7188, Lon: 109.0654 | Alt:     1m
+   71% | Tick   58 | Lat: 20.7188, Lon: 109.0663 | Alt:     0m
+  100% | Tick   60 | Lat: 20.7188, Lon: 109.0636 | Alt:     2m
+
+Track TRK-597A [Unknown]:
+  Samples: 109 | Distance: 20.18 km | Avg Speed: 3632.1 kts
+    0% | Tick   60 | Lat: 20.5942, Lon: 108.6385 | Alt:  9883m
+    9% | Tick   70 | Lat: 20.5926, Lon: 108.6506 | Alt:  9404m
+   19% | Tick   80 | Lat: 20.5903, Lon: 108.6685 | Alt:  8692m
+   28% | Tick   90 | Lat: 20.5879, Lon: 108.6868 | Alt:  7956m
+   37% | Tick  100 | Lat: 20.5855, Lon: 108.7052 | Alt:  7207m
+   46% | Tick  110 | Lat: 20.5831, Lon: 108.7236 | Alt:  6449m
+   56% | Tick  120 | Lat: 20.5808, Lon: 108.7420 | Alt:  5681m
+   65% | Tick  130 | Lat: 20.5784, Lon: 108.7604 | Alt:  4902m
+   74% | Tick  140 | Lat: 20.5760, Lon: 108.7788 | Alt:  4114m
+   83% | Tick  150 | Lat: 20.5736, Lon: 108.7972 | Alt:  3317m
+   93% | Tick  160 | Lat: 20.5712, Lon: 108.8156 | Alt:  2509m
+  100% | Tick  168 | Lat: 20.5693, Lon: 108.8304 | Alt:  1857m
+
+Track TRK-E127 [Unknown]:
+  Samples: 109 | Distance: 20.18 km | Avg Speed: 3632.1 kts
+    0% | Tick   60 | Lat: 20.5942, Lon: 108.6386 | Alt:  9883m
+    9% | Tick   70 | Lat: 20.5926, Lon: 108.6507 | Alt:  9404m
+   19% | Tick   80 | Lat: 20.5903, Lon: 108.6686 | Alt:  8692m
+   28% | Tick   90 | Lat: 20.5879, Lon: 108.6869 | Alt:  7956m
+   37% | Tick  100 | Lat: 20.5855, Lon: 108.7053 | Alt:  7207m
+   46% | Tick  110 | Lat: 20.5831, Lon: 108.7237 | Alt:  6449m
+   56% | Tick  120 | Lat: 20.5807, Lon: 108.7421 | Alt:  5681m
+   65% | Tick  130 | Lat: 20.5784, Lon: 108.7605 | Alt:  4902m
+   74% | Tick  140 | Lat: 20.5760, Lon: 108.7789 | Alt:  4114m
+   83% | Tick  150 | Lat: 20.5736, Lon: 108.7973 | Alt:  3317m
+   93% | Tick  160 | Lat: 20.5712, Lon: 108.8157 | Alt:  2509m
+  100% | Tick  168 | Lat: 20.5693, Lon: 108.8304 | Alt:  1857m
+
+Track TRK-8E89 [Unknown]:
+  Samples: 109 | Distance: 20.39 km | Avg Speed: 3670.2 kts
+    0% | Tick   60 | Lat: 20.5942, Lon: 108.6386 | Alt:  9892m
+    9% | Tick   70 | Lat: 20.5928, Lon: 108.6508 | Alt:  9451m
+   19% | Tick   80 | Lat: 20.5907, Lon: 108.6689 | Alt:  8794m
+   28% | Tick   90 | Lat: 20.5885, Lon: 108.6875 | Alt:  8115m
+   37% | Tick  100 | Lat: 20.5863, Lon: 108.7061 | Alt:  7424m
+   46% | Tick  110 | Lat: 20.5841, Lon: 108.7247 | Alt:  6722m
+   56% | Tick  120 | Lat: 20.5820, Lon: 108.7434 | Alt:  6011m
+   65% | Tick  130 | Lat: 20.5798, Lon: 108.7620 | Alt:  5290m
+   74% | Tick  140 | Lat: 20.5776, Lon: 108.7806 | Alt:  4559m
+   83% | Tick  150 | Lat: 20.5754, Lon: 108.7992 | Alt:  3818m
+   93% | Tick  160 | Lat: 20.5732, Lon: 108.8179 | Alt:  3068m
+  100% | Tick  168 | Lat: 20.5715, Lon: 108.8328 | Alt:  2461m
+
+Track TRK-E30F [Weapon]:
+  Samples: 7 | Distance: 0.19 km | Avg Speed: 514.0 kts
+    0% | Tick   63 | Lat: 20.7188, Lon: 109.0618 | Alt:     2m
+   14% | Tick   64 | Lat: 20.7188, Lon: 109.0627 | Alt:     2m
+   29% | Tick   65 | Lat: 20.7188, Lon: 109.0636 | Alt:     1m
+   43% | Tick   66 | Lat: 20.7188, Lon: 109.0645 | Alt:     1m
+   57% | Tick   67 | Lat: 20.7188, Lon: 109.0654 | Alt:     1m
+   71% | Tick   68 | Lat: 20.7188, Lon: 109.0663 | Alt:     0m
+  100% | Tick   70 | Lat: 20.7188, Lon: 109.0636 | Alt:     2m
+
+Track TRK-7337 [Weapon]:
+  Samples: 7 | Distance: 0.28 km | Avg Speed: 674.6 kts
+    0% | Tick   72 | Lat: 20.7188, Lon: 109.0618 | Alt:     2m
+   13% | Tick   73 | Lat: 20.7188, Lon: 109.0627 | Alt:     2m
+   25% | Tick   74 | Lat: 20.7188, Lon: 109.0636 | Alt:     1m
+   38% | Tick   75 | Lat: 20.7188, Lon: 109.0645 | Alt:     1m
+   50% | Tick   76 | Lat: 20.7188, Lon: 109.0654 | Alt:     1m
+   63% | Tick   77 | Lat: 20.7188, Lon: 109.0663 | Alt:     0m
+  100% | Tick   80 | Lat: 20.7188, Lon: 109.0645 | Alt:     1m
+
+Track TRK-F09D [Weapon]:
+  Samples: 7 | Distance: 0.19 km | Avg Speed: 514.0 kts
+    0% | Tick   83 | Lat: 20.7187, Lon: 109.0618 | Alt:     2m
+   14% | Tick   84 | Lat: 20.7187, Lon: 109.0627 | Alt:     2m
+   29% | Tick   85 | Lat: 20.7187, Lon: 109.0636 | Alt:     1m
+   43% | Tick   86 | Lat: 20.7187, Lon: 109.0645 | Alt:     1m
+   57% | Tick   87 | Lat: 20.7187, Lon: 109.0654 | Alt:     1m
+   71% | Tick   88 | Lat: 20.7187, Lon: 109.0663 | Alt:     0m
+  100% | Tick   90 | Lat: 20.7187, Lon: 109.0636 | Alt:     2m
+
+Track TRK-4735 [Weapon]:
+  Samples: 7 | Distance: 0.19 km | Avg Speed: 514.0 kts
+    0% | Tick   93 | Lat: 20.7187, Lon: 109.0618 | Alt:     2m
+   14% | Tick   94 | Lat: 20.7187, Lon: 109.0627 | Alt:     2m
+   29% | Tick   95 | Lat: 20.7187, Lon: 109.0636 | Alt:     1m
+   43% | Tick   96 | Lat: 20.7187, Lon: 109.0645 | Alt:     1m
+   57% | Tick   97 | Lat: 20.7187, Lon: 109.0654 | Alt:     1m
+   71% | Tick   98 | Lat: 20.7187, Lon: 109.0663 | Alt:     0m
+  100% | Tick  100 | Lat: 20.7187, Lon: 109.0636 | Alt:     2m
+
+Entity uss-arleigh-burke-harpoon-1778029138689-151 [harpoon-projectile]:
+  Samples: 69 | Distance: 1.34 km | Avg Speed: 384.1 kts
+    0% | Tick  100 | Lat: 20.6291, Lon: 108.6770 | Alt:     2m
+    9% | Tick  106 | Lat: 20.6292, Lon: 108.6776 | Alt:   145m
+   18% | Tick  112 | Lat: 20.6293, Lon: 108.6782 | Alt:   299m
+   26% | Tick  118 | Lat: 20.6295, Lon: 108.6789 | Alt:   473m
+   35% | Tick  124 | Lat: 20.6296, Lon: 108.6797 | Alt:   680m
+   44% | Tick  130 | Lat: 20.6298, Lon: 108.6807 | Alt:   929m
+   53% | Tick  136 | Lat: 20.6301, Lon: 108.6819 | Alt:  1222m
+   62% | Tick  142 | Lat: 20.6303, Lon: 108.6832 | Alt:  1548m
+   71% | Tick  148 | Lat: 20.6306, Lon: 108.6846 | Alt:  1898m
+   79% | Tick  154 | Lat: 20.6310, Lon: 108.6861 | Alt:  2258m
+   88% | Tick  160 | Lat: 20.6313, Lon: 108.6876 | Alt:  2618m
+   97% | Tick  166 | Lat: 20.6316, Lon: 108.6891 | Alt:  2974m
+  100% | Tick  168 | Lat: 20.6317, Lon: 108.6896 | Alt:  3092m
+
+Entity uss-arleigh-burke-harpoon-1778029138771-871 [harpoon-projectile]:
+  Samples: 69 | Distance: 1.34 km | Avg Speed: 384.1 kts
+    0% | Tick  100 | Lat: 20.6291, Lon: 108.6770 | Alt:     2m
+    9% | Tick  106 | Lat: 20.6292, Lon: 108.6776 | Alt:   145m
+   18% | Tick  112 | Lat: 20.6293, Lon: 108.6782 | Alt:   299m
+   26% | Tick  118 | Lat: 20.6294, Lon: 108.6789 | Alt:   473m
+   35% | Tick  124 | Lat: 20.6296, Lon: 108.6797 | Alt:   680m
+   44% | Tick  130 | Lat: 20.6298, Lon: 108.6807 | Alt:   929m
+   53% | Tick  136 | Lat: 20.6301, Lon: 108.6819 | Alt:  1222m
+   62% | Tick  142 | Lat: 20.6303, Lon: 108.6832 | Alt:  1548m
+   71% | Tick  148 | Lat: 20.6306, Lon: 108.6847 | Alt:  1898m
+   79% | Tick  154 | Lat: 20.6309, Lon: 108.6861 | Alt:  2258m
+   88% | Tick  160 | Lat: 20.6312, Lon: 108.6876 | Alt:  2618m
+   97% | Tick  166 | Lat: 20.6316, Lon: 108.6891 | Alt:  2974m
+  100% | Tick  168 | Lat: 20.6317, Lon: 108.6896 | Alt:  3092m
+
+Entity uss-arleigh-burke-harpoon-1778029138982-480 [harpoon-projectile]:
+  Samples: 69 | Distance: 1.34 km | Avg Speed: 384.1 kts
+    0% | Tick  100 | Lat: 20.6291, Lon: 108.6770 | Alt:     2m
+    9% | Tick  106 | Lat: 20.6292, Lon: 108.6776 | Alt:   145m
+   18% | Tick  112 | Lat: 20.6293, Lon: 108.6782 | Alt:   299m
+   26% | Tick  118 | Lat: 20.6295, Lon: 108.6789 | Alt:   473m
+   35% | Tick  124 | Lat: 20.6296, Lon: 108.6797 | Alt:   680m
+   44% | Tick  130 | Lat: 20.6298, Lon: 108.6807 | Alt:   929m
+   53% | Tick  136 | Lat: 20.6301, Lon: 108.6819 | Alt:  1222m
+   62% | Tick  142 | Lat: 20.6304, Lon: 108.6832 | Alt:  1548m
+   71% | Tick  148 | Lat: 20.6306, Lon: 108.6846 | Alt:  1898m
+   79% | Tick  154 | Lat: 20.6310, Lon: 108.6861 | Alt:  2258m
+   88% | Tick  160 | Lat: 20.6313, Lon: 108.6876 | Alt:  2618m
+   97% | Tick  166 | Lat: 20.6316, Lon: 108.6891 | Alt:  2974m
+  100% | Tick  168 | Lat: 20.6317, Lon: 108.6896 | Alt:  3092m
+
+Entity friendly-f35-1-aim-120-1778029139246-573 [aim-120-projectile]:
+  Samples: 68 | Distance: 12.30 km | Avg Speed: 3568.8 kts
+    0% | Tick  101 | Lat: 20.6050, Lon: 108.6425 | Alt: 10002m
+    9% | Tick  107 | Lat: 20.6039, Lon: 108.6488 | Alt:  9767m
+   18% | Tick  113 | Lat: 20.6025, Lon: 108.6563 | Alt:  9486m
+   27% | Tick  119 | Lat: 20.6009, Lon: 108.6653 | Alt:  9144m
+   36% | Tick  125 | Lat: 20.5990, Lon: 108.6759 | Alt:  8743m
+   45% | Tick  131 | Lat: 20.5969, Lon: 108.6873 | Alt:  8306m
+   54% | Tick  137 | Lat: 20.5949, Lon: 108.6989 | Alt:  7861m
+   63% | Tick  143 | Lat: 20.5928, Lon: 108.7104 | Alt:  7413m
+   72% | Tick  149 | Lat: 20.5907, Lon: 108.7219 | Alt:  6961m
+   81% | Tick  155 | Lat: 20.5886, Lon: 108.7335 | Alt:  6506m
+   90% | Tick  161 | Lat: 20.5865, Lon: 108.7450 | Alt:  6048m
+   99% | Tick  167 | Lat: 20.5844, Lon: 108.7565 | Alt:  5585m
+  100% | Tick  168 | Lat: 20.5841, Lon: 108.7585 | Alt:  5508m
+
+Track TRK-9E74 [Weapon]:
+  Samples: 7 | Distance: 0.19 km | Avg Speed: 514.0 kts
+    0% | Tick  103 | Lat: 20.7186, Lon: 109.0618 | Alt:     2m
+   14% | Tick  104 | Lat: 20.7186, Lon: 109.0627 | Alt:     2m
+   29% | Tick  105 | Lat: 20.7186, Lon: 109.0636 | Alt:     1m
+   43% | Tick  106 | Lat: 20.7186, Lon: 109.0645 | Alt:     1m
+   57% | Tick  107 | Lat: 20.7186, Lon: 109.0654 | Alt:     1m
+   71% | Tick  108 | Lat: 20.7186, Lon: 109.0663 | Alt:     0m
+  100% | Tick  110 | Lat: 20.7186, Lon: 109.0636 | Alt:     2m
+
+Track TRK-D0C4 [Unknown]:
+  Samples: 59 | Distance: 10.75 km | Avg Speed: 3604.0 kts
+    0% | Tick  110 | Lat: 20.6045, Lon: 108.6456 | Alt:  9889m
+    9% | Tick  115 | Lat: 20.6035, Lon: 108.6511 | Alt:  9682m
+   17% | Tick  120 | Lat: 20.6023, Lon: 108.6577 | Alt:  9434m
+   26% | Tick  125 | Lat: 20.6009, Lon: 108.6653 | Alt:  9145m
+   34% | Tick  130 | Lat: 20.5994, Lon: 108.6740 | Alt:  8814m
+   43% | Tick  135 | Lat: 20.5976, Lon: 108.6835 | Alt:  8454m
+   52% | Tick  140 | Lat: 20.5959, Lon: 108.6931 | Alt:  8084m
+   60% | Tick  145 | Lat: 20.5942, Lon: 108.7027 | Alt:  7712m
+   69% | Tick  150 | Lat: 20.5924, Lon: 108.7123 | Alt:  7338m
+   78% | Tick  155 | Lat: 20.5907, Lon: 108.7219 | Alt:  6962m
+   86% | Tick  160 | Lat: 20.5890, Lon: 108.7315 | Alt:  6582m
+   95% | Tick  165 | Lat: 20.5872, Lon: 108.7412 | Alt:  6201m
+  100% | Tick  168 | Lat: 20.5862, Lon: 108.7469 | Alt:  5972m
+
+Track TRK-E206 [Unknown]:
+  Samples: 59 | Distance: 1.15 km | Avg Speed: 383.9 kts
+    0% | Tick  110 | Lat: 20.6291, Lon: 108.6774 | Alt:    97m
+    9% | Tick  115 | Lat: 20.6292, Lon: 108.6779 | Alt:   220m
+   17% | Tick  120 | Lat: 20.6294, Lon: 108.6784 | Alt:   353m
+   26% | Tick  125 | Lat: 20.6295, Lon: 108.6790 | Alt:   504m
+   34% | Tick  130 | Lat: 20.6296, Lon: 108.6797 | Alt:   678m
+   43% | Tick  135 | Lat: 20.6298, Lon: 108.6805 | Alt:   883m
+   52% | Tick  140 | Lat: 20.6300, Lon: 108.6815 | Alt:  1119m
+   60% | Tick  145 | Lat: 20.6302, Lon: 108.6825 | Alt:  1381m
+   69% | Tick  150 | Lat: 20.6304, Lon: 108.6837 | Alt:  1662m
+   78% | Tick  155 | Lat: 20.6307, Lon: 108.6849 | Alt:  1957m
+   86% | Tick  160 | Lat: 20.6310, Lon: 108.6861 | Alt:  2258m
+   95% | Tick  165 | Lat: 20.6312, Lon: 108.6874 | Alt:  2558m
+  100% | Tick  168 | Lat: 20.6314, Lon: 108.6881 | Alt:  2738m
+
+Track TRK-BE9C [Unknown]:
+  Samples: 59 | Distance: 1.15 km | Avg Speed: 383.9 kts
+    0% | Tick  110 | Lat: 20.6291, Lon: 108.6774 | Alt:    97m
+    9% | Tick  115 | Lat: 20.6292, Lon: 108.6779 | Alt:   220m
+   17% | Tick  120 | Lat: 20.6293, Lon: 108.6784 | Alt:   353m
+   26% | Tick  125 | Lat: 20.6295, Lon: 108.6790 | Alt:   504m
+   34% | Tick  130 | Lat: 20.6296, Lon: 108.6797 | Alt:   678m
+   43% | Tick  135 | Lat: 20.6298, Lon: 108.6805 | Alt:   883m
+   52% | Tick  140 | Lat: 20.6300, Lon: 108.6815 | Alt:  1119m
+   60% | Tick  145 | Lat: 20.6302, Lon: 108.6825 | Alt:  1381m
+   69% | Tick  150 | Lat: 20.6304, Lon: 108.6837 | Alt:  1662m
+   78% | Tick  155 | Lat: 20.6307, Lon: 108.6849 | Alt:  1957m
+   86% | Tick  160 | Lat: 20.6309, Lon: 108.6861 | Alt:  2258m
+   95% | Tick  165 | Lat: 20.6312, Lon: 108.6874 | Alt:  2558m
+  100% | Tick  168 | Lat: 20.6313, Lon: 108.6881 | Alt:  2738m
+
+Track TRK-D580 [Unknown]:
+  Samples: 59 | Distance: 1.15 km | Avg Speed: 383.9 kts
+    0% | Tick  110 | Lat: 20.6291, Lon: 108.6774 | Alt:    97m
+    9% | Tick  115 | Lat: 20.6292, Lon: 108.6779 | Alt:   220m
+   17% | Tick  120 | Lat: 20.6294, Lon: 108.6784 | Alt:   353m
+   26% | Tick  125 | Lat: 20.6295, Lon: 108.6790 | Alt:   504m
+   34% | Tick  130 | Lat: 20.6296, Lon: 108.6797 | Alt:   678m
+   43% | Tick  135 | Lat: 20.6298, Lon: 108.6805 | Alt:   883m
+   52% | Tick  140 | Lat: 20.6300, Lon: 108.6815 | Alt:  1119m
+   60% | Tick  145 | Lat: 20.6302, Lon: 108.6825 | Alt:  1381m
+   69% | Tick  150 | Lat: 20.6305, Lon: 108.6837 | Alt:  1662m
+   78% | Tick  155 | Lat: 20.6307, Lon: 108.6849 | Alt:  1957m
+   86% | Tick  160 | Lat: 20.6310, Lon: 108.6861 | Alt:  2258m
+   95% | Tick  165 | Lat: 20.6312, Lon: 108.6874 | Alt:  2558m
+  100% | Tick  168 | Lat: 20.6314, Lon: 108.6881 | Alt:  2738m
+
+Track TRK-03CA [Weapon]:
+  Samples: 7 | Distance: 0.19 km | Avg Speed: 514.0 kts
+    0% | Tick  113 | Lat: 20.7186, Lon: 109.0618 | Alt:     2m
+   14% | Tick  114 | Lat: 20.7186, Lon: 109.0627 | Alt:     2m
+   29% | Tick  115 | Lat: 20.7186, Lon: 109.0636 | Alt:     1m
+   43% | Tick  116 | Lat: 20.7186, Lon: 109.0645 | Alt:     1m
+   57% | Tick  117 | Lat: 20.7186, Lon: 109.0654 | Alt:     1m
+   71% | Tick  118 | Lat: 20.7186, Lon: 109.0663 | Alt:     0m
+  100% | Tick  120 | Lat: 20.7186, Lon: 109.0636 | Alt:     2m
+
+Track TRK-E6C6 [Weapon]:
+  Samples: 7 | Distance: 0.19 km | Avg Speed: 514.0 kts
+    0% | Tick  123 | Lat: 20.7185, Lon: 109.0618 | Alt:     2m
+   14% | Tick  124 | Lat: 20.7185, Lon: 109.0627 | Alt:     2m
+   29% | Tick  125 | Lat: 20.7185, Lon: 109.0636 | Alt:     1m
+   43% | Tick  126 | Lat: 20.7185, Lon: 109.0645 | Alt:     1m
+   57% | Tick  127 | Lat: 20.7185, Lon: 109.0654 | Alt:     1m
+   71% | Tick  128 | Lat: 20.7185, Lon: 109.0662 | Alt:     0m
+  100% | Tick  130 | Lat: 20.7185, Lon: 109.0636 | Alt:     2m
+
+Track TRK-4EF3 [Weapon]:
+  Samples: 7 | Distance: 0.19 km | Avg Speed: 514.0 kts
+    0% | Tick  133 | Lat: 20.7185, Lon: 109.0618 | Alt:     2m
+   14% | Tick  134 | Lat: 20.7185, Lon: 109.0627 | Alt:     2m
+   29% | Tick  135 | Lat: 20.7185, Lon: 109.0635 | Alt:     1m
+   43% | Tick  136 | Lat: 20.7185, Lon: 109.0644 | Alt:     1m
+   57% | Tick  137 | Lat: 20.7185, Lon: 109.0653 | Alt:     1m
+   71% | Tick  138 | Lat: 20.7185, Lon: 109.0662 | Alt:     0m
+  100% | Tick  140 | Lat: 20.7185, Lon: 109.0635 | Alt:     2m
+
+Track TRK-9D09 [Weapon]:
+  Samples: 7 | Distance: 0.19 km | Avg Speed: 514.0 kts
+    0% | Tick  143 | Lat: 20.7183, Lon: 109.0618 | Alt:     2m
+   14% | Tick  144 | Lat: 20.7183, Lon: 109.0627 | Alt:     2m
+   29% | Tick  145 | Lat: 20.7183, Lon: 109.0635 | Alt:     1m
+   43% | Tick  146 | Lat: 20.7183, Lon: 109.0644 | Alt:     1m
+   57% | Tick  147 | Lat: 20.7183, Lon: 109.0653 | Alt:     1m
+   71% | Tick  148 | Lat: 20.7183, Lon: 109.0662 | Alt:     0m
+  100% | Tick  150 | Lat: 20.7183, Lon: 109.0635 | Alt:     2m
+
+Track TRK-1C91 [Weapon]:
+  Samples: 7 | Distance: 0.19 km | Avg Speed: 514.0 kts
+    0% | Tick  153 | Lat: 20.7183, Lon: 109.0618 | Alt:     2m
+   14% | Tick  154 | Lat: 20.7183, Lon: 109.0626 | Alt:     2m
+   29% | Tick  155 | Lat: 20.7183, Lon: 109.0635 | Alt:     1m
+   43% | Tick  156 | Lat: 20.7183, Lon: 109.0644 | Alt:     1m
+   57% | Tick  157 | Lat: 20.7183, Lon: 109.0653 | Alt:     1m
+   71% | Tick  158 | Lat: 20.7183, Lon: 109.0662 | Alt:     0m
+  100% | Tick  160 | Lat: 20.7183, Lon: 109.0635 | Alt:     2m
+
+Track TRK-D557 [Weapon]:
+  Samples: 6 | Distance: 0.46 km | Avg Speed: 1798.9 kts
+    0% | Tick  163 | Lat: 20.7181, Lon: 109.0617 | Alt:     2m
+   20% | Tick  164 | Lat: 20.7181, Lon: 109.0626 | Alt:     2m
+   40% | Tick  165 | Lat: 20.7181, Lon: 109.0635 | Alt:     1m
+   60% | Tick  166 | Lat: 20.7181, Lon: 109.0644 | Alt:     1m
+   80% | Tick  167 | Lat: 20.7181, Lon: 109.0653 | Alt:     1m
+  100% | Tick  168 | Lat: 20.7181, Lon: 109.0662 | Alt:     0m
+
+SIMULATION PERFORMANCE:
+──────────────────────────────────────────────────
+ Sim Duration:  16.8s (168 ticks)
+ Wall Clock:    60.55s
+ Max RSS Used:  375MB

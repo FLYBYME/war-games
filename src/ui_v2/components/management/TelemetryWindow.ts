@@ -51,6 +51,7 @@ export class TelemetryWindow extends Component {
             if (!vs) return;
             const blueLosses = vs.losses?.blue || 0;
             const redLosses = vs.losses?.red || 0;
+            this.munitionsExpended = vs.losses?.munitionsExpended || 0;
             
             this.blueHistory.push(blueLosses);
             this.redHistory.push(redLosses);

@@ -6,6 +6,7 @@ import { EntityProfile, SensorType } from "../sdk/index.js";
 export const profiles: Record<string, EntityProfile> = {
     'ddg-destroyer': {
         type: 'Ship',
+        health: { maxHp: 2500 },
         kinematics: { massKg: 9000000, maxSpeedKts: 32, cruiseSpeedKts: 20 },
         propulsion: { maxThrustDryN: 5000000, spoolRate: 0.1, sfcDry: 0.5 },
         fuel: { maxKg: 500000 },
@@ -30,6 +31,7 @@ export const profiles: Record<string, EntityProfile> = {
     },
     'hostile-frigate': {
         type: 'Ship',
+        health: { maxHp: 1500 },
         kinematics: { massKg: 4000000, maxSpeedKts: 28, cruiseSpeedKts: 18 },
         propulsion: { maxThrustDryN: 2000000, spoolRate: 0.1, sfcDry: 0.5 },
         fuel: { maxKg: 300000 },
@@ -52,6 +54,7 @@ export const profiles: Record<string, EntityProfile> = {
     },
     'f-35a': {
         type: 'Aircraft',
+        health: { maxHp: 200 },
         kinematics: { massKg: 13000, maxSpeedKts: 1200, cruiseSpeedKts: 500, maxAltitudeM: 15000 },
         propulsion: { maxThrustDryN: 125000, spoolRate: 0.4, sfcDry: 0.8 },
         fuel: { maxKg: 8000 },
@@ -88,6 +91,7 @@ export const profiles: Record<string, EntityProfile> = {
     },
     'target-drone': {
         type: 'Aircraft',
+        health: { maxHp: 50 },
         kinematics: { massKg: 500, maxSpeedKts: 450, cruiseSpeedKts: 300 },
         propulsion: { maxThrustDryN: 8000, spoolRate: 0.5, sfcDry: 1.2 },
         fuel: { maxKg: 200 },
@@ -105,6 +109,7 @@ export const profiles: Record<string, EntityProfile> = {
     },
     'ford-class-carrier': {
         type: 'Ship',
+        health: { maxHp: 20000 },
         kinematics: { massKg: 100000000, maxSpeedKts: 30, cruiseSpeedKts: 22 },
         propulsion: { maxThrustDryN: 20000000, spoolRate: 0.05, sfcDry: 0.4 },
         fuel: { maxKg: 5000000 },
@@ -176,7 +181,10 @@ export const profiles: Record<string, EntityProfile> = {
         propulsion: { maxThrustDryN: 3000, spoolRate: 0.5, sfcDry: 0.5 },
         fuel: { maxKg: 100 },
         signatures: { baseRCS: 0.5 },
-        stages: [{ name: 'Sustainer', durationTicks: 2000, thrustN: 3000, separateOnComplete: false }]
+        stages: [
+            { name: 'Booster', durationTicks: 40, thrustN: 50000, separateOnComplete: true, guidanceMode: 'None' },
+            { name: 'Sustainer', durationTicks: 2000, thrustN: 3000, separateOnComplete: false }
+        ]
     },
     'c-802-projectile': {
         type: 'Weapon',
@@ -184,7 +192,10 @@ export const profiles: Record<string, EntityProfile> = {
         propulsion: { maxThrustDryN: 3500, spoolRate: 0.5, sfcDry: 0.5 },
         fuel: { maxKg: 110 },
         signatures: { baseRCS: 0.5 },
-        stages: [{ name: 'Sustainer', durationTicks: 2000, thrustN: 3500, separateOnComplete: false }]
+        stages: [
+            { name: 'Booster', durationTicks: 40, thrustN: 55000, separateOnComplete: true, guidanceMode: 'None' },
+            { name: 'Sustainer', durationTicks: 2000, thrustN: 3500, separateOnComplete: false }
+        ]
     },
     'hq-16-projectile': {
         type: 'Weapon',

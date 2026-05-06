@@ -65,6 +65,7 @@ export class WRAExecutorSystem implements ISystem {
                     for (let i = 0; i < combat.mounts.length; i++) {
                         if (usedMounts.has(i)) continue;
                         const mount = combat.mounts[i];
+                        if (!mount || !mount.magazineIndices) continue;
                         const magIdx = mount.magazineIndices[mount.activeMagazineIndex];
 
                         if (magIdx === undefined) continue;

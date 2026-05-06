@@ -7,6 +7,7 @@ export interface WindowState {
     y: number;
     width: number;
     height: number;
+    isDetached?: boolean;
 }
 
 export interface ClientSettings {

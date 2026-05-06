@@ -44,13 +44,13 @@ export class SetHeadingHandler implements CommandHandler<SetHeadingCommand> {
 
         if (navigation) {
             navigation.desiredHeadingDeg = cmd.heading;
-            navigation.navState = NavState.None; // Manual override
+            if (cmd.isExternal) navigation.navState = NavState.None; // Manual override
         } else if (transform) {
             transform.rotation = cmd.heading;
         }
 
-        // Suspend automated tasks to prevent override
-        if (taskComp) {
+        // Suspend automated tasks only on external override
+        if (cmd.isExternal && taskComp) {
             for (const node of taskComp.graph.nodes.values()) {
                 if (node.status === TaskStatus.Active || node.status === TaskStatus.Pending) {
                     node.status = TaskStatus.Suspended;
@@ -59,8 +59,8 @@ export class SetHeadingHandler implements CommandHandler<SetHeadingCommand> {
             taskComp.graph.updateActiveNodes();
         }
 
-        // Abort high-level mission
-        if (missionComp) {
+        // Abort high-level mission only on external override
+        if (cmd.isExternal && missionComp) {
             missionComp.missionType = MissionType.Idle;
             missionComp.status = MissionStatus.Aborted;
         }
@@ -99,10 +99,10 @@ export class SetAltitudeHandler implements CommandHandler<SetAltitudeCommand> {
         }
  
         navigation.desiredAltitudeM = cmd.altitudeM;
-        navigation.navState = NavState.None; // Manual override
+        if (cmd.isExternal) navigation.navState = NavState.None; // Manual override
 
-        // Suspend automated tasks
-        if (taskComp) {
+        // Suspend automated tasks only on external override
+        if (cmd.isExternal && taskComp) {
             for (const node of taskComp.graph.nodes.values()) {
                 if (node.status === TaskStatus.Active || node.status === TaskStatus.Pending) {
                     node.status = TaskStatus.Suspended;
@@ -111,8 +111,8 @@ export class SetAltitudeHandler implements CommandHandler<SetAltitudeCommand> {
             taskComp.graph.updateActiveNodes();
         }
 
-        // Abort mission
-        if (missionComp) {
+        // Abort mission only on external override
+        if (cmd.isExternal && missionComp) {
             missionComp.missionType = MissionType.Idle;
             missionComp.status = MissionStatus.Aborted;
         }
@@ -140,10 +140,10 @@ export class SetSpeedHandler implements CommandHandler<SetSpeedCommand> {
         }
  
         navigation.desiredSpeedKts = speed;
-        navigation.navState = NavState.None; // Manual override
+        if (cmd.isExternal) navigation.navState = NavState.None; // Manual override
 
-        // Suspend automated tasks
-        if (taskComp) {
+        // Suspend automated tasks only on external override
+        if (cmd.isExternal && taskComp) {
             for (const node of taskComp.graph.nodes.values()) {
                 if (node.status === TaskStatus.Active || node.status === TaskStatus.Pending) {
                     node.status = TaskStatus.Suspended;
@@ -152,8 +152,8 @@ export class SetSpeedHandler implements CommandHandler<SetSpeedCommand> {
             taskComp.graph.updateActiveNodes();
         }
 
-        // Abort mission
-        if (missionComp) {
+        // Abort mission only on external override
+        if (cmd.isExternal && missionComp) {
             missionComp.missionType = MissionType.Idle;
             missionComp.status = MissionStatus.Aborted;
         }

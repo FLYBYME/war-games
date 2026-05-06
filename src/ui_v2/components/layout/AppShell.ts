@@ -1,5 +1,6 @@
 import { Component } from '../../framework/Component';
 import { MenuBar } from './MenuBar';
+import { StatusBar } from './StatusBar';
 import { windowManager } from '../../framework/WindowManager';
 import { WindowFrame } from './WindowFrame';
 import { SessionManager } from '../management/SessionManager';
@@ -10,6 +11,7 @@ import { MountsWindowContent } from '../management/MountsWindow';
 import { SensorsWindowContent } from '../management/SensorsWindow';
 import { ContactsWindowContent } from '../management/ContactsWindow';
 import { MissionPanel } from '../management/MissionPanel';
+import { AdvancedMissionPlanner } from '../management/AdvancedMissionPlanner';
 import { WeatherWindow } from '../management/WeatherWindow';
 import { DoctrineWindow } from '../management/DoctrineWindow';
 import { WRAWindow } from '../management/WRAWindow';
@@ -17,6 +19,8 @@ import { TelemetryWindow } from '../management/TelemetryWindow';
 import { NetworkWindow } from '../management/NetworkWindow';
 import { LogisticsWindow } from '../management/LogisticsWindow';
 import { LoadoutWindow } from '../management/LoadoutWindow';
+import { MiniMap } from '../management/MiniMap';
+import { DBBrowser } from '../management/DBBrowser';
 import { settingsStore } from '../../framework/SettingsStore';
 
 /**
@@ -86,6 +90,10 @@ export class AppShell extends Component {
         this.addChild(menuBar);
         this.element.appendChild(shellBody);
         
+        const statusBar = new StatusBar();
+        this.element.appendChild(statusBar.element);
+        this.addChild(statusBar);
+
         shellBody.appendChild(contentArea);
         shellBody.appendChild(windowLayer);
 
@@ -115,6 +123,7 @@ export class AppShell extends Component {
                         case 'sensors': content = new SensorsWindowContent(); break;
                         case 'contacts': content = new ContactsWindowContent(); break;
                         case 'missions': content = new MissionPanel(); break;
+                        case 'mission-planner': content = new AdvancedMissionPlanner(); break;
                         case 'network': content = new NetworkWindow(); break;
                         case 'logistics': content = new LogisticsWindow(); break;
                         case 'loadout': content = new LoadoutWindow(); break;
@@ -122,6 +131,8 @@ export class AppShell extends Component {
                         case 'doctrine': content = new DoctrineWindow(); break;
                         case 'wra': content = new WRAWindow(); break;
                         case 'telemetry': content = new TelemetryWindow(); break;
+                        case 'minimap': content = new MiniMap(); break;
+                        case 'db-browser': content = new DBBrowser(); break;
                         default: content = new PlaceholderContent(opts.title);
                     }
                     const frame = new WindowFrame(opts, content);
@@ -143,6 +154,7 @@ export class AppShell extends Component {
                 if (id === 'sensors') windowManager.open({ id: 'sensors', title: 'SENSOR CONTROL' });
                 if (id === 'contacts') windowManager.open({ id: 'contacts', title: 'CONTACT LIST' });
                 if (id === 'missions') windowManager.open({ id: 'missions', title: 'MISSION PLANNER' });
+                if (id === 'mission-planner') windowManager.open({ id: 'mission-planner', title: 'ADVANCED MISSION PLANNER' });
                 if (id === 'network') windowManager.open({ id: 'network', title: 'DATALINK TOPOLOGY' });
                 if (id === 'logistics') windowManager.open({ id: 'logistics', title: 'FUEL & BINGO STATUS' });
                 if (id === 'loadout') windowManager.open({ id: 'loadout', title: 'LOADOUT CONFIGURATOR' });
@@ -150,6 +162,8 @@ export class AppShell extends Component {
                 if (id === 'doctrine') windowManager.open({ id: 'doctrine', title: 'DOCTRINE & ROE' });
                 if (id === 'wra') windowManager.open({ id: 'wra', title: 'WRA EDITOR' });
                 if (id === 'telemetry') windowManager.open({ id: 'telemetry', title: 'LOSSES & TELEMETRY' });
+                if (id === 'minimap') windowManager.open({ id: 'minimap', title: 'STRATEGIC MINI-MAP' });
+                if (id === 'db-browser') windowManager.open({ id: 'db-browser', title: 'DB3000 BROWSER' });
             }
         });
     }

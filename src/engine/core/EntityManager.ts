@@ -26,6 +26,8 @@ import { AcousticSignatureComponent } from '../components/Subsurface.js';
 
 import type { EntityProfile, MagazineProfile } from '../../sdk/schemas/index.js';
 
+import { TelemetryComponent } from '../components/Telemetry.js';
+
 export interface SpawnParams {
     id?: string;
     profileId?: string;
@@ -56,7 +58,7 @@ export class EntityManager {
             throw new Error(`Profile not found: ${params.profileId || 'No profile provided'}`);
         }
 
-        const entity = new Entity(id, params.side, undefined, params.profileId || profile.name || profile.type || 'custom');
+        const entity = new Entity(id, params.side, undefined, params.profileId || profile.platformClass || profile.type || 'custom');
 
         // Normalize position
         let position: Vector3;
@@ -185,7 +187,7 @@ export class EntityManager {
 
             const mounts = (profile.combat.mounts || []).map((m): Mount => ({
                 name: m.name || 'Unknown Mount',
-                magazineIndices: m.magazineIndices,
+                magazineIndices: m.magazineIndices || [0],
                 activeMagazineIndex: 0,
                 reloadTicks: m.reloadTicks || 10,
                 lastFireTick: 0,
@@ -212,12 +214,12 @@ export class EntityManager {
             ));
         }
 
-        if (profile.health) {
-            entity.addComponent(new HealthComponent(
-                profile.health.maxHp || 100,
-                profile.health.maxHp || 100
-            ));
-        }
+        // 5. Health & Vitality
+        const healthParams = profile.health || { maxHp: 100 };
+        entity.addComponent(new HealthComponent(
+            healthParams.maxHp || 100,
+            healthParams.maxHp || 100
+        ));
 
         // 6. Signatures
         const baseRCS = profile.signatures?.baseRCS ?? (profile.type === 'Ship' ? 5000 : 5);
@@ -238,6 +240,9 @@ export class EntityManager {
             case 'Facility': colRadius = 200; colLayer = 'surface'; break;
         }
         entity.addComponent(new CollisionComponent(colRadius, undefined, colLayer, ['surface', 'air', 'missile', 'default']));
+
+        // 8. Telemetry History
+        entity.addComponent(new TelemetryComponent(500));
 
         this.world.addEntity(entity);
         return entity;

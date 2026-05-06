@@ -11,6 +11,7 @@ import { CoverageLayer } from '../framework/map/layers/CoverageLayer';
 import { UnitLabelsLayer } from '../framework/map/layers/UnitLabelsLayer';
 import { TracksLayer } from '../framework/map/layers/TracksLayer';
 import { TacticalGraphicsLayer } from '../framework/map/layers/TacticalGraphicsLayer';
+import { WeatherOverlayLayer } from '../framework/map/layers/WeatherOverlayLayer';
 import { worldToLatLon } from '../framework/map/CoordUtils';
 import { layerRegistry } from '../framework/map/LayerRegistry';
 import { mapDataPipeline } from '../framework/map/MapDataPipeline';
@@ -81,6 +82,7 @@ export class TacticalMap extends Component {
         layerRegistry.register(new UnitLabelsLayer(), { id: 'labels', label: 'Unit Labels', group: 'tactical', defaultOn: true });
         layerRegistry.register(new TracksLayer(), { id: 'tracks', label: 'Sensor Tracks', group: 'tactical', defaultOn: true });
         layerRegistry.register(new TacticalGraphicsLayer(), { id: 'tactical', label: 'Tactical Graphics', group: 'tactical', defaultOn: true });
+        layerRegistry.register(new WeatherOverlayLayer(), { id: 'weather', label: 'Weather Overlay', group: 'environment', defaultOn: true });
 
         this.setupInteraction();
     }
@@ -107,6 +109,5 @@ export class TacticalMap extends Component {
 
     protected onUnmount() {
         this.renderer.destroy();
-        // Unregister layers if needed, or just keep them for next mount
     }
 }

@@ -113,7 +113,7 @@ export class MenuBar extends Component {
                     { label: 'Weapon Mounts', action: () => windowManager.open({ id: 'mounts', title: 'WEAPON MOUNTS', width: 300, height: 400 }) },
                     { label: 'Sensor Control', action: () => windowManager.open({ id: 'sensors', title: 'SENSOR CONTROL', width: 300, height: 400 }) },
                     { label: 'Contact List', action: () => windowManager.open({ id: 'contacts', title: 'CONTACT LIST', width: 400, height: 500 }) },
-                    { label: 'Mission Planner', action: () => windowManager.open({ id: 'missions', title: 'MISSION PLANNER', width: 400, height: 500 }) },
+                    { label: 'Mission Designer', action: () => windowManager.open({ id: 'mission-planner', title: 'MISSION DESIGNER', width: 400, height: 500 }) },
                     { label: 'Datalink Topology', action: () => windowManager.open({ id: 'network', title: 'DATALINK TOPOLOGY', width: 450, height: 350 }) },
                     { label: 'Fuel & Bingo Status', action: () => windowManager.open({ id: 'logistics', title: 'FUEL & BINGO STATUS', width: 400, height: 400 }) },
                     { label: 'Loadout Configurator', action: () => windowManager.open({ id: 'loadout', title: 'LOADOUT CONFIGURATOR', width: 350, height: 500 }) },
@@ -121,9 +121,10 @@ export class MenuBar extends Component {
                     { label: 'Doctrine & ROE', action: () => windowManager.open({ id: 'doctrine', title: 'DOCTRINE & ROE', width: 400, height: 350 }) },
                     { label: 'WRA Editor', action: () => windowManager.open({ id: 'wra', title: 'WRA EDITOR', width: 600, height: 400 }) },
                     { label: 'Losses & Telemetry', action: () => windowManager.open({ id: 'telemetry', title: 'LOSSES & TELEMETRY', width: 400, height: 300 }) },
+                    { label: 'Strategic Mini-Map', action: () => windowManager.open({ id: 'minimap', title: 'STRATEGIC MINI-MAP', width: 300, height: 250 }) },
+                    { label: 'DB3000 Browser', action: () => windowManager.open({ id: 'db-browser', title: 'DB3000 BROWSER', width: 800, height: 600 }) },
                     { label: 'Profile Editor', action: () => UIStore.activeView.set('profiles') },
-                    { label: 'Scenario Editor', action: () => UIStore.activeView.set('scenarios') },
-                    { label: 'DB3000 Browser', testId: 'menu-db' }
+                    { label: 'Scenario Editor', action: () => UIStore.activeView.set('scenarios') }
                 ]
             },
             {

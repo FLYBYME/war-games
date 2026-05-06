@@ -8,6 +8,8 @@ import { SpawnUnitCommand } from './commands/SpawnUnitCommand.js';
 import { SimControlCommand } from './commands/SimControlCommand.js';
 import { ListMatchesCommand } from './commands/ListMatchesCommand.js';
 import { ServerMetricsCommand } from './commands/ServerMetricsCommand.js';
+import { DuelCommand } from './commands/DuelCommand.js';
+import { ViewBugsCommand } from './commands/ViewBugsCommand.js';
 import { C } from './core/Utils.js';
 
 const program = new Command();
@@ -22,6 +24,8 @@ registry.register(new SpawnUnitCommand());
 registry.register(new SimControlCommand());
 registry.register(new ListMatchesCommand());
 registry.register(new ServerMetricsCommand());
+registry.register(new DuelCommand());
+registry.register(new ViewBugsCommand());
 
 program
     .name('war-games')

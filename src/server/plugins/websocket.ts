@@ -160,6 +160,23 @@ async function handleMessage(app: FastifyInstance, session: ClientSession, msg: 
             app.matchService.setMatchTime(matchId, msg.rate, msg.rate === 0);
             break;
 
+        case 'SAVE_MATCH':
+            if (msg.matchId && msg.filename) {
+                try {
+                    const world = app.matchService.getMatch(msg.matchId);
+                    if (world) {
+                        const worldData = world.toJSON();
+                        await (app.scenarioService as any).save(msg.filename, worldData);
+                        session.send({ type: 'COMMAND_ACK', payload: { commandType: 'SAVE_MATCH', success: true } });
+                        logger.info(`Match ${msg.matchId} saved to ${msg.filename}`);
+                    }
+                } catch (err: any) {
+                    logger.error('Failed to save match', { error: err.message });
+                    session.send({ type: 'ERROR', payload: { message: `Save failed: ${err.message}` } });
+                }
+            }
+            break;
+
         case 'EXPORT_SCENARIO':
             const worldData = app.matchService.globalWorld.toJSON();
             session.send({ type: 'SCENARIO_EXPORTED', payload: worldData });

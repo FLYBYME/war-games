@@ -2,6 +2,7 @@ import { EntityId, Vector3, Track, Side } from './Types.js';
 import { ScenarioIntent } from '../../sdk/schemas/index.js';
 
 export abstract class Command {
+    public isExternal: boolean = false;
     constructor(
         public readonly entityId: EntityId,
         public readonly priority: number = 0

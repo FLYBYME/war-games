@@ -1,6 +1,7 @@
 import { Container, Graphics, Rectangle, Text, TextStyle } from 'pixi.js';
 import { MapLayer } from '../MapLayer';
 import { ViewState, UIStore } from '../../UIStore';
+import { SymbologyService, Affiliation, Domain } from '../SymbologyService';
 
 /**
  * TracksLayer: Renders sensor contacts and tracks.
@@ -42,48 +43,39 @@ export class TracksLayer implements MapLayer {
             c.position.set(track.pos.x, -track.pos.y);
 
             const isSelected = UIStore.selectedEntityId.get() === track.id;
-            const color = this.getColor(track);
             const size = 9 / viewScale;
 
             const g = new Graphics();
             
-            // 1. Symbol Shape based on classification
-            if (track.classification === 'Weapon') {
-                // Vampire/Weapon Icon (Chevron)
-                const w = size * 0.7;
-                const h = size * 1.1;
-                g.moveTo(0, -h).lineTo(w, h).lineTo(0, h * 0.5).lineTo(-w, h).closePath();
-            } else {
-                switch (track.classification) {
-                    case 'Hostile':
-                        // Diamond (MIL-STD-2525D)
-                        g.moveTo(0, -size * 1.2).lineTo(size * 1.2, 0).lineTo(0, size * 1.2).lineTo(-size * 1.2, 0).closePath();
-                        break;
-                    case 'Friendly':
-                        // Square
-                        g.rect(-size, -size, size * 2, size * 2);
-                        break;
-                    case 'Neutral':
-                        // Circle
-                        g.circle(0, 0, size);
-                        break;
-                    default:
-                        // Clover-ish/Circle for unknown
-                        g.circle(0, 0, size);
-                        g.moveTo(-size, 0).lineTo(size, 0);
-                        g.moveTo(0, -size).lineTo(0, size);
-                }
-            }
+            // Map classification to MIL-STD categories
+            let affiliation: Affiliation = 'Unknown';
+            if (track.classification === 'Hostile') affiliation = 'Hostile';
+            else if (track.classification === 'Friendly') affiliation = 'Friendly';
+            else if (track.classification === 'Neutral') affiliation = 'Neutral';
 
-            g.fill({ color, alpha: isSelected ? 0.9 : 0.65 });
-            g.stroke({ width: 1.5 / viewScale, color: 0xffffff, alpha: 0.8 });
+            let domain: Domain = 'Surface';
+            if (track.classification === 'Weapon') domain = 'Weapon';
+            else if (track.pos.z > 20) domain = 'Air';
+            else if (track.pos.z < -5) domain = 'Subsurface';
+
+            SymbologyService.drawSymbol(g, {
+                affiliation,
+                domain,
+                size,
+                viewScale,
+                isSelected
+            });
 
             // 2. Heading Stem
             if (track.rot !== undefined) {
                 const stemLen = size * 2.5;
+                // Pixi rotation 0 is North (+Y), but Pixi screen Y is down, so we need to be careful.
+                // In UnitsLayer we use rotation = deg * rad.
+                // Here we draw directly in Graphics.
+                const rad = (track.rot - 90) * Math.PI / 180;
                 g.moveTo(0, 0).lineTo(
-                    Math.sin(track.rot * Math.PI / 180) * stemLen,
-                    -Math.cos(track.rot * Math.PI / 180) * stemLen
+                    Math.cos(rad) * stemLen,
+                    Math.sin(rad) * stemLen
                 );
                 g.stroke({ width: 2 / viewScale, color: 0xffffff, alpha: 0.7 });
             }
@@ -99,7 +91,7 @@ export class TracksLayer implements MapLayer {
             // 4. Selection Ring
             if (isSelected) {
                 const sel = new Graphics();
-                sel.circle(0, 0, size * 1.5);
+                sel.circle(0, 0, size * 1.8);
                 sel.stroke({ width: 2 / viewScale, color: 0xffff00 });
                 c.addChild(sel);
             }
@@ -114,20 +106,10 @@ export class TracksLayer implements MapLayer {
         }
     }
 
-    private getColor(track: any): number {
-        const identity = (track as any).identification || track.classification;
-        switch (identity) {
-            case 'Hostile': return 0xff3b30;
-            case 'Friendly': return 0x4cd964;
-            case 'Neutral': return 0x007aff;
-            case 'Unknown': return 0xffcc00;
-            default: return 0xffcc00;
-        }
-    }
-
     destroy() {
         this.trackContainers.forEach(c => c.destroy({ children: true }));
         this.trackContainers.clear();
         this.container.removeChildren();
     }
 }
+

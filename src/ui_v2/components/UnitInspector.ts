@@ -7,6 +7,8 @@ import { SpeedAltitudeSlider } from './management/SpeedAltitudeSlider';
 import { EMCONMatrix } from './management/EMCONMatrix';
 import { WeaponAllocationMatrix } from './management/WeaponAllocationMatrix';
 import { FlightPlanEditor } from './management/FlightPlanEditor';
+import { DoctrineWindow } from './management/DoctrineWindow';
+import { WRAWindow } from './management/WRAWindow';
 
 /**
  * UnitInspector: Detailed information panel for the selected unit.
@@ -22,6 +24,9 @@ export class UnitInspector extends Component {
     private weaponsArea: HTMLElement | null = null;
     private routingArea: HTMLElement | null = null;
     private formationArea: HTMLElement | null = null;
+    private doctrineArea: HTMLElement | null = null;
+    private damageArea: HTMLElement | null = null;
+    private damageBody: HTMLElement | null = null;
 
     private sensorListManager: ListManager<any> | null = null;
     private weaponListManager: ListManager<any> | null = null;
@@ -33,6 +38,8 @@ export class UnitInspector extends Component {
     private flightPlanEditor: FlightPlanEditor | null = null;
     private totCalculator: TOTCalculator | null = null;
     private formationEditor: FormationEditor | null = null;
+    private doctrineWindow: DoctrineWindow | null = null;
+    private wraWindow: WRAWindow | null = null;
 
     constructor() {
         super('div', 'unit-inspector', 'unit-inspector');
@@ -335,6 +342,37 @@ export class UnitInspector extends Component {
         this.updateKinematics(unit);
         this.updateSensors(unit);
         this.updateWeapons(unit);
+        this.updateDamage(unit);
+    }
+
+    private updateDamage(unit: ViewUnit) {
+        if (!this.damageBody) return;
+        this.damageBody.innerHTML = '';
+        
+        // Overall Hull Integrity
+        const hullRow = this.el('div', 'data-row');
+        hullRow.appendChild(this.el('span', 'data-label', 'Hull Integrity'));
+        const hullVal = this.el('span', `data-value ${unit.hp > 80 ? 'active' : unit.hp > 30 ? 'warn' : 'danger'}`, `${Math.round(unit.hp)}%`);
+        hullRow.appendChild(hullVal);
+        this.damageBody.appendChild(hullRow);
+
+        this.damageBody.appendChild(this.el('div', 'widget-separator'));
+
+        // Sub-systems (From SDK ViewUnitPayload)
+        // Note: SDK currently doesn't have a specific sub-systems health list in ViewUnitPayload, 
+        // but we can infer some from sensors/mounts or use a placeholder if not present.
+        if ((unit as any).systems) {
+            (unit as any).systems.forEach((s: any) => {
+                const row = this.el('div', 'data-row');
+                row.appendChild(this.el('span', 'data-label', s.name));
+                const status = s.health > 0 ? 'OPERATIONAL' : 'DESTROYED';
+                const val = this.el('span', `data-value ${s.health > 0 ? 'active' : 'danger'}`, status);
+                row.appendChild(val);
+                this.damageBody.appendChild(row);
+            });
+        } else {
+            this.damageBody.appendChild(this.el('div', 'empty-state', 'Detailed subsystem telemetry unavailable.'));
+        }
     }
 
     private updateKinematics(unit: ViewUnit) {

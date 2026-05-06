@@ -1,5 +1,6 @@
 import { World } from '../../engine/core/World.js';
 import { Side } from '../../engine/core/Types.js';
+import { HealthComponent } from '../../engine/components/Health.js';
 import { ProfileRegistry } from '../../engine/core/ProfileRegistry.js';
 import { EntityManager } from '../../engine/core/EntityManager.js';
 import { ScenarioLoader, ScenarioManifest } from '../../engine/core/ScenarioLoader.js';
@@ -201,6 +202,7 @@ export class MatchService {
         this.logger.info(`Creating Match: ${matchId}`, { scenario: manifest?.name || 'Empty' });
 
         const world = new World(undefined, undefined, this.profiles, this.weaponProfiles);
+        world.isPaused = true;
         this.initializeWorldSystems(world);
         this.setupEventBus(matchId, world);
         this.matches.set(matchId, world);
@@ -236,6 +238,58 @@ export class MatchService {
             isPaused: world.clock.isPaused,
             timeCompression: world.clock.timeCompression
         }));
+    }
+
+    public getWinState(matchId: string): { over: boolean; winner?: string; reason?: string } {
+        const world = this.getMatch(matchId);
+        if (!world) return { over: false };
+
+        const entities = Array.from(world.getEntities());
+        if (entities.length === 0) return { over: false };
+
+        const redUnits = entities.filter(e => e.side === Side.Red && e.hasComponent(HealthComponent));
+        const blueUnits = entities.filter(e => e.side === Side.Blue && e.hasComponent(HealthComponent));
+
+        // Filter out projectiles/munitions and other non-platform entities
+        const redCombatants = redUnits.filter(e => {
+            const pid = e.profileId?.toLowerCase() || '';
+            return !pid.includes('projectile') && !pid.includes('missile') && !pid.includes('torpedo') && !pid.includes('sonobuoy');
+        });
+        const blueCombatants = blueUnits.filter(e => {
+            const pid = e.profileId?.toLowerCase() || '';
+            return !pid.includes('projectile') && !pid.includes('missile') && !pid.includes('torpedo') && !pid.includes('sonobuoy');
+        });
+
+        // Debug log if we see 0 combatants but we have entities
+        if (redCombatants.length === 0 && blueCombatants.length === 0 && world.currentTick > 0) {
+            this.logger.warn(`WinState check: No combatants found for match ${matchId} at tick ${world.currentTick}. Total entities: ${entities.length}`);
+        }
+
+        if (world.currentTick > 0) {
+            if (redCombatants.length === 0 && blueCombatants.length > 0) {
+                return { over: true, winner: 'Blue', reason: 'All Red units destroyed' };
+            }
+            if (blueCombatants.length === 0 && redCombatants.length > 0) {
+                return { over: true, winner: 'Red', reason: 'All Blue units destroyed' };
+            }
+            if (redCombatants.length === 0 && blueCombatants.length === 0) {
+                // Only declare mutual destruction if the match has actually run for a bit
+                return { over: true, winner: 'None', reason: 'Mutual destruction' };
+            }
+        }
+
+        return { over: false };
+    }
+
+    public getRecentEvents(matchId: string, count: number = 50): any[] {
+        const world = this.getMatch(matchId);
+        if (!world) return [];
+        const tel = world.getSystem(TelemetrySystem);
+        return tel ? tel.getRecentEvents(count) : [];
+    }
+
+    public getProfile(id: string) {
+        return this.profiles.get(id);
     }
 
     public getStats(): any {

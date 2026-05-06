@@ -1,0 +1,840 @@
+{"tick":0,"type":"tactical","data":{"type":"tactical","tick":2,"severity":"Info","category":"SENSORS","message":"New detection: friendly-f35-1 by uss-arleigh-burke","entityId":"uss-arleigh-burke","payload":{"targetId":"friendly-f35-1"}}}
+{"tick":0,"type":"tactical","data":{"type":"tactical","tick":2,"severity":"Info","category":"SENSORS","message":"New detection: swarm-2 by uss-arleigh-burke","entityId":"uss-arleigh-burke","payload":{"targetId":"swarm-2"}}}
+{"tick":0,"type":"tactical","data":{"type":"tactical","tick":2,"severity":"Info","category":"SENSORS","message":"New detection: uss-arleigh-burke by friendly-f35-1","entityId":"friendly-f35-1","payload":{"targetId":"uss-arleigh-burke"}}}
+{"tick":0,"type":"tactical","data":{"type":"tactical","tick":2,"severity":"Info","category":"SENSORS","message":"New detection: hostile-frigate-1 by friendly-f35-1","entityId":"friendly-f35-1","payload":{"targetId":"hostile-frigate-1"}}}
+{"tick":0,"type":"tactical","data":{"type":"tactical","tick":2,"severity":"Info","category":"SENSORS","message":"New detection: swarm-1 by friendly-f35-1","entityId":"friendly-f35-1","payload":{"targetId":"swarm-1"}}}
+{"tick":0,"type":"tactical","data":{"type":"tactical","tick":2,"severity":"Info","category":"SENSORS","message":"New detection: swarm-2 by friendly-f35-1","entityId":"friendly-f35-1","payload":{"targetId":"swarm-2"}}}
+{"tick":0,"type":"tactical","data":{"type":"tactical","tick":2,"severity":"Info","category":"SENSORS","message":"New detection: friendly-f35-1 by hostile-frigate-1","entityId":"hostile-frigate-1","payload":{"targetId":"friendly-f35-1"}}}
+{"tick":0,"type":"tactical","data":{"type":"tactical","tick":2,"severity":"Info","category":"SENSORS","message":"New detection: swarm-1 by hostile-frigate-1","entityId":"hostile-frigate-1","payload":{"targetId":"swarm-1"}}}
+{"tick":0,"type":"tactical","data":{"type":"tactical","tick":2,"severity":"Info","category":"SENSORS","message":"New detection: swarm-2 by hostile-frigate-1","entityId":"hostile-frigate-1","payload":{"targetId":"swarm-2"}}}
+{"tick":0,"type":"tactical","data":{"type":"tactical","tick":2,"severity":"Info","category":"SENSORS","message":"New detection: swarm-2 by swarm-1","entityId":"swarm-1","payload":{"targetId":"swarm-2"}}}
+{"tick":0,"type":"tactical","data":{"type":"tactical","tick":2,"severity":"Info","category":"SENSORS","message":"New detection: swarm-1 by swarm-2","entityId":"swarm-2","payload":{"targetId":"swarm-1"}}}
+{"tick":2,"type":"state:paused","data":false}
+{"tick":3,"type":"state:paused","data":false}
+{"tick":4,"type":"state:paused","data":false}
+{"tick":5,"type":"state:paused","data":false}
+{"tick":6,"type":"state:paused","data":false}
+{"tick":7,"type":"state:paused","data":false}
+{"tick":8,"type":"state:paused","data":false}
+{"tick":9,"type":"state:paused","data":false}
+{"tick":10,"type":"state:paused","data":false}
+{"tick":10,"type":"metrics:performance","data":{"type":"metrics:performance","tick":10,"data":{"lastMs":2.4109400000002097,"avgMs":69.27617559999995,"maxMs":320.82805099999996,"histogram":[{"limit":0.1,"count":0},{"limit":0.5,"count":0},{"limit":1,"count":0},{"limit":2,"count":4},{"limit":5,"count":3},{"limit":10,"count":0},{"limit":20,"count":0}],"overflow":3,"phases":{"externalCommands":0.0011139999996885308,"Environment":0.1944029999999657,"Doctrine":0.05635699999993449,"Perception":0.5779630000001816,"Lifecycle":0.07072599999992235,"Decision":0.06801599999971586,"Forces":0.03483199999982389,"Physics":0.06361499999957232,"resolveCommands":0.5733519999998862,"spatialGrid":0.004309999999804859,"Bridge":0.7547640000002502}}}}
+{"tick":11,"type":"state:paused","data":false}
+{"tick":12,"type":"state:paused","data":false}
+{"tick":13,"type":"state:paused","data":false}
+{"tick":14,"type":"state:paused","data":false}
+{"tick":15,"type":"state:paused","data":false}
+{"tick":16,"type":"state:paused","data":false}
+{"tick":17,"type":"state:paused","data":false}
+{"tick":18,"type":"state:paused","data":false}
+{"tick":18,"type":"tactical","data":{"type":"tactical","tick":19,"severity":"Info","category":"SENSORS","message":"New detection: swarm-1 by uss-arleigh-burke","entityId":"uss-arleigh-burke","payload":{"targetId":"swarm-1"}}}
+{"tick":19,"type":"state:paused","data":false}
+{"tick":20,"type":"state:paused","data":false}
+{"tick":20,"type":"metrics:performance","data":{"type":"metrics:performance","tick":20,"data":{"lastMs":2.010004000000208,"avgMs":49.28775129999999,"maxMs":320.82805099999996,"histogram":[{"limit":0.1,"count":0},{"limit":0.5,"count":0},{"limit":1,"count":0},{"limit":2,"count":4},{"limit":5,"count":11},{"limit":10,"count":0},{"limit":20,"count":0}],"overflow":5,"phases":{"externalCommands":0.0008729999999559368,"Environment":0.1145779999997103,"Doctrine":0.09865499999978056,"Perception":0.5527710000001207,"Lifecycle":0.07878500000015265,"Decision":0.03689200000007986,"Forces":0.028452000000015687,"Physics":0.02988599999980579,"resolveCommands":0.2719819999997526,"spatialGrid":0.0036620000000766595,"Bridge":0.7822919999998703}}}}
+{"tick":21,"type":"state:paused","data":false}
+{"tick":22,"type":"state:paused","data":false}
+{"tick":23,"type":"state:paused","data":false}
+{"tick":24,"type":"state:paused","data":false}
+{"tick":25,"type":"state:paused","data":false}
+{"tick":26,"type":"state:paused","data":false}
+{"tick":27,"type":"state:paused","data":false}
+{"tick":28,"type":"state:paused","data":false}
+{"tick":29,"type":"state:paused","data":false}
+{"tick":30,"type":"state:paused","data":false}
+{"tick":30,"type":"metrics:performance","data":{"type":"metrics:performance","tick":30,"data":{"lastMs":1.7682670000003782,"avgMs":33.445984033333346,"maxMs":320.82805099999996,"histogram":[{"limit":0.1,"count":0},{"limit":0.5,"count":0},{"limit":1,"count":0},{"limit":2,"count":13},{"limit":5,"count":12},{"limit":10,"count":0},{"limit":20,"count":0}],"overflow":5,"phases":{"externalCommands":0.0003670000000965956,"Environment":0.042845999999826745,"Doctrine":0.026902999999947497,"Perception":0.5202850000000581,"Lifecycle":0.05897099999992861,"Decision":0.025982999999996537,"Forces":0.031044999999721767,"Physics":0.029301999999916006,"resolveCommands":0.22682999999960884,"spatialGrid":0.0033360000002176093,"Bridge":0.7955430000001797}}}}
+{"tick":30,"type":"tactical","data":{"type":"tactical","tick":31,"severity":"Combat","category":"WEAPONS","message":"uss-arleigh-burke fired at swarm-2","entityId":"uss-arleigh-burke","pos":{"x":0.011329073076914244,"y":0.20263531761257914,"z":0}}}
+{"tick":30,"type":"tactical","data":{"type":"tactical","tick":31,"severity":"Combat","category":"WEAPONS","message":"hostile-frigate-1 fired at hostile-frigate-1","entityId":"hostile-frigate-1","pos":{"x":39999.974509588574,"y":9999.544070591042,"z":0}}}
+{"tick":30,"type":"WeaponFired","data":{"type":"WeaponFired","tick":31,"entityId":"uss-arleigh-burke","targetId":"swarm-2","data":{"weaponProfileId":"sm-6","mountIndex":0}}}
+{"tick":30,"type":"WeaponFired","data":{"type":"WeaponFired","tick":31,"entityId":"uss-arleigh-burke","targetId":"swarm-2","data":{"weaponProfileId":"sm-6","mountIndex":0}}}
+{"tick":30,"type":"WeaponFired","data":{"type":"WeaponFired","tick":31,"entityId":"uss-arleigh-burke","targetId":"swarm-2","data":{"weaponProfileId":"sm-6","mountIndex":0}}}
+{"tick":30,"type":"WeaponFired","data":{"type":"WeaponFired","tick":31,"entityId":"hostile-frigate-1","targetId":"hostile-frigate-1","data":{"weaponProfileId":"76mm-shell","mountIndex":2}}}
+{"tick":31,"type":"state:paused","data":false}
+{"tick":31,"type":"tactical","data":{"type":"tactical","tick":32,"severity":"Info","category":"SENSORS","message":"New detection: hostile-frigate-1-76mm-shell-1778029088950-802 by friendly-f35-1","entityId":"friendly-f35-1","payload":{"targetId":"hostile-frigate-1-76mm-shell-1778029088950-802"}}}
+{"tick":31,"type":"tactical","data":{"type":"tactical","tick":32,"severity":"Info","category":"SENSORS","message":"New detection: uss-arleigh-burke by uss-arleigh-burke-sm-6-1778029088945-706","entityId":"uss-arleigh-burke-sm-6-1778029088945-706","payload":{"targetId":"uss-arleigh-burke"}}}
+{"tick":31,"type":"tactical","data":{"type":"tactical","tick":32,"severity":"Info","category":"SENSORS","message":"New detection: uss-arleigh-burke by uss-arleigh-burke-sm-6-1778029088947-884","entityId":"uss-arleigh-burke-sm-6-1778029088947-884","payload":{"targetId":"uss-arleigh-burke"}}}
+{"tick":32,"type":"state:paused","data":false}
+{"tick":32,"type":"tactical","data":{"type":"tactical","tick":33,"severity":"Info","category":"SENSORS","message":"New detection: uss-arleigh-burke-sm-6-1778029088945-706 by hostile-frigate-1","entityId":"hostile-frigate-1","payload":{"targetId":"uss-arleigh-burke-sm-6-1778029088945-706"}}}
+{"tick":32,"type":"tactical","data":{"type":"tactical","tick":33,"severity":"Info","category":"SENSORS","message":"New detection: uss-arleigh-burke-sm-6-1778029088947-884 by hostile-frigate-1","entityId":"hostile-frigate-1","payload":{"targetId":"uss-arleigh-burke-sm-6-1778029088947-884"}}}
+{"tick":32,"type":"tactical","data":{"type":"tactical","tick":33,"severity":"Info","category":"SENSORS","message":"New detection: uss-arleigh-burke-sm-6-1778029088949-203 by hostile-frigate-1","entityId":"hostile-frigate-1","payload":{"targetId":"uss-arleigh-burke-sm-6-1778029088949-203"}}}
+{"tick":32,"type":"tactical","data":{"type":"tactical","tick":33,"severity":"Info","category":"SENSORS","message":"New detection: uss-arleigh-burke by uss-arleigh-burke-sm-6-1778029088949-203","entityId":"uss-arleigh-burke-sm-6-1778029088949-203","payload":{"targetId":"uss-arleigh-burke"}}}
+{"tick":33,"type":"state:paused","data":false}
+{"tick":34,"type":"state:paused","data":false}
+{"tick":35,"type":"state:paused","data":false}
+{"tick":36,"type":"state:paused","data":false}
+{"tick":37,"type":"state:paused","data":false}
+{"tick":37,"type":"Impact","data":{"type":"Impact","tick":38,"entityId":"hostile-frigate-1-76mm-shell-1778029088950-802","data":{"targetId":"TERRAIN","position":{"x":40555.15935433335,"y":9999.858884573103,"z":0}}}}
+{"tick":38,"type":"state:paused","data":false}
+{"tick":39,"type":"state:paused","data":false}
+{"tick":40,"type":"state:paused","data":false}
+{"tick":40,"type":"metrics:performance","data":{"type":"metrics:performance","tick":40,"data":{"lastMs":2.303360999999768,"avgMs":25.812727374999998,"maxMs":320.82805099999996,"histogram":[{"limit":0.1,"count":0},{"limit":0.5,"count":0},{"limit":1,"count":0},{"limit":2,"count":16},{"limit":5,"count":18},{"limit":10,"count":1},{"limit":20,"count":0}],"overflow":5,"phases":{"externalCommands":0.00040999999964697054,"Environment":0.03982099999984712,"Doctrine":0.06411600000001272,"Perception":0.555547999999817,"Lifecycle":0.07305600000017876,"Decision":0.037074000000302476,"Forces":0.03731800000014118,"Physics":0.04166000000032,"resolveCommands":0.5169370000003255,"spatialGrid":0.006891999999879772,"Bridge":0.9206739999999627}}}}
+{"tick":40,"type":"tactical","data":{"type":"tactical","tick":41,"severity":"Combat","category":"WEAPONS","message":"hostile-frigate-1 fired at hostile-frigate-1","entityId":"hostile-frigate-1","pos":{"x":39999.91637123951,"y":9998.86119299245,"z":0}}}
+{"tick":40,"type":"WeaponFired","data":{"type":"WeaponFired","tick":41,"entityId":"hostile-frigate-1","targetId":"hostile-frigate-1","data":{"weaponProfileId":"76mm-shell","mountIndex":2}}}
+{"tick":41,"type":"state:paused","data":false}
+{"tick":41,"type":"tactical","data":{"type":"tactical","tick":42,"severity":"Info","category":"SENSORS","message":"New detection: hostile-frigate-1-76mm-shell-1778029088977-234 by friendly-f35-1","entityId":"friendly-f35-1","payload":{"targetId":"hostile-frigate-1-76mm-shell-1778029088977-234"}}}
+{"tick":42,"type":"state:paused","data":false}
+{"tick":43,"type":"state:paused","data":false}
+{"tick":44,"type":"state:paused","data":false}
+{"tick":45,"type":"state:paused","data":false}
+{"tick":46,"type":"state:paused","data":false}
+{"tick":47,"type":"state:paused","data":false}
+{"tick":47,"type":"Impact","data":{"type":"Impact","tick":48,"entityId":"hostile-frigate-1-76mm-shell-1778029088977-234","data":{"targetId":"TERRAIN","position":{"x":40553.83581561768,"y":9996.457666143784,"z":0}}}}
+{"tick":48,"type":"state:paused","data":false}
+{"tick":49,"type":"state:paused","data":false}
+{"tick":49,"type":"tactical","data":{"type":"tactical","tick":50,"severity":"Combat","category":"WEAPONS","message":"friendly-f35-1 fired at swarm-1","entityId":"friendly-f35-1","pos":{"x":-4323.457351813414,"y":-3829.8178717770984,"z":10000}}}
+{"tick":49,"type":"tactical","data":{"type":"tactical","tick":50,"severity":"Combat","category":"WEAPONS","message":"friendly-f35-1 fired at swarm-2","entityId":"friendly-f35-1","pos":{"x":-4323.457351813414,"y":-3829.8178717770984,"z":10000}}}
+{"tick":49,"type":"WeaponFired","data":{"type":"WeaponFired","tick":50,"entityId":"friendly-f35-1","targetId":"swarm-1","data":{"weaponProfileId":"aim-120","mountIndex":0}}}
+{"tick":49,"type":"WeaponFired","data":{"type":"WeaponFired","tick":50,"entityId":"friendly-f35-1","targetId":"swarm-1","data":{"weaponProfileId":"aim-120","mountIndex":0}}}
+{"tick":49,"type":"WeaponFired","data":{"type":"WeaponFired","tick":50,"entityId":"friendly-f35-1","targetId":"swarm-2","data":{"weaponProfileId":"aim-120","mountIndex":1}}}
+{"tick":50,"type":"state:paused","data":false}
+{"tick":50,"type":"metrics:performance","data":{"type":"metrics:performance","tick":50,"data":{"lastMs":46.00786500000004,"avgMs":26.066096660000003,"maxMs":320.82805099999996,"histogram":[{"limit":0.1,"count":0},{"limit":0.5,"count":0},{"limit":1,"count":0},{"limit":2,"count":21},{"limit":5,"count":21},{"limit":10,"count":1},{"limit":20,"count":0}],"overflow":7,"phases":{"externalCommands":0.0006410000000869331,"Environment":0.04730700000027355,"Doctrine":41.24074900000005,"Perception":0.5277439999999842,"Lifecycle":0.3303280000000086,"Decision":0.03782900000032896,"Forces":0.04017599999997401,"Physics":0.04035500000009051,"resolveCommands":2.8081050000000687,"spatialGrid":0.013167000000066764,"Bridge":0.9070200000001023}}}}
+{"tick":50,"type":"tactical","data":{"type":"tactical","tick":51,"severity":"Combat","category":"WEAPONS","message":"hostile-frigate-1 fired at hostile-frigate-1","entityId":"hostile-frigate-1","pos":{"x":39999.802335679036,"y":9997.706391071642,"z":0}}}
+{"tick":50,"type":"tactical","data":{"type":"tactical","tick":51,"severity":"Info","category":"SENSORS","message":"New detection: friendly-f35-1-aim-120-1778029089248-710 by hostile-frigate-1","entityId":"hostile-frigate-1","payload":{"targetId":"friendly-f35-1-aim-120-1778029089248-710"}}}
+{"tick":50,"type":"tactical","data":{"type":"tactical","tick":51,"severity":"Info","category":"SENSORS","message":"New detection: friendly-f35-1-aim-120-1778029089249-639 by hostile-frigate-1","entityId":"hostile-frigate-1","payload":{"targetId":"friendly-f35-1-aim-120-1778029089249-639"}}}
+{"tick":50,"type":"tactical","data":{"type":"tactical","tick":51,"severity":"Info","category":"SENSORS","message":"New detection: friendly-f35-1-aim-120-1778029089250-328 by hostile-frigate-1","entityId":"hostile-frigate-1","payload":{"targetId":"friendly-f35-1-aim-120-1778029089250-328"}}}
+{"tick":50,"type":"WeaponFired","data":{"type":"WeaponFired","tick":51,"entityId":"hostile-frigate-1","targetId":"hostile-frigate-1","data":{"weaponProfileId":"76mm-shell","mountIndex":2}}}
+{"tick":51,"type":"state:paused","data":false}
+{"tick":51,"type":"tactical","data":{"type":"tactical","tick":52,"severity":"Info","category":"SENSORS","message":"New detection: hostile-frigate-1-76mm-shell-1778029089253-325 by friendly-f35-1","entityId":"friendly-f35-1","payload":{"targetId":"hostile-frigate-1-76mm-shell-1778029089253-325"}}}
+{"tick":52,"type":"state:paused","data":false}
+{"tick":53,"type":"state:paused","data":false}
+{"tick":53,"type":"tactical","data":{"type":"tactical","tick":54,"severity":"Info","category":"SENSORS","message":"New detection: swarm-2 by uss-arleigh-burke","entityId":"uss-arleigh-burke","payload":{"targetId":"swarm-2"}}}
+{"tick":54,"type":"state:paused","data":false}
+{"tick":55,"type":"state:paused","data":false}
+{"tick":56,"type":"state:paused","data":false}
+{"tick":57,"type":"state:paused","data":false}
+{"tick":57,"type":"Impact","data":{"type":"Impact","tick":58,"entityId":"hostile-frigate-1-76mm-shell-1778029089253-325","data":{"targetId":"TERRAIN","position":{"x":40554.35115813024,"y":9999.371111725231,"z":0}}}}
+{"tick":58,"type":"state:paused","data":false}
+{"tick":59,"type":"state:paused","data":false}
+{"tick":60,"type":"state:paused","data":false}
+{"tick":60,"type":"metrics:performance","data":{"type":"metrics:performance","tick":60,"data":{"lastMs":2.1230060000007143,"avgMs":26.80496485000001,"maxMs":320.82805099999996,"histogram":[{"limit":0.1,"count":0},{"limit":0.5,"count":0},{"limit":1,"count":0},{"limit":2,"count":23},{"limit":5,"count":25},{"limit":10,"count":1},{"limit":20,"count":0}],"overflow":11,"phases":{"externalCommands":0.0003169999999954598,"Environment":0.039993000000322354,"Doctrine":0.03664699999990262,"Perception":0.6679599999997663,"Lifecycle":0.07451899999978195,"Decision":0.02949700000044686,"Forces":0.035318000000188476,"Physics":0.045669000000089,"resolveCommands":0.4796010000000024,"spatialGrid":0.028804000000491214,"Bridge":0.6763300000002346}}}}
+{"tick":60,"type":"tactical","data":{"type":"tactical","tick":61,"severity":"Combat","category":"WEAPONS","message":"hostile-frigate-1 fired at hostile-frigate-1","entityId":"hostile-frigate-1","pos":{"x":39999.63126596915,"y":9995.952474773032,"z":0}}}
+{"tick":60,"type":"WeaponFired","data":{"type":"WeaponFired","tick":61,"entityId":"hostile-frigate-1","targetId":"hostile-frigate-1","data":{"weaponProfileId":"76mm-shell","mountIndex":2}}}
+{"tick":61,"type":"state:paused","data":false}
+{"tick":61,"type":"tactical","data":{"type":"tactical","tick":62,"severity":"Info","category":"SENSORS","message":"New detection: hostile-frigate-1-76mm-shell-1778029089563-860 by friendly-f35-1","entityId":"friendly-f35-1","payload":{"targetId":"hostile-frigate-1-76mm-shell-1778029089563-860"}}}
+{"tick":62,"type":"state:paused","data":false}
+{"tick":63,"type":"state:paused","data":false}
+{"tick":64,"type":"state:paused","data":false}
+{"tick":65,"type":"state:paused","data":false}
+{"tick":66,"type":"state:paused","data":false}
+{"tick":67,"type":"state:paused","data":false}
+{"tick":67,"type":"Impact","data":{"type":"Impact","tick":68,"entityId":"hostile-frigate-1-76mm-shell-1778029089563-860","data":{"targetId":"TERRAIN","position":{"x":40553.54482766393,"y":9997.853786099426,"z":0}}}}
+{"tick":67,"type":"tactical","data":{"type":"tactical","tick":68,"severity":"Info","category":"SENSORS","message":"New detection: swarm-1 by uss-arleigh-burke-sm-6-1778029088945-706","entityId":"uss-arleigh-burke-sm-6-1778029088945-706","payload":{"targetId":"swarm-1"}}}
+{"tick":67,"type":"tactical","data":{"type":"tactical","tick":68,"severity":"Info","category":"SENSORS","message":"New detection: swarm-1 by uss-arleigh-burke-sm-6-1778029088947-884","entityId":"uss-arleigh-burke-sm-6-1778029088947-884","payload":{"targetId":"swarm-1"}}}
+{"tick":67,"type":"tactical","data":{"type":"tactical","tick":68,"severity":"Info","category":"SENSORS","message":"New detection: swarm-1 by uss-arleigh-burke-sm-6-1778029088949-203","entityId":"uss-arleigh-burke-sm-6-1778029088949-203","payload":{"targetId":"swarm-1"}}}
+{"tick":68,"type":"state:paused","data":false}
+{"tick":69,"type":"state:paused","data":false}
+{"tick":70,"type":"state:paused","data":false}
+{"tick":70,"type":"metrics:performance","data":{"type":"metrics:performance","tick":70,"data":{"lastMs":2.5775540000004185,"avgMs":24.01884092857144,"maxMs":320.82805099999996,"histogram":[{"limit":0.1,"count":0},{"limit":0.5,"count":0},{"limit":1,"count":0},{"limit":2,"count":25},{"limit":5,"count":31},{"limit":10,"count":1},{"limit":20,"count":0}],"overflow":13,"phases":{"externalCommands":0.000420000000303844,"Environment":0.05418600000029983,"Doctrine":0.037220999999590276,"Perception":0.7695499999999811,"Lifecycle":0.08904499999971449,"Decision":0.032290000000102737,"Forces":0.0390400000005684,"Physics":0.04912400000011985,"resolveCommands":0.5086419999997815,"spatialGrid":0.007067999999890162,"Bridge":0.9768100000001141}}}}
+{"tick":70,"type":"tactical","data":{"type":"tactical","tick":71,"severity":"Combat","category":"WEAPONS","message":"hostile-frigate-1 fired at hostile-frigate-1","entityId":"hostile-frigate-1","pos":{"x":39999.37979038391,"y":9993.474643082818,"z":0}}}
+{"tick":70,"type":"WeaponFired","data":{"type":"WeaponFired","tick":71,"entityId":"hostile-frigate-1","targetId":"hostile-frigate-1","data":{"weaponProfileId":"76mm-shell","mountIndex":2}}}
+{"tick":71,"type":"state:paused","data":false}
+{"tick":71,"type":"tactical","data":{"type":"tactical","tick":72,"severity":"Info","category":"SENSORS","message":"New detection: hostile-frigate-1-76mm-shell-1778029089644-750 by friendly-f35-1","entityId":"friendly-f35-1","payload":{"targetId":"hostile-frigate-1-76mm-shell-1778029089644-750"}}}
+{"tick":72,"type":"state:paused","data":false}
+{"tick":72,"type":"tactical","data":{"type":"tactical","tick":73,"severity":"Info","category":"SENSORS","message":"New detection: uss-arleigh-burke-sm-6-1778029088945-706 by hostile-frigate-1","entityId":"hostile-frigate-1","payload":{"targetId":"uss-arleigh-burke-sm-6-1778029088945-706"}}}
+{"tick":72,"type":"tactical","data":{"type":"tactical","tick":73,"severity":"Info","category":"SENSORS","message":"New detection: uss-arleigh-burke-sm-6-1778029088947-884 by hostile-frigate-1","entityId":"hostile-frigate-1","payload":{"targetId":"uss-arleigh-burke-sm-6-1778029088947-884"}}}
+{"tick":72,"type":"tactical","data":{"type":"tactical","tick":73,"severity":"Info","category":"SENSORS","message":"New detection: uss-arleigh-burke-sm-6-1778029088949-203 by hostile-frigate-1","entityId":"hostile-frigate-1","payload":{"targetId":"uss-arleigh-burke-sm-6-1778029088949-203"}}}
+{"tick":73,"type":"state:paused","data":false}
+{"tick":74,"type":"state:paused","data":false}
+{"tick":75,"type":"state:paused","data":false}
+{"tick":76,"type":"state:paused","data":false}
+{"tick":77,"type":"state:paused","data":false}
+{"tick":77,"type":"Impact","data":{"type":"Impact","tick":78,"entityId":"hostile-frigate-1-76mm-shell-1778029089644-750","data":{"targetId":"TERRAIN","position":{"x":40555.77016186978,"y":9993.757234008111,"z":0}}}}
+{"tick":78,"type":"state:paused","data":false}
+{"tick":79,"type":"state:paused","data":false}
+{"tick":80,"type":"state:paused","data":false}
+{"tick":80,"type":"metrics:performance","data":{"type":"metrics:performance","tick":80,"data":{"lastMs":3.08583599999929,"avgMs":21.32268381249998,"maxMs":320.82805099999996,"histogram":[{"limit":0.1,"count":0},{"limit":0.5,"count":0},{"limit":1,"count":0},{"limit":2,"count":27},{"limit":5,"count":39},{"limit":10,"count":1},{"limit":20,"count":0}],"overflow":13,"phases":{"externalCommands":0.0004239999998389976,"Environment":0.07715900000039255,"Doctrine":0.03512799999953131,"Perception":0.6008800000008705,"Lifecycle":0.06874299999981304,"Decision":0.02919300000030489,"Forces":0.029773999999633816,"Physics":0.11192300000038813,"resolveCommands":0.9062790000007226,"spatialGrid":0.013127000000167754,"Bridge":1.1994100000001708}}}}
+{"tick":80,"type":"tactical","data":{"type":"tactical","tick":81,"severity":"Combat","category":"WEAPONS","message":"hostile-frigate-1 fired at hostile-frigate-1","entityId":"hostile-frigate-1","pos":{"x":39999.019072508076,"y":9990.148309503591,"z":0}}}
+{"tick":80,"type":"WeaponFired","data":{"type":"WeaponFired","tick":81,"entityId":"hostile-frigate-1","targetId":"hostile-frigate-1","data":{"weaponProfileId":"76mm-shell","mountIndex":2}}}
+{"tick":81,"type":"state:paused","data":false}
+{"tick":81,"type":"tactical","data":{"type":"tactical","tick":82,"severity":"Info","category":"SENSORS","message":"New detection: hostile-frigate-1-76mm-shell-1778029089715-701 by friendly-f35-1","entityId":"friendly-f35-1","payload":{"targetId":"hostile-frigate-1-76mm-shell-1778029089715-701"}}}
+{"tick":82,"type":"state:paused","data":false}
+{"tick":83,"type":"state:paused","data":false}
+{"tick":84,"type":"state:paused","data":false}
+{"tick":85,"type":"state:paused","data":false}
+{"tick":86,"type":"state:paused","data":false}
+{"tick":87,"type":"state:paused","data":false}
+{"tick":87,"type":"Impact","data":{"type":"Impact","tick":88,"entityId":"hostile-frigate-1-76mm-shell-1778029089715-701","data":{"targetId":"TERRAIN","position":{"x":40552.92668881887,"y":9991.161874066695,"z":0}}}}
+{"tick":87,"type":"tactical","data":{"type":"tactical","tick":88,"severity":"Info","category":"SENSORS","message":"New detection: swarm-1 by friendly-f35-1-aim-120-1778029089248-710","entityId":"friendly-f35-1-aim-120-1778029089248-710","payload":{"targetId":"swarm-1"}}}
+{"tick":87,"type":"tactical","data":{"type":"tactical","tick":88,"severity":"Info","category":"SENSORS","message":"New detection: swarm-1 by friendly-f35-1-aim-120-1778029089249-639","entityId":"friendly-f35-1-aim-120-1778029089249-639","payload":{"targetId":"swarm-1"}}}
+{"tick":87,"type":"tactical","data":{"type":"tactical","tick":88,"severity":"Info","category":"SENSORS","message":"New detection: swarm-1 by friendly-f35-1-aim-120-1778029089250-328","entityId":"friendly-f35-1-aim-120-1778029089250-328","payload":{"targetId":"swarm-1"}}}
+{"tick":88,"type":"state:paused","data":false}
+{"tick":89,"type":"state:paused","data":false}
+{"tick":90,"type":"state:paused","data":false}
+{"tick":90,"type":"metrics:performance","data":{"type":"metrics:performance","tick":90,"data":{"lastMs":3.0997200000001612,"avgMs":19.647756822222238,"maxMs":320.82805099999996,"histogram":[{"limit":0.1,"count":0},{"limit":0.5,"count":0},{"limit":1,"count":0},{"limit":2,"count":31},{"limit":5,"count":44},{"limit":10,"count":1},{"limit":20,"count":0}],"overflow":14,"phases":{"externalCommands":0.0005830000000059954,"Environment":0.04131500000039523,"Doctrine":0.036842999999862514,"Perception":0.8316480000003139,"Lifecycle":0.07705199999963952,"Decision":0.21124200000031124,"Forces":0.03232800000023417,"Physics":0.027748000000428874,"resolveCommands":0.741146999999728,"spatialGrid":0.011963000000832835,"Bridge":1.074163999999655}}}}
+{"tick":90,"type":"tactical","data":{"type":"tactical","tick":91,"severity":"Combat","category":"WEAPONS","message":"hostile-frigate-1 fired at hostile-frigate-1","entityId":"hostile-frigate-1","pos":{"x":39998.515759407026,"y":9985.848967531174,"z":0}}}
+{"tick":90,"type":"WeaponFired","data":{"type":"WeaponFired","tick":91,"entityId":"hostile-frigate-1","targetId":"hostile-frigate-1","data":{"weaponProfileId":"76mm-shell","mountIndex":2}}}
+{"tick":91,"type":"state:paused","data":false}
+{"tick":91,"type":"tactical","data":{"type":"tactical","tick":92,"severity":"Info","category":"SENSORS","message":"New detection: hostile-frigate-1-76mm-shell-1778029089742-533 by friendly-f35-1","entityId":"friendly-f35-1","payload":{"targetId":"hostile-frigate-1-76mm-shell-1778029089742-533"}}}
+{"tick":92,"type":"state:paused","data":false}
+{"tick":93,"type":"state:paused","data":false}
+{"tick":94,"type":"state:paused","data":false}
+{"tick":95,"type":"state:paused","data":false}
+{"tick":96,"type":"state:paused","data":false}
+{"tick":97,"type":"state:paused","data":false}
+{"tick":97,"type":"Impact","data":{"type":"Impact","tick":98,"entityId":"hostile-frigate-1-76mm-shell-1778029089742-533","data":{"targetId":"TERRAIN","position":{"x":40555.764501912374,"y":9986.212404949576,"z":0}}}}
+{"tick":98,"type":"state:paused","data":false}
+{"tick":99,"type":"state:paused","data":false}
+{"tick":99,"type":"tactical","data":{"type":"tactical","tick":100,"severity":"Combat","category":"WEAPONS","message":"uss-arleigh-burke fired at hostile-frigate-1","entityId":"uss-arleigh-burke","pos":{"x":1.1481122105887038,"y":8.384237090885648,"z":0}}}
+{"tick":99,"type":"WeaponFired","data":{"type":"WeaponFired","tick":100,"entityId":"uss-arleigh-burke","targetId":"hostile-frigate-1","data":{"weaponProfileId":"harpoon","mountIndex":1}}}
+{"tick":99,"type":"WeaponFired","data":{"type":"WeaponFired","tick":100,"entityId":"uss-arleigh-burke","targetId":"hostile-frigate-1","data":{"weaponProfileId":"harpoon","mountIndex":1}}}
+{"tick":99,"type":"WeaponFired","data":{"type":"WeaponFired","tick":100,"entityId":"uss-arleigh-burke","targetId":"hostile-frigate-1","data":{"weaponProfileId":"harpoon","mountIndex":1}}}
+{"tick":100,"type":"state:paused","data":false}
+{"tick":100,"type":"metrics:performance","data":{"type":"metrics:performance","tick":100,"data":{"lastMs":200.05073300000004,"avgMs":20.336392389999997,"maxMs":320.82805099999996,"histogram":[{"limit":0.1,"count":0},{"limit":0.5,"count":0},{"limit":1,"count":0},{"limit":2,"count":35},{"limit":5,"count":48},{"limit":10,"count":1},{"limit":20,"count":0}],"overflow":16,"phases":{"externalCommands":0.00027599999975791434,"Environment":0.07695700000022043,"Doctrine":0.14027400000031776,"Perception":0.7086730000000898,"Lifecycle":0.26650100000006205,"Decision":0.10161200000038662,"Forces":0.03213199999936478,"Physics":0.02755200000046898,"resolveCommands":197.44005600000037,"spatialGrid":0.016275999999379565,"Bridge":1.1087790000001405}}}}
+{"tick":100,"type":"tactical","data":{"type":"tactical","tick":101,"severity":"Combat","category":"WEAPONS","message":"friendly-f35-1 fired at swarm-2","entityId":"friendly-f35-1","pos":{"x":-3593.70788584077,"y":-2664.0396216550084,"z":10000}}}
+{"tick":100,"type":"tactical","data":{"type":"tactical","tick":101,"severity":"Combat","category":"WEAPONS","message":"hostile-frigate-1 fired at hostile-frigate-1","entityId":"hostile-frigate-1","pos":{"x":39997.8319304919,"y":9980.452200426344,"z":0}}}
+{"tick":100,"type":"tactical","data":{"type":"tactical","tick":101,"severity":"Info","category":"SENSORS","message":"New detection: uss-arleigh-burke by uss-arleigh-burke-harpoon-1778029089871-27","entityId":"uss-arleigh-burke-harpoon-1778029089871-27","payload":{"targetId":"uss-arleigh-burke"}}}
+{"tick":100,"type":"tactical","data":{"type":"tactical","tick":101,"severity":"Info","category":"SENSORS","message":"New detection: uss-arleigh-burke by uss-arleigh-burke-harpoon-1778029089873-292","entityId":"uss-arleigh-burke-harpoon-1778029089873-292","payload":{"targetId":"uss-arleigh-burke"}}}
+{"tick":100,"type":"tactical","data":{"type":"tactical","tick":101,"severity":"Info","category":"SENSORS","message":"New detection: uss-arleigh-burke by uss-arleigh-burke-harpoon-1778029090020-907","entityId":"uss-arleigh-burke-harpoon-1778029090020-907","payload":{"targetId":"uss-arleigh-burke"}}}
+{"tick":100,"type":"WeaponFired","data":{"type":"WeaponFired","tick":101,"entityId":"friendly-f35-1","targetId":"swarm-2","data":{"weaponProfileId":"aim-120","mountIndex":1}}}
+{"tick":100,"type":"WeaponFired","data":{"type":"WeaponFired","tick":101,"entityId":"hostile-frigate-1","targetId":"hostile-frigate-1","data":{"weaponProfileId":"76mm-shell","mountIndex":2}}}
+{"tick":101,"type":"state:paused","data":false}
+{"tick":101,"type":"tactical","data":{"type":"tactical","tick":102,"severity":"Info","category":"SENSORS","message":"New detection: hostile-frigate-1-76mm-shell-1778029090069-170 by friendly-f35-1","entityId":"friendly-f35-1","payload":{"targetId":"hostile-frigate-1-76mm-shell-1778029090069-170"}}}
+{"tick":101,"type":"tactical","data":{"type":"tactical","tick":102,"severity":"Info","category":"SENSORS","message":"New detection: friendly-f35-1-aim-120-1778029090069-112 by hostile-frigate-1","entityId":"hostile-frigate-1","payload":{"targetId":"friendly-f35-1-aim-120-1778029090069-112"}}}
+{"tick":101,"type":"tactical","data":{"type":"tactical","tick":102,"severity":"Info","category":"SENSORS","message":"New detection: uss-arleigh-burke-harpoon-1778029089871-27 by hostile-frigate-1","entityId":"hostile-frigate-1","payload":{"targetId":"uss-arleigh-burke-harpoon-1778029089871-27"}}}
+{"tick":101,"type":"tactical","data":{"type":"tactical","tick":102,"severity":"Info","category":"SENSORS","message":"New detection: uss-arleigh-burke-harpoon-1778029089873-292 by hostile-frigate-1","entityId":"hostile-frigate-1","payload":{"targetId":"uss-arleigh-burke-harpoon-1778029089873-292"}}}
+{"tick":101,"type":"tactical","data":{"type":"tactical","tick":102,"severity":"Info","category":"SENSORS","message":"New detection: uss-arleigh-burke-harpoon-1778029090020-907 by hostile-frigate-1","entityId":"hostile-frigate-1","payload":{"targetId":"uss-arleigh-burke-harpoon-1778029090020-907"}}}
+{"tick":102,"type":"state:paused","data":false}
+{"tick":103,"type":"state:paused","data":false}
+{"tick":104,"type":"state:paused","data":false}
+{"tick":105,"type":"state:paused","data":false}
+{"tick":106,"type":"state:paused","data":false}
+{"tick":107,"type":"state:paused","data":false}
+{"tick":107,"type":"Impact","data":{"type":"Impact","tick":108,"entityId":"hostile-frigate-1-76mm-shell-1778029090069-170","data":{"targetId":"TERRAIN","position":{"x":40554.715410008015,"y":9980.934355181924,"z":0}}}}
+{"tick":108,"type":"state:paused","data":false}
+{"tick":109,"type":"state:paused","data":false}
+{"tick":110,"type":"state:paused","data":false}
+{"tick":110,"type":"metrics:performance","data":{"type":"metrics:performance","tick":110,"data":{"lastMs":2.63079099999959,"avgMs":19.859049027272714,"maxMs":320.82805099999996,"histogram":[{"limit":0.1,"count":0},{"limit":0.5,"count":0},{"limit":1,"count":0},{"limit":2,"count":37},{"limit":5,"count":54},{"limit":10,"count":1},{"limit":20,"count":0}],"overflow":18,"phases":{"externalCommands":0.00030900000001565786,"Environment":0.03439600000001519,"Doctrine":0.03238000000055763,"Perception":0.8197989999998754,"Lifecycle":0.10181999999986147,"Decision":0.08534899999995105,"Forces":0.05711299999984476,"Physics":0.03905200000008335,"resolveCommands":0.6429640000005747,"spatialGrid":0.007497999999941385,"Bridge":0.7986929999997301}}}}
+{"tick":110,"type":"tactical","data":{"type":"tactical","tick":111,"severity":"Combat","category":"WEAPONS","message":"hostile-frigate-1 fired at hostile-frigate-1","entityId":"hostile-frigate-1","pos":{"x":39996.92878670825,"y":9973.843502250158,"z":0}}}
+{"tick":110,"type":"WeaponFired","data":{"type":"WeaponFired","tick":111,"entityId":"hostile-frigate-1","targetId":"hostile-frigate-1","data":{"weaponProfileId":"76mm-shell","mountIndex":2}}}
+{"tick":111,"type":"state:paused","data":false}
+{"tick":111,"type":"tactical","data":{"type":"tactical","tick":112,"severity":"Info","category":"SENSORS","message":"New detection: hostile-frigate-1-76mm-shell-1778029090219-886 by friendly-f35-1","entityId":"friendly-f35-1","payload":{"targetId":"hostile-frigate-1-76mm-shell-1778029090219-886"}}}
+{"tick":111,"type":"tactical","data":{"type":"tactical","tick":112,"severity":"Info","category":"SENSORS","message":"New detection: friendly-f35-1-aim-120-1778029089248-710 by swarm-1","entityId":"swarm-1","payload":{"targetId":"friendly-f35-1-aim-120-1778029089248-710"}}}
+{"tick":111,"type":"tactical","data":{"type":"tactical","tick":112,"severity":"Info","category":"SENSORS","message":"New detection: friendly-f35-1-aim-120-1778029089249-639 by swarm-1","entityId":"swarm-1","payload":{"targetId":"friendly-f35-1-aim-120-1778029089249-639"}}}
+{"tick":111,"type":"tactical","data":{"type":"tactical","tick":112,"severity":"Info","category":"SENSORS","message":"New detection: friendly-f35-1-aim-120-1778029089250-328 by swarm-1","entityId":"swarm-1","payload":{"targetId":"friendly-f35-1-aim-120-1778029089250-328"}}}
+{"tick":112,"type":"state:paused","data":false}
+{"tick":113,"type":"state:paused","data":false}
+{"tick":114,"type":"state:paused","data":false}
+{"tick":115,"type":"state:paused","data":false}
+{"tick":116,"type":"state:paused","data":false}
+{"tick":117,"type":"state:paused","data":false}
+{"tick":117,"type":"Impact","data":{"type":"Impact","tick":118,"entityId":"hostile-frigate-1-76mm-shell-1778029090219-886","data":{"targetId":"TERRAIN","position":{"x":40553.62718927321,"y":9976.137623444212,"z":0}}}}
+{"tick":118,"type":"state:paused","data":false}
+{"tick":119,"type":"state:paused","data":false}
+{"tick":120,"type":"state:paused","data":false}
+{"tick":120,"type":"metrics:performance","data":{"type":"metrics:performance","tick":120,"data":{"lastMs":3.3549339999999575,"avgMs":20.00062799999999,"maxMs":320.82805099999996,"histogram":[{"limit":0.1,"count":0},{"limit":0.5,"count":0},{"limit":1,"count":0},{"limit":2,"count":37},{"limit":5,"count":61},{"limit":10,"count":1},{"limit":20,"count":0}],"overflow":21,"phases":{"externalCommands":0.0007220000006782357,"Environment":0.05198500000005879,"Doctrine":0.06723800000054325,"Perception":1.0595089999997072,"Lifecycle":0.0914599999996426,"Decision":0.22761199999968085,"Forces":0.09449000000040542,"Physics":0.05671299999994517,"resolveCommands":0.7566759999999704,"spatialGrid":0.0075230000002193265,"Bridge":0.92229800000041}}}}
+{"tick":120,"type":"tactical","data":{"type":"tactical","tick":121,"severity":"Combat","category":"WEAPONS","message":"hostile-frigate-1 fired at hostile-frigate-1","entityId":"hostile-frigate-1","pos":{"x":39995.79483028998,"y":9965.988453333564,"z":0}}}
+{"tick":120,"type":"tactical","data":{"type":"tactical","tick":121,"severity":"Info","category":"SENSORS","message":"New detection: friendly-f35-1-aim-120-1778029089248-710 by swarm-2","entityId":"swarm-2","payload":{"targetId":"friendly-f35-1-aim-120-1778029089248-710"}}}
+{"tick":120,"type":"tactical","data":{"type":"tactical","tick":121,"severity":"Info","category":"SENSORS","message":"New detection: friendly-f35-1-aim-120-1778029089249-639 by swarm-2","entityId":"swarm-2","payload":{"targetId":"friendly-f35-1-aim-120-1778029089249-639"}}}
+{"tick":120,"type":"tactical","data":{"type":"tactical","tick":121,"severity":"Info","category":"SENSORS","message":"New detection: friendly-f35-1-aim-120-1778029089250-328 by swarm-2","entityId":"swarm-2","payload":{"targetId":"friendly-f35-1-aim-120-1778029089250-328"}}}
+{"tick":120,"type":"WeaponFired","data":{"type":"WeaponFired","tick":121,"entityId":"hostile-frigate-1","targetId":"hostile-frigate-1","data":{"weaponProfileId":"76mm-shell","mountIndex":2}}}
+{"tick":121,"type":"state:paused","data":false}
+{"tick":121,"type":"tactical","data":{"type":"tactical","tick":122,"severity":"Info","category":"SENSORS","message":"New detection: hostile-frigate-1-76mm-shell-1778029090468-579 by friendly-f35-1","entityId":"friendly-f35-1","payload":{"targetId":"hostile-frigate-1-76mm-shell-1778029090468-579"}}}
+{"tick":122,"type":"state:paused","data":false}
+{"tick":123,"type":"state:paused","data":false}
+{"tick":124,"type":"state:paused","data":false}
+{"tick":125,"type":"state:paused","data":false}
+{"tick":126,"type":"state:paused","data":false}
+{"tick":127,"type":"state:paused","data":false}
+{"tick":127,"type":"Impact","data":{"type":"Impact","tick":128,"entityId":"hostile-frigate-1-76mm-shell-1778029090468-579","data":{"targetId":"TERRAIN","position":{"x":40550.348304466715,"y":9966.522289383245,"z":0}}}}
+{"tick":128,"type":"state:paused","data":false}
+{"tick":129,"type":"state:paused","data":false}
+{"tick":130,"type":"state:paused","data":false}
+{"tick":130,"type":"metrics:performance","data":{"type":"metrics:performance","tick":130,"data":{"lastMs":2.5871769999994285,"avgMs":19.018390938461515,"maxMs":320.82805099999996,"histogram":[{"limit":0.1,"count":0},{"limit":0.5,"count":0},{"limit":1,"count":0},{"limit":2,"count":38},{"limit":5,"count":69},{"limit":10,"count":1},{"limit":20,"count":0}],"overflow":22,"phases":{"externalCommands":0.00033199999961652793,"Environment":0.029768999999760126,"Doctrine":0.02913799999987532,"Perception":0.6977470000001631,"Lifecycle":0.043396000000029744,"Decision":0.02904599999965285,"Forces":0.02994799999942188,"Physics":0.02707899999950314,"resolveCommands":0.6723820000006526,"spatialGrid":0.01797699999951874,"Bridge":1.0008490000000165}}}}
+{"tick":130,"type":"tactical","data":{"type":"tactical","tick":131,"severity":"Combat","category":"WEAPONS","message":"hostile-frigate-1 fired at hostile-frigate-1","entityId":"hostile-frigate-1","pos":{"x":39994.45980338513,"y":9956.952048891933,"z":0}}}
+{"tick":130,"type":"WeaponFired","data":{"type":"WeaponFired","tick":131,"entityId":"hostile-frigate-1","targetId":"hostile-frigate-1","data":{"weaponProfileId":"76mm-shell","mountIndex":2}}}
+{"tick":131,"type":"state:paused","data":false}
+{"tick":131,"type":"tactical","data":{"type":"tactical","tick":132,"severity":"Info","category":"SENSORS","message":"New detection: hostile-frigate-1-76mm-shell-1778029090518-545 by friendly-f35-1","entityId":"friendly-f35-1","payload":{"targetId":"hostile-frigate-1-76mm-shell-1778029090518-545"}}}
+{"tick":132,"type":"state:paused","data":false}
+{"tick":133,"type":"state:paused","data":false}
+{"tick":134,"type":"state:paused","data":false}
+{"tick":134,"type":"tactical","data":{"type":"tactical","tick":135,"severity":"Info","category":"SENSORS","message":"New detection: swarm-1 by friendly-f35-1-aim-120-1778029090069-112","entityId":"friendly-f35-1-aim-120-1778029090069-112","payload":{"targetId":"swarm-1"}}}
+{"tick":135,"type":"state:paused","data":false}
+{"tick":136,"type":"state:paused","data":false}
+{"tick":137,"type":"state:paused","data":false}
+{"tick":137,"type":"Impact","data":{"type":"Impact","tick":138,"entityId":"hostile-frigate-1-76mm-shell-1778029090518-545","data":{"targetId":"TERRAIN","position":{"x":40548.13051382467,"y":9954.54736301999,"z":0}}}}
+{"tick":138,"type":"state:paused","data":false}
+{"tick":139,"type":"state:paused","data":false}
+{"tick":140,"type":"state:paused","data":false}
+{"tick":140,"type":"metrics:performance","data":{"type":"metrics:performance","tick":140,"data":{"lastMs":2.9291549999998097,"avgMs":17.82601507142856,"maxMs":320.82805099999996,"histogram":[{"limit":0.1,"count":0},{"limit":0.5,"count":0},{"limit":1,"count":0},{"limit":2,"count":39},{"limit":5,"count":78},{"limit":10,"count":1},{"limit":20,"count":0}],"overflow":22,"phases":{"externalCommands":0.0002919999997175182,"Environment":0.06889500000033877,"Doctrine":0.0274039999994784,"Perception":0.7053529999993771,"Lifecycle":0.3030959999996412,"Decision":0.0771230000000287,"Forces":0.06199500000002445,"Physics":0.04443100000025879,"resolveCommands":0.8650029999998878,"spatialGrid":0.008068000000093889,"Bridge":0.7568649999993795}}}}
+{"tick":140,"type":"tactical","data":{"type":"tactical","tick":141,"severity":"Combat","category":"WEAPONS","message":"hostile-frigate-1 fired at hostile-frigate-1","entityId":"hostile-frigate-1","pos":{"x":39992.973309455694,"y":9946.836495628611,"z":0}}}
+{"tick":140,"type":"WeaponFired","data":{"type":"WeaponFired","tick":141,"entityId":"hostile-frigate-1","targetId":"hostile-frigate-1","data":{"weaponProfileId":"76mm-shell","mountIndex":2}}}
+{"tick":141,"type":"state:paused","data":false}
+{"tick":141,"type":"tactical","data":{"type":"tactical","tick":142,"severity":"Info","category":"SENSORS","message":"New detection: hostile-frigate-1-76mm-shell-1778029090552-127 by friendly-f35-1","entityId":"friendly-f35-1","payload":{"targetId":"hostile-frigate-1-76mm-shell-1778029090552-127"}}}
+{"tick":142,"type":"state:paused","data":false}
+{"tick":143,"type":"state:paused","data":false}
+{"tick":143,"type":"tactical","data":{"type":"tactical","tick":144,"severity":"Info","category":"SENSORS","message":"New detection: swarm-2 by friendly-f35-1-aim-120-1778029090069-112","entityId":"friendly-f35-1-aim-120-1778029090069-112","payload":{"targetId":"swarm-2"}}}
+{"tick":144,"type":"state:paused","data":false}
+{"tick":145,"type":"state:paused","data":false}
+{"tick":146,"type":"state:paused","data":false}
+{"tick":147,"type":"state:paused","data":false}
+{"tick":147,"type":"Impact","data":{"type":"Impact","tick":148,"entityId":"hostile-frigate-1-76mm-shell-1778029090552-127","data":{"targetId":"TERRAIN","position":{"x":40549.00351574816,"y":9947.719347174296,"z":0}}}}
+{"tick":148,"type":"state:paused","data":false}
+{"tick":149,"type":"state:paused","data":false}
+{"tick":150,"type":"state:paused","data":false}
+{"tick":150,"type":"metrics:performance","data":{"type":"metrics:performance","tick":150,"data":{"lastMs":2.9364040000000386,"avgMs":16.827308686666655,"maxMs":320.82805099999996,"histogram":[{"limit":0.1,"count":0},{"limit":0.5,"count":0},{"limit":1,"count":0},{"limit":2,"count":40},{"limit":5,"count":87},{"limit":10,"count":1},{"limit":20,"count":0}],"overflow":22,"phases":{"externalCommands":0.0005230000006122282,"Environment":0.04139799999938987,"Doctrine":0.04836100000011356,"Perception":0.8534049999998388,"Lifecycle":0.08297700000002806,"Decision":0.05510099999992235,"Forces":0.061247999999977765,"Physics":0.04766899999958696,"resolveCommands":0.9917869999999311,"spatialGrid":0.00746900000012829,"Bridge":0.7214789999998175}}}}
+{"tick":150,"type":"tactical","data":{"type":"tactical","tick":151,"severity":"Combat","category":"WEAPONS","message":"hostile-frigate-1 fired at hostile-frigate-1","entityId":"hostile-frigate-1","pos":{"x":39991.38863060277,"y":9935.74118192511,"z":0}}}
+{"tick":150,"type":"WeaponFired","data":{"type":"WeaponFired","tick":151,"entityId":"hostile-frigate-1","targetId":"hostile-frigate-1","data":{"weaponProfileId":"76mm-shell","mountIndex":2}}}
+{"tick":151,"type":"state:paused","data":false}
+{"tick":151,"type":"tactical","data":{"type":"tactical","tick":152,"severity":"Info","category":"SENSORS","message":"New detection: hostile-frigate-1-76mm-shell-1778029090581-784 by friendly-f35-1","entityId":"friendly-f35-1","payload":{"targetId":"hostile-frigate-1-76mm-shell-1778029090581-784"}}}
+{"tick":152,"type":"state:paused","data":false}
+{"tick":153,"type":"state:paused","data":false}
+{"tick":154,"type":"state:paused","data":false}
+{"tick":155,"type":"state:paused","data":false}
+{"tick":156,"type":"state:paused","data":false}
+{"tick":157,"type":"state:paused","data":false}
+{"tick":157,"type":"Impact","data":{"type":"Impact","tick":158,"entityId":"hostile-frigate-1-76mm-shell-1778029090581-784","data":{"targetId":"TERRAIN","position":{"x":40545.7050326363,"y":9933.450611180571,"z":0}}}}
+{"tick":158,"type":"state:paused","data":false}
+{"tick":158,"type":"tactical","data":{"type":"tactical","tick":159,"severity":"Info","category":"SENSORS","message":"New detection: friendly-f35-1-aim-120-1778029090069-112 by swarm-1","entityId":"swarm-1","payload":{"targetId":"friendly-f35-1-aim-120-1778029090069-112"}}}
+{"tick":159,"type":"state:paused","data":false}
+{"tick":160,"type":"state:paused","data":false}
+{"tick":160,"type":"metrics:performance","data":{"type":"metrics:performance","tick":160,"data":{"lastMs":2.734954000000471,"avgMs":15.9166685,"maxMs":320.82805099999996,"histogram":[{"limit":0.1,"count":0},{"limit":0.5,"count":0},{"limit":1,"count":0},{"limit":2,"count":42},{"limit":5,"count":95},{"limit":10,"count":1},{"limit":20,"count":0}],"overflow":22,"phases":{"externalCommands":0.000652000000627595,"Environment":0.05498600000009901,"Doctrine":0.05257400000027701,"Perception":0.8092179999994187,"Lifecycle":0.0594970000001922,"Decision":0.14050899999983812,"Forces":0.03832400000010239,"Physics":0.03798000000006141,"resolveCommands":0.6905059999999139,"spatialGrid":0.007641000000148779,"Bridge":0.8219200000003184}}}}
+{"tick":160,"type":"tactical","data":{"type":"tactical","tick":161,"severity":"Combat","category":"WEAPONS","message":"hostile-frigate-1 fired at hostile-frigate-1","entityId":"hostile-frigate-1","pos":{"x":39989.76252145468,"y":9923.762161371264,"z":0}}}
+{"tick":160,"type":"WeaponFired","data":{"type":"WeaponFired","tick":161,"entityId":"hostile-frigate-1","targetId":"hostile-frigate-1","data":{"weaponProfileId":"76mm-shell","mountIndex":2}}}
+{"tick":161,"type":"state:paused","data":false}
+{"tick":161,"type":"tactical","data":{"type":"tactical","tick":162,"severity":"Info","category":"SENSORS","message":"New detection: hostile-frigate-1-76mm-shell-1778029090611-578 by friendly-f35-1","entityId":"friendly-f35-1","payload":{"targetId":"hostile-frigate-1-76mm-shell-1778029090611-578"}}}
+{"tick":162,"type":"state:paused","data":false}
+{"tick":163,"type":"state:paused","data":false}
+{"tick":164,"type":"state:paused","data":false}
+{"tick":165,"type":"state:paused","data":false}
+{"tick":166,"type":"state:paused","data":false}
+{"tick":167,"type":"state:paused","data":false}
+{"tick":167,"type":"Impact","data":{"type":"Impact","tick":168,"entityId":"hostile-frigate-1-76mm-shell-1778029090611-578","data":{"targetId":"TERRAIN","position":{"x":40544.58199499476,"y":9921.831667549452,"z":0}}}}
+{"tick":167,"type":"tactical","data":{"type":"tactical","tick":168,"severity":"Info","category":"SENSORS","message":"New detection: friendly-f35-1-aim-120-1778029090069-112 by swarm-2","entityId":"swarm-2","payload":{"targetId":"friendly-f35-1-aim-120-1778029090069-112"}}}
+{"tick":168,"type":"state:paused","data":false}
+{"tick":168,"type":"tactical","data":{"type":"tactical","tick":169,"severity":"Info","category":"SENSORS","message":"New detection: friendly-f35-1 by uss-arleigh-burke-sm-6-1778029088945-706","entityId":"uss-arleigh-burke-sm-6-1778029088945-706","payload":{"targetId":"friendly-f35-1"}}}
+{"tick":168,"type":"tactical","data":{"type":"tactical","tick":169,"severity":"Info","category":"SENSORS","message":"New detection: friendly-f35-1 by uss-arleigh-burke-sm-6-1778029088947-884","entityId":"uss-arleigh-burke-sm-6-1778029088947-884","payload":{"targetId":"friendly-f35-1"}}}
+{"tick":168,"type":"tactical","data":{"type":"tactical","tick":169,"severity":"Info","category":"SENSORS","message":"New detection: friendly-f35-1 by uss-arleigh-burke-sm-6-1778029088949-203","entityId":"uss-arleigh-burke-sm-6-1778029088949-203","payload":{"targetId":"friendly-f35-1"}}}
+{"tick":169,"type":"state:paused","data":false}
+{"tick":170,"type":"state:paused","data":false}
+{"tick":170,"type":"metrics:performance","data":{"type":"metrics:performance","tick":170,"data":{"lastMs":2.317895000000135,"avgMs":15.223273270588237,"maxMs":320.82805099999996,"histogram":[{"limit":0.1,"count":0},{"limit":0.5,"count":0},{"limit":1,"count":0},{"limit":2,"count":42},{"limit":5,"count":104},{"limit":10,"count":1},{"limit":20,"count":1}],"overflow":22,"phases":{"externalCommands":0.000398000000132015,"Environment":0.03165699999954086,"Doctrine":0.029856000000108907,"Perception":0.7233529999994062,"Lifecycle":0.04856999999992695,"Decision":0.03089399999953457,"Forces":0.04062100000010105,"Physics":0.06317799999942508,"resolveCommands":0.6493419999997059,"spatialGrid":0.008935000000747095,"Bridge":0.6736430000000837}}}}
+{"tick":170,"type":"tactical","data":{"type":"tactical","tick":171,"severity":"Combat","category":"WEAPONS","message":"hostile-frigate-1 fired at hostile-frigate-1","entityId":"hostile-frigate-1","pos":{"x":39988.15520854794,"y":9910.99207837627,"z":0}}}
+{"tick":170,"type":"WeaponFired","data":{"type":"WeaponFired","tick":171,"entityId":"hostile-frigate-1","targetId":"hostile-frigate-1","data":{"weaponProfileId":"76mm-shell","mountIndex":2}}}
+{"tick":171,"type":"state:paused","data":false}
+{"tick":171,"type":"tactical","data":{"type":"tactical","tick":172,"severity":"Info","category":"SENSORS","message":"New detection: hostile-frigate-1-76mm-shell-1778029090662-732 by friendly-f35-1","entityId":"friendly-f35-1","payload":{"targetId":"hostile-frigate-1-76mm-shell-1778029090662-732"}}}
+{"tick":172,"type":"state:paused","data":false}
+{"tick":173,"type":"state:paused","data":false}
+{"tick":174,"type":"state:paused","data":false}
+{"tick":175,"type":"state:paused","data":false}
+{"tick":176,"type":"state:paused","data":false}
+{"tick":177,"type":"state:paused","data":false}
+{"tick":177,"type":"Impact","data":{"type":"Impact","tick":178,"entityId":"hostile-frigate-1-76mm-shell-1778029090662-732","data":{"targetId":"TERRAIN","position":{"x":40541.76201796828,"y":9910.47134584279,"z":0}}}}
+{"tick":178,"type":"state:paused","data":false}
+{"tick":179,"type":"state:paused","data":false}
+{"tick":180,"type":"state:paused","data":false}
+{"tick":180,"type":"metrics:performance","data":{"type":"metrics:performance","tick":180,"data":{"lastMs":3.6205669999999373,"avgMs":14.50374194444445,"maxMs":320.82805099999996,"histogram":[{"limit":0.1,"count":0},{"limit":0.5,"count":0},{"limit":1,"count":0},{"limit":2,"count":45},{"limit":5,"count":111},{"limit":10,"count":1},{"limit":20,"count":1}],"overflow":22,"phases":{"externalCommands":0.0003530000003593159,"Environment":0.034813000000212924,"Doctrine":0.029249999999592546,"Perception":0.7659720000001471,"Lifecycle":0.054033999999774096,"Decision":0.12505000000055588,"Forces":0.04785699999956705,"Physics":0.04393600000003062,"resolveCommands":1.0068520000004355,"spatialGrid":0.015153999999711232,"Bridge":1.4834399999999732}}}}
+{"tick":180,"type":"tactical","data":{"type":"tactical","tick":181,"severity":"Combat","category":"WEAPONS","message":"hostile-frigate-1 fired at hostile-frigate-1","entityId":"hostile-frigate-1","pos":{"x":39986.63040240509,"y":9897.520070656888,"z":0}}}
+{"tick":180,"type":"Impact","data":{"type":"Impact","tick":181,"entityId":"friendly-f35-1-aim-120-1778029089248-710","data":{"targetId":"TERRAIN","position":{"x":20422.601244599275,"y":-7237.9978602423835,"z":0}}}}
+{"tick":180,"type":"Impact","data":{"type":"Impact","tick":181,"entityId":"friendly-f35-1-aim-120-1778029089249-639","data":{"targetId":"TERRAIN","position":{"x":20421.96225035349,"y":-7236.765266554854,"z":0}}}}
+{"tick":180,"type":"WeaponFired","data":{"type":"WeaponFired","tick":181,"entityId":"hostile-frigate-1","targetId":"hostile-frigate-1","data":{"weaponProfileId":"76mm-shell","mountIndex":2}}}
+{"tick":181,"type":"state:paused","data":false}
+{"tick":181,"type":"tactical","data":{"type":"tactical","tick":182,"severity":"Info","category":"SENSORS","message":"New detection: hostile-frigate-1-76mm-shell-1778029090686-602 by friendly-f35-1","entityId":"friendly-f35-1","payload":{"targetId":"hostile-frigate-1-76mm-shell-1778029090686-602"}}}
+{"tick":182,"type":"state:paused","data":false}
+{"tick":183,"type":"state:paused","data":false}
+{"tick":184,"type":"state:paused","data":false}
+{"tick":185,"type":"state:paused","data":false}
+{"tick":186,"type":"state:paused","data":false}
+{"tick":187,"type":"state:paused","data":false}
+{"tick":187,"type":"Impact","data":{"type":"Impact","tick":188,"entityId":"hostile-frigate-1-76mm-shell-1778029090686-602","data":{"targetId":"TERRAIN","position":{"x":40540.82653063362,"y":9896.868498302618,"z":0}}}}
+{"tick":188,"type":"state:paused","data":false}
+{"tick":189,"type":"state:paused","data":false}
+{"tick":189,"type":"Impact","data":{"type":"Impact","tick":190,"entityId":"friendly-f35-1-aim-120-1778029089250-328","data":{"targetId":"TERRAIN","position":{"x":22559.334159837705,"y":-7160.159227292491,"z":0}}}}
+{"tick":190,"type":"state:paused","data":false}
+{"tick":190,"type":"metrics:performance","data":{"type":"metrics:performance","tick":190,"data":{"lastMs":3.1726330000001326,"avgMs":13.867795957894742,"maxMs":320.82805099999996,"histogram":[{"limit":0.1,"count":0},{"limit":0.5,"count":0},{"limit":1,"count":0},{"limit":2,"count":47},{"limit":5,"count":119},{"limit":10,"count":1},{"limit":20,"count":1}],"overflow":22,"phases":{"externalCommands":0.0007430000005115289,"Environment":0.03700399999979709,"Doctrine":0.030353000000104657,"Perception":0.6974840000002587,"Lifecycle":0.22911299999941548,"Decision":0.04631200000039826,"Forces":0.06782599999951344,"Physics":0.05025200000000041,"resolveCommands":1.0610070000002452,"spatialGrid":0.009068000000297616,"Bridge":0.9271699999999328}}}}
+{"tick":190,"type":"tactical","data":{"type":"tactical","tick":191,"severity":"Combat","category":"WEAPONS","message":"hostile-frigate-1 fired at hostile-frigate-1","entityId":"hostile-frigate-1","pos":{"x":39985.25532199679,"y":9883.431644222139,"z":0}}}
+{"tick":190,"type":"WeaponFired","data":{"type":"WeaponFired","tick":191,"entityId":"hostile-frigate-1","targetId":"hostile-frigate-1","data":{"weaponProfileId":"76mm-shell","mountIndex":2}}}
+{"tick":191,"type":"state:paused","data":false}
+{"tick":191,"type":"tactical","data":{"type":"tactical","tick":192,"severity":"Info","category":"SENSORS","message":"New detection: hostile-frigate-1-76mm-shell-1778029090717-745 by friendly-f35-1","entityId":"friendly-f35-1","payload":{"targetId":"hostile-frigate-1-76mm-shell-1778029090717-745"}}}
+{"tick":192,"type":"state:paused","data":false}
+{"tick":193,"type":"state:paused","data":false}
+{"tick":194,"type":"state:paused","data":false}
+{"tick":195,"type":"state:paused","data":false}
+{"tick":196,"type":"state:paused","data":false}
+{"tick":197,"type":"state:paused","data":false}
+{"tick":197,"type":"Impact","data":{"type":"Impact","tick":198,"entityId":"hostile-frigate-1-76mm-shell-1778029090717-745","data":{"targetId":"TERRAIN","position":{"x":40542.44427508875,"y":9880.976894536005,"z":0}}}}
+{"tick":198,"type":"state:paused","data":false}
+{"tick":199,"type":"state:paused","data":false}
+{"tick":199,"type":"tactical","data":{"type":"tactical","tick":200,"severity":"Combat","category":"WEAPONS","message":"uss-arleigh-burke fired at hostile-frigate-1","entityId":"uss-arleigh-burke","pos":{"x":10.42696852620482,"y":62.765124094486076,"z":0}}}
+{"tick":199,"type":"WeaponFired","data":{"type":"WeaponFired","tick":200,"entityId":"uss-arleigh-burke","targetId":"hostile-frigate-1","data":{"weaponProfileId":"harpoon","mountIndex":1}}}
+{"tick":200,"type":"state:paused","data":false}
+{"tick":200,"type":"metrics:performance","data":{"type":"metrics:performance","tick":200,"data":{"lastMs":6.328783999999359,"avgMs":13.291613525,"maxMs":320.82805099999996,"histogram":[{"limit":0.1,"count":0},{"limit":0.5,"count":0},{"limit":1,"count":0},{"limit":2,"count":54},{"limit":5,"count":121},{"limit":10,"count":2},{"limit":20,"count":1}],"overflow":22,"phases":{"externalCommands":0.00044100000013713725,"Environment":0.0658610000000408,"Doctrine":0.03173100000003615,"Perception":0.6457229999996343,"Lifecycle":0.1924010000002454,"Decision":0.057308000000375614,"Forces":0.0292779999999766,"Physics":0.02879899999970803,"resolveCommands":4.43952199999967,"spatialGrid":0.010568000000603206,"Bridge":0.7973430000001827}}}}
+{"tick":200,"type":"tactical","data":{"type":"tactical","tick":201,"severity":"Combat","category":"WEAPONS","message":"hostile-frigate-1 fired at hostile-frigate-1","entityId":"hostile-frigate-1","pos":{"x":39984.100731593615,"y":9868.808515404455,"z":0}}}
+{"tick":200,"type":"WeaponFired","data":{"type":"WeaponFired","tick":201,"entityId":"hostile-frigate-1","targetId":"hostile-frigate-1","data":{"weaponProfileId":"76mm-shell","mountIndex":2}}}
+{"tick":201,"type":"state:paused","data":false}
+{"tick":201,"type":"tactical","data":{"type":"tactical","tick":202,"severity":"Info","category":"SENSORS","message":"New detection: hostile-frigate-1-76mm-shell-1778029090748-432 by friendly-f35-1","entityId":"friendly-f35-1","payload":{"targetId":"hostile-frigate-1-76mm-shell-1778029090748-432"}}}
+{"tick":201,"type":"tactical","data":{"type":"tactical","tick":202,"severity":"Info","category":"SENSORS","message":"New detection: uss-arleigh-burke-harpoon-1778029090743-834 by hostile-frigate-1","entityId":"hostile-frigate-1","payload":{"targetId":"uss-arleigh-burke-harpoon-1778029090743-834"}}}
+{"tick":201,"type":"tactical","data":{"type":"tactical","tick":202,"severity":"Info","category":"SENSORS","message":"New detection: uss-arleigh-burke by uss-arleigh-burke-harpoon-1778029090743-834","entityId":"uss-arleigh-burke-harpoon-1778029090743-834","payload":{"targetId":"uss-arleigh-burke"}}}
+{"tick":202,"type":"state:paused","data":false}
+{"tick":203,"type":"state:paused","data":false}
+{"tick":204,"type":"state:paused","data":false}
+{"tick":205,"type":"state:paused","data":false}
+{"tick":206,"type":"state:paused","data":false}
+{"tick":207,"type":"state:paused","data":false}
+{"tick":207,"type":"Impact","data":{"type":"Impact","tick":208,"entityId":"hostile-frigate-1-76mm-shell-1778029090748-432","data":{"targetId":"TERRAIN","position":{"x":40537.70831176031,"y":9869.497905016844,"z":0}}}}
+{"tick":208,"type":"state:paused","data":false}
+{"tick":209,"type":"state:paused","data":false}
+{"tick":210,"type":"state:paused","data":false}
+{"tick":210,"type":"metrics:performance","data":{"type":"metrics:performance","tick":210,"data":{"lastMs":2.547392999999829,"avgMs":12.758740123809524,"maxMs":320.82805099999996,"histogram":[{"limit":0.1,"count":0},{"limit":0.5,"count":0},{"limit":1,"count":0},{"limit":2,"count":57},{"limit":5,"count":128},{"limit":10,"count":2},{"limit":20,"count":1}],"overflow":22,"phases":{"externalCommands":0.0004079999998793937,"Environment":0.032444999999825086,"Doctrine":0.033739999999852444,"Perception":0.9558209999995597,"Lifecycle":0.07687799999985145,"Decision":0.04506400000082067,"Forces":0.03429899999991903,"Physics":0.032215000000178406,"resolveCommands":0.6065230000003794,"spatialGrid":0.008973999999398075,"Bridge":0.7065510000002178}}}}
+{"tick":210,"type":"tactical","data":{"type":"tactical","tick":211,"severity":"Combat","category":"WEAPONS","message":"hostile-frigate-1 fired at hostile-frigate-1","entityId":"hostile-frigate-1","pos":{"x":39983.24089321123,"y":9853.728304732314,"z":0}}}
+{"tick":210,"type":"WeaponFired","data":{"type":"WeaponFired","tick":211,"entityId":"hostile-frigate-1","targetId":"hostile-frigate-1","data":{"weaponProfileId":"76mm-shell","mountIndex":2}}}
+{"tick":211,"type":"state:paused","data":false}
+{"tick":211,"type":"tactical","data":{"type":"tactical","tick":212,"severity":"Info","category":"SENSORS","message":"New detection: hostile-frigate-1-76mm-shell-1778029090776-950 by friendly-f35-1","entityId":"friendly-f35-1","payload":{"targetId":"hostile-frigate-1-76mm-shell-1778029090776-950"}}}
+{"tick":212,"type":"state:paused","data":false}
+{"tick":213,"type":"state:paused","data":false}
+{"tick":214,"type":"state:paused","data":false}
+{"tick":215,"type":"state:paused","data":false}
+{"tick":216,"type":"state:paused","data":false}
+{"tick":217,"type":"state:paused","data":false}
+{"tick":217,"type":"Impact","data":{"type":"Impact","tick":218,"entityId":"hostile-frigate-1-76mm-shell-1778029090776-950","data":{"targetId":"TERRAIN","position":{"x":40538.874974772676,"y":9855.13094072848,"z":0}}}}
+{"tick":218,"type":"state:paused","data":false}
+{"tick":219,"type":"state:paused","data":false}
+{"tick":220,"type":"state:paused","data":false}
+{"tick":220,"type":"metrics:performance","data":{"type":"metrics:performance","tick":220,"data":{"lastMs":2.7964429999992717,"avgMs":12.29042606818182,"maxMs":320.82805099999996,"histogram":[{"limit":0.1,"count":0},{"limit":0.5,"count":0},{"limit":1,"count":0},{"limit":2,"count":58},{"limit":5,"count":137},{"limit":10,"count":2},{"limit":20,"count":1}],"overflow":22,"phases":{"externalCommands":0.00027599999975791434,"Environment":0.033250000000407454,"Doctrine":0.052510999999867636,"Perception":0.8325000000004366,"Lifecycle":0.06861800000024232,"Decision":0.17750100000012026,"Forces":0.044377000000167754,"Physics":0.055296999999882246,"resolveCommands":0.5640880000000834,"spatialGrid":0.007955000000038126,"Bridge":0.9443540000002031}}}}
+{"tick":220,"type":"tactical","data":{"type":"tactical","tick":221,"severity":"Combat","category":"WEAPONS","message":"hostile-frigate-1 fired at hostile-frigate-1","entityId":"hostile-frigate-1","pos":{"x":39982.73302654453,"y":9838.241740369958,"z":0}}}
+{"tick":220,"type":"WeaponFired","data":{"type":"WeaponFired","tick":221,"entityId":"hostile-frigate-1","targetId":"hostile-frigate-1","data":{"weaponProfileId":"76mm-shell","mountIndex":2}}}
+{"tick":221,"type":"state:paused","data":false}
+{"tick":221,"type":"tactical","data":{"type":"tactical","tick":222,"severity":"Info","category":"SENSORS","message":"New detection: hostile-frigate-1-76mm-shell-1778029090808-822 by friendly-f35-1","entityId":"friendly-f35-1","payload":{"targetId":"hostile-frigate-1-76mm-shell-1778029090808-822"}}}
+{"tick":222,"type":"state:paused","data":false}
+{"tick":223,"type":"state:paused","data":false}
+{"tick":224,"type":"state:paused","data":false}
+{"tick":225,"type":"state:paused","data":false}
+{"tick":226,"type":"state:paused","data":false}
+{"tick":227,"type":"state:paused","data":false}
+{"tick":227,"type":"Impact","data":{"type":"Impact","tick":228,"entityId":"hostile-frigate-1-76mm-shell-1778029090808-822","data":{"targetId":"TERRAIN","position":{"x":40539.558108042096,"y":9838.071227042514,"z":0}}}}
+{"tick":228,"type":"state:paused","data":false}
+{"tick":229,"type":"state:paused","data":false}
+{"tick":230,"type":"state:paused","data":false}
+{"tick":230,"type":"metrics:performance","data":{"type":"metrics:performance","tick":230,"data":{"lastMs":2.120444999999563,"avgMs":11.842834026086955,"maxMs":320.82805099999996,"histogram":[{"limit":0.1,"count":0},{"limit":0.5,"count":0},{"limit":1,"count":0},{"limit":2,"count":64},{"limit":5,"count":141},{"limit":10,"count":2},{"limit":20,"count":1}],"overflow":22,"phases":{"externalCommands":0.000315000000227883,"Environment":0.02874100000008184,"Doctrine":0.026260999999976775,"Perception":0.6365599999999176,"Lifecycle":0.04828799999995681,"Decision":0.023597999999765307,"Forces":0.04726900000059686,"Physics":0.026898000000073807,"resolveCommands":0.5235949999996592,"spatialGrid":0.00641399999949499,"Bridge":0.7417779999996128}}}}
+{"tick":230,"type":"tactical","data":{"type":"tactical","tick":231,"severity":"Combat","category":"WEAPONS","message":"hostile-frigate-1 fired at hostile-frigate-1","entityId":"hostile-frigate-1","pos":{"x":39982.591908633935,"y":9822.347565592725,"z":0}}}
+{"tick":230,"type":"WeaponFired","data":{"type":"WeaponFired","tick":231,"entityId":"hostile-frigate-1","targetId":"hostile-frigate-1","data":{"weaponProfileId":"76mm-shell","mountIndex":2}}}
+{"tick":231,"type":"state:paused","data":false}
+{"tick":231,"type":"tactical","data":{"type":"tactical","tick":232,"severity":"Info","category":"SENSORS","message":"New detection: hostile-frigate-1-76mm-shell-1778029090834-815 by friendly-f35-1","entityId":"friendly-f35-1","payload":{"targetId":"hostile-frigate-1-76mm-shell-1778029090834-815"}}}
+{"tick":232,"type":"state:paused","data":false}
+{"tick":233,"type":"state:paused","data":false}
+{"tick":234,"type":"state:paused","data":false}
+{"tick":235,"type":"state:paused","data":false}
+{"tick":236,"type":"state:paused","data":false}
+{"tick":237,"type":"state:paused","data":false}
+{"tick":237,"type":"Impact","data":{"type":"Impact","tick":238,"entityId":"friendly-f35-1-aim-120-1778029090069-112","data":{"targetId":"TERRAIN","position":{"x":22308.42437759582,"y":-7649.465048166716,"z":0}}}}
+{"tick":237,"type":"Impact","data":{"type":"Impact","tick":238,"entityId":"hostile-frigate-1-76mm-shell-1778029090834-815","data":{"targetId":"TERRAIN","position":{"x":40536.66796226259,"y":9821.559739241313,"z":0}}}}
+{"tick":238,"type":"state:paused","data":false}
+{"tick":239,"type":"state:paused","data":false}
+{"tick":240,"type":"state:paused","data":false}
+{"tick":240,"type":"metrics:performance","data":{"type":"metrics:performance","tick":240,"data":{"lastMs":2.317309000000023,"avgMs":11.433916062499996,"maxMs":320.82805099999996,"histogram":[{"limit":0.1,"count":0},{"limit":0.5,"count":0},{"limit":1,"count":0},{"limit":2,"count":70},{"limit":5,"count":145},{"limit":10,"count":2},{"limit":20,"count":1}],"overflow":22,"phases":{"externalCommands":0.0003209999995306134,"Environment":0.02727099999992788,"Doctrine":0.02587299999959214,"Perception":0.5260099999995873,"Lifecycle":0.1765850000001592,"Decision":0.03244199999971897,"Forces":0.031692999999904714,"Physics":0.029217000000244298,"resolveCommands":0.7318720000002941,"spatialGrid":0.006935000000339642,"Bridge":0.7171180000004824}}}}
+{"tick":240,"type":"tactical","data":{"type":"tactical","tick":241,"severity":"Combat","category":"WEAPONS","message":"hostile-frigate-1 fired at hostile-frigate-1","entityId":"hostile-frigate-1","pos":{"x":39982.827530821414,"y":9806.037077082732,"z":0}}}
+{"tick":240,"type":"WeaponFired","data":{"type":"WeaponFired","tick":241,"entityId":"hostile-frigate-1","targetId":"hostile-frigate-1","data":{"weaponProfileId":"76mm-shell","mountIndex":2}}}
+{"tick":241,"type":"state:paused","data":false}
+{"tick":241,"type":"tactical","data":{"type":"tactical","tick":242,"severity":"Info","category":"SENSORS","message":"New detection: hostile-frigate-1-76mm-shell-1778029090862-771 by friendly-f35-1","entityId":"friendly-f35-1","payload":{"targetId":"hostile-frigate-1-76mm-shell-1778029090862-771"}}}
+{"tick":242,"type":"state:paused","data":false}
+{"tick":243,"type":"state:paused","data":false}
+{"tick":244,"type":"state:paused","data":false}
+{"tick":245,"type":"state:paused","data":false}
+{"tick":246,"type":"state:paused","data":false}
+{"tick":247,"type":"state:paused","data":false}
+{"tick":247,"type":"Impact","data":{"type":"Impact","tick":248,"entityId":"hostile-frigate-1-76mm-shell-1778029090862-771","data":{"targetId":"TERRAIN","position":{"x":40537.50043726387,"y":9805.925242041767,"z":0}}}}
+{"tick":248,"type":"state:paused","data":false}
+{"tick":249,"type":"state:paused","data":false}
+{"tick":250,"type":"state:paused","data":false}
+{"tick":250,"type":"metrics:performance","data":{"type":"metrics:performance","tick":250,"data":{"lastMs":2.7411510000001726,"avgMs":11.058906967999993,"maxMs":320.82805099999996,"histogram":[{"limit":0.1,"count":0},{"limit":0.5,"count":0},{"limit":1,"count":0},{"limit":2,"count":76},{"limit":5,"count":149},{"limit":10,"count":2},{"limit":20,"count":1}],"overflow":22,"phases":{"externalCommands":0.0003529999994498212,"Environment":0.03130799999962619,"Doctrine":0.03951500000039232,"Perception":0.5922479999999268,"Lifecycle":0.04706200000055105,"Decision":0.02595999999994092,"Forces":0.02611799999976938,"Physics":0.026310000000194123,"resolveCommands":0.6698200000000725,"spatialGrid":0.01869799999985844,"Bridge":1.2484969999995883}}}}
+{"tick":250,"type":"tactical","data":{"type":"tactical","tick":251,"severity":"Combat","category":"WEAPONS","message":"hostile-frigate-1 fired at hostile-frigate-1","entityId":"hostile-frigate-1","pos":{"x":39983.44777122029,"y":9789.29786426908,"z":0}}}
+{"tick":250,"type":"WeaponFired","data":{"type":"WeaponFired","tick":251,"entityId":"hostile-frigate-1","targetId":"hostile-frigate-1","data":{"weaponProfileId":"76mm-shell","mountIndex":2}}}
+{"tick":251,"type":"state:paused","data":false}
+{"tick":251,"type":"tactical","data":{"type":"tactical","tick":252,"severity":"Info","category":"SENSORS","message":"New detection: hostile-frigate-1-76mm-shell-1778029090892-132 by friendly-f35-1","entityId":"friendly-f35-1","payload":{"targetId":"hostile-frigate-1-76mm-shell-1778029090892-132"}}}
+{"tick":252,"type":"state:paused","data":false}
+{"tick":253,"type":"state:paused","data":false}
+{"tick":254,"type":"state:paused","data":false}
+{"tick":255,"type":"state:paused","data":false}
+{"tick":256,"type":"state:paused","data":false}
+{"tick":257,"type":"state:paused","data":false}
+{"tick":257,"type":"Impact","data":{"type":"Impact","tick":258,"entityId":"hostile-frigate-1-76mm-shell-1778029090892-132","data":{"targetId":"TERRAIN","position":{"x":40539.62757414446,"y":9789.684371891075,"z":0}}}}
+{"tick":258,"type":"state:paused","data":false}
+{"tick":259,"type":"state:paused","data":false}
+{"tick":260,"type":"state:paused","data":false}
+{"tick":260,"type":"metrics:performance","data":{"type":"metrics:performance","tick":260,"data":{"lastMs":1.9534640000001673,"avgMs":10.705168249999998,"maxMs":320.82805099999996,"histogram":[{"limit":0.1,"count":0},{"limit":0.5,"count":0},{"limit":1,"count":0},{"limit":2,"count":83},{"limit":5,"count":152},{"limit":10,"count":2},{"limit":20,"count":1}],"overflow":22,"phases":{"externalCommands":0.0006819999998697313,"Environment":0.0442510000002585,"Doctrine":0.03457999999955064,"Perception":0.6199569999998857,"Lifecycle":0.05081700000027922,"Decision":0.035227999999733584,"Forces":0.03837500000008731,"Physics":0.028125000000727596,"resolveCommands":0.4629639999993742,"spatialGrid":0.005685999999514024,"Bridge":0.6156029999992825}}}}
+{"tick":260,"type":"tactical","data":{"type":"tactical","tick":261,"severity":"Combat","category":"WEAPONS","message":"hostile-frigate-1 fired at hostile-frigate-1","entityId":"hostile-frigate-1","pos":{"x":39984.44999589863,"y":9772.10682763806,"z":0}}}
+{"tick":260,"type":"WeaponFired","data":{"type":"WeaponFired","tick":261,"entityId":"hostile-frigate-1","targetId":"hostile-frigate-1","data":{"weaponProfileId":"76mm-shell","mountIndex":2}}}
+{"tick":261,"type":"state:paused","data":false}
+{"tick":261,"type":"tactical","data":{"type":"tactical","tick":262,"severity":"Info","category":"SENSORS","message":"New detection: hostile-frigate-1-76mm-shell-1778029090977-83 by friendly-f35-1","entityId":"friendly-f35-1","payload":{"targetId":"hostile-frigate-1-76mm-shell-1778029090977-83"}}}
+{"tick":262,"type":"state:paused","data":false}
+{"tick":263,"type":"state:paused","data":false}
+{"tick":264,"type":"state:paused","data":false}
+{"tick":265,"type":"state:paused","data":false}
+{"tick":266,"type":"state:paused","data":false}
+{"tick":267,"type":"state:paused","data":false}
+{"tick":267,"type":"Impact","data":{"type":"Impact","tick":268,"entityId":"hostile-frigate-1-76mm-shell-1778029090977-83","data":{"targetId":"TERRAIN","position":{"x":40538.151027670334,"y":9770.496927729197,"z":0}}}}
+{"tick":268,"type":"state:paused","data":false}
+{"tick":269,"type":"state:paused","data":false}
+{"tick":270,"type":"state:paused","data":false}
+{"tick":270,"type":"metrics:performance","data":{"type":"metrics:performance","tick":270,"data":{"lastMs":1.7976399999997739,"avgMs":10.417599203703704,"maxMs":320.82805099999996,"histogram":[{"limit":0.1,"count":0},{"limit":0.5,"count":0},{"limit":1,"count":0},{"limit":2,"count":90},{"limit":5,"count":154},{"limit":10,"count":2},{"limit":20,"count":2}],"overflow":22,"phases":{"externalCommands":0.0002749999994193786,"Environment":0.028570000000399887,"Doctrine":0.027833000000100583,"Perception":0.5194619999992938,"Lifecycle":0.04395199999999022,"Decision":0.027396000000408094,"Forces":0.02289699999982986,"Physics":0.024631999999655818,"resolveCommands":0.5308840000006967,"spatialGrid":0.006687999999485328,"Bridge":0.5547959999994418}}}}
+{"tick":270,"type":"tactical","data":{"type":"tactical","tick":271,"severity":"Combat","category":"WEAPONS","message":"hostile-frigate-1 fired at hostile-frigate-1","entityId":"hostile-frigate-1","pos":{"x":39985.82863269599,"y":9754.437640687356,"z":0}}}
+{"tick":270,"type":"WeaponFired","data":{"type":"WeaponFired","tick":271,"entityId":"hostile-frigate-1","targetId":"hostile-frigate-1","data":{"weaponProfileId":"76mm-shell","mountIndex":2}}}
+{"tick":271,"type":"state:paused","data":false}
+{"tick":271,"type":"tactical","data":{"type":"tactical","tick":272,"severity":"Info","category":"SENSORS","message":"New detection: hostile-frigate-1-76mm-shell-1778029091006-984 by friendly-f35-1","entityId":"friendly-f35-1","payload":{"targetId":"hostile-frigate-1-76mm-shell-1778029091006-984"}}}
+{"tick":272,"type":"state:paused","data":false}
+{"tick":273,"type":"state:paused","data":false}
+{"tick":274,"type":"state:paused","data":false}
+{"tick":275,"type":"state:paused","data":false}
+{"tick":276,"type":"state:paused","data":false}
+{"tick":277,"type":"state:paused","data":false}
+{"tick":277,"type":"Impact","data":{"type":"Impact","tick":278,"entityId":"hostile-frigate-1-76mm-shell-1778029091006-984","data":{"targetId":"TERRAIN","position":{"x":40540.71281765729,"y":9755.192373181504,"z":0}}}}
+{"tick":278,"type":"state:paused","data":false}
+{"tick":278,"type":"tactical","data":{"type":"tactical","tick":279,"severity":"Info","category":"SENSORS","message":"New detection: friendly-f35-1 by uss-arleigh-burke","entityId":"uss-arleigh-burke","payload":{"targetId":"friendly-f35-1"}}}
+{"tick":278,"type":"tactical","data":{"type":"tactical","tick":279,"severity":"Info","category":"SENSORS","message":"New detection: uss-arleigh-burke by friendly-f35-1","entityId":"friendly-f35-1","payload":{"targetId":"uss-arleigh-burke"}}}
+{"tick":279,"type":"state:paused","data":false}
+{"tick":280,"type":"state:paused","data":false}
+{"tick":280,"type":"metrics:performance","data":{"type":"metrics:performance","tick":280,"data":{"lastMs":1.708926999999676,"avgMs":10.440664075000006,"maxMs":320.82805099999996,"histogram":[{"limit":0.1,"count":0},{"limit":0.5,"count":0},{"limit":1,"count":0},{"limit":2,"count":96},{"limit":5,"count":157},{"limit":10,"count":2},{"limit":20,"count":2}],"overflow":23,"phases":{"externalCommands":0.00032300000020768493,"Environment":0.028881999999612162,"Doctrine":0.02933000000030006,"Perception":0.4866540000002715,"Lifecycle":0.0783080000001064,"Decision":0.017546000000038475,"Forces":0.020254000000022643,"Physics":0.03411199999936798,"resolveCommands":0.41554999999971187,"spatialGrid":0.0054139999992912635,"Bridge":0.5822629999993296}}}}
+{"tick":280,"type":"tactical","data":{"type":"tactical","tick":281,"severity":"Combat","category":"WEAPONS","message":"hostile-frigate-1 fired at hostile-frigate-1","entityId":"hostile-frigate-1","pos":{"x":39987.577405779004,"y":9736.26289918079,"z":0}}}
+{"tick":280,"type":"WeaponFired","data":{"type":"WeaponFired","tick":281,"entityId":"hostile-frigate-1","targetId":"hostile-frigate-1","data":{"weaponProfileId":"76mm-shell","mountIndex":2}}}
+{"tick":281,"type":"state:paused","data":false}
+{"tick":281,"type":"tactical","data":{"type":"tactical","tick":282,"severity":"Info","category":"SENSORS","message":"New detection: hostile-frigate-1-76mm-shell-1778029091267-127 by friendly-f35-1","entityId":"friendly-f35-1","payload":{"targetId":"hostile-frigate-1-76mm-shell-1778029091267-127"}}}
+{"tick":282,"type":"state:paused","data":false}
+{"tick":283,"type":"state:paused","data":false}
+{"tick":284,"type":"state:paused","data":false}
+{"tick":285,"type":"state:paused","data":false}
+{"tick":286,"type":"state:paused","data":false}
+{"tick":287,"type":"state:paused","data":false}
+{"tick":287,"type":"Impact","data":{"type":"Impact","tick":288,"entityId":"hostile-frigate-1-76mm-shell-1778029091267-127","data":{"targetId":"TERRAIN","position":{"x":40541.63362649372,"y":9734.212864794024,"z":0}}}}
+{"tick":288,"type":"state:paused","data":false}
+{"tick":289,"type":"state:paused","data":false}
+{"tick":290,"type":"state:paused","data":false}
+{"tick":290,"type":"metrics:performance","data":{"type":"metrics:performance","tick":290,"data":{"lastMs":2.4111779999993814,"avgMs":10.1430418137931,"maxMs":320.82805099999996,"histogram":[{"limit":0.1,"count":0},{"limit":0.5,"count":0},{"limit":1,"count":0},{"limit":2,"count":103},{"limit":5,"count":160},{"limit":10,"count":2},{"limit":20,"count":2}],"overflow":23,"phases":{"externalCommands":0.0003440000000409782,"Environment":0.04437899999993533,"Doctrine":0.030764000000090164,"Perception":0.5404170000001614,"Lifecycle":0.06884100000024773,"Decision":0.03073300000050949,"Forces":0.027312999999594467,"Physics":0.02633499999956257,"resolveCommands":0.6337299999995594,"spatialGrid":0.01533000000017637,"Bridge":0.9798410000003059}}}}
+{"tick":290,"type":"tactical","data":{"type":"tactical","tick":291,"severity":"Combat","category":"WEAPONS","message":"hostile-frigate-1 fired at hostile-frigate-1","entityId":"hostile-frigate-1","pos":{"x":39989.689220100394,"y":9717.554116787811,"z":0}}}
+{"tick":290,"type":"WeaponFired","data":{"type":"WeaponFired","tick":291,"entityId":"hostile-frigate-1","targetId":"hostile-frigate-1","data":{"weaponProfileId":"76mm-shell","mountIndex":2}}}
+{"tick":291,"type":"state:paused","data":false}
+{"tick":291,"type":"tactical","data":{"type":"tactical","tick":292,"severity":"Info","category":"SENSORS","message":"New detection: hostile-frigate-1-76mm-shell-1778029091285-375 by friendly-f35-1","entityId":"friendly-f35-1","payload":{"targetId":"hostile-frigate-1-76mm-shell-1778029091285-375"}}}
+{"tick":292,"type":"state:paused","data":false}
+{"tick":293,"type":"state:paused","data":false}
+{"tick":294,"type":"state:paused","data":false}
+{"tick":295,"type":"state:paused","data":false}
+{"tick":296,"type":"state:paused","data":false}
+{"tick":297,"type":"state:paused","data":false}
+{"tick":297,"type":"Impact","data":{"type":"Impact","tick":298,"entityId":"hostile-frigate-1-76mm-shell-1778029091285-375","data":{"targetId":"TERRAIN","position":{"x":40543.96360511469,"y":9718.556705617224,"z":0}}}}
+{"tick":298,"type":"state:paused","data":false}
+{"tick":299,"type":"state:paused","data":false}
+{"tick":299,"type":"tactical","data":{"type":"tactical","tick":300,"severity":"Combat","category":"WEAPONS","message":"uss-arleigh-burke fired at hostile-frigate-1","entityId":"uss-arleigh-burke","pos":{"x":29.568605444448067,"y":176.21623051835272,"z":0}}}
+{"tick":299,"type":"WeaponFired","data":{"type":"WeaponFired","tick":300,"entityId":"uss-arleigh-burke","targetId":"hostile-frigate-1","data":{"weaponProfileId":"harpoon","mountIndex":1}}}
+{"tick":300,"type":"state:paused","data":false}
+{"tick":300,"type":"metrics:performance","data":{"type":"metrics:performance","tick":300,"data":{"lastMs":105.11605299999974,"avgMs":10.21584422333333,"maxMs":320.82805099999996,"histogram":[{"limit":0.1,"count":0},{"limit":0.5,"count":0},{"limit":1,"count":0},{"limit":2,"count":108},{"limit":5,"count":164},{"limit":10,"count":2},{"limit":20,"count":2}],"overflow":24,"phases":{"externalCommands":0.00027599999975791434,"Environment":0.03244399999948655,"Doctrine":0.028051999999661348,"Perception":101.40711499999998,"Lifecycle":0.9048539999994318,"Decision":0.0445079999999507,"Forces":0.06937199999993027,"Physics":0.059673999999176885,"resolveCommands":1.8131590000002689,"spatialGrid":0.0093669999996564,"Bridge":0.7302989999998317}}}}
+{"tick":300,"type":"tactical","data":{"type":"tactical","tick":301,"severity":"Combat","category":"WEAPONS","message":"hostile-frigate-1 fired at hostile-frigate-1","entityId":"hostile-frigate-1","pos":{"x":39992.156044014155,"y":9698.281728688458,"z":0}}}
+{"tick":300,"type":"WeaponFired","data":{"type":"WeaponFired","tick":301,"entityId":"hostile-frigate-1","targetId":"hostile-frigate-1","data":{"weaponProfileId":"76mm-shell","mountIndex":2}}}
+{"tick":301,"type":"state:paused","data":false}
+{"tick":301,"type":"tactical","data":{"type":"tactical","tick":302,"severity":"Info","category":"SENSORS","message":"New detection: hostile-frigate-1-76mm-shell-1778029091416-687 by friendly-f35-1","entityId":"friendly-f35-1","payload":{"targetId":"hostile-frigate-1-76mm-shell-1778029091416-687"}}}
+{"tick":301,"type":"tactical","data":{"type":"tactical","tick":302,"severity":"Info","category":"SENSORS","message":"New detection: uss-arleigh-burke-harpoon-1778029091413-163 by hostile-frigate-1","entityId":"hostile-frigate-1","payload":{"targetId":"uss-arleigh-burke-harpoon-1778029091413-163"}}}
+{"tick":301,"type":"tactical","data":{"type":"tactical","tick":302,"severity":"Info","category":"SENSORS","message":"New detection: uss-arleigh-burke by uss-arleigh-burke-harpoon-1778029091413-163","entityId":"uss-arleigh-burke-harpoon-1778029091413-163","payload":{"targetId":"uss-arleigh-burke"}}}
+{"tick":302,"type":"state:paused","data":false}
+{"tick":303,"type":"state:paused","data":false}
+{"tick":304,"type":"state:paused","data":false}
+{"tick":305,"type":"state:paused","data":false}
+{"tick":306,"type":"state:paused","data":false}
+{"tick":307,"type":"state:paused","data":false}
+{"tick":307,"type":"Impact","data":{"type":"Impact","tick":308,"entityId":"hostile-frigate-1-76mm-shell-1778029091416-687","data":{"targetId":"TERRAIN","position":{"x":40548.387739887476,"y":9700.75631084392,"z":0}}}}
+{"tick":308,"type":"state:paused","data":false}
+{"tick":309,"type":"state:paused","data":false}
+{"tick":310,"type":"state:paused","data":false}
+{"tick":310,"type":"metrics:performance","data":{"type":"metrics:performance","tick":310,"data":{"lastMs":2.090911999999662,"avgMs":9.942697316129026,"maxMs":320.82805099999996,"histogram":[{"limit":0.1,"count":0},{"limit":0.5,"count":0},{"limit":1,"count":0},{"limit":2,"count":116},{"limit":5,"count":166},{"limit":10,"count":2},{"limit":20,"count":2}],"overflow":24,"phases":{"externalCommands":0.0002209999993283418,"Environment":0.028580000000147265,"Doctrine":0.02683699999943201,"Perception":0.5055590000001757,"Lifecycle":0.036528000000544125,"Decision":0.016279000000395172,"Forces":0.044130000000222935,"Physics":0.023342999999840686,"resolveCommands":0.688705999999911,"spatialGrid":0.00504099999943719,"Bridge":0.71006799999941}}}}
+{"tick":310,"type":"tactical","data":{"type":"tactical","tick":311,"severity":"Combat","category":"WEAPONS","message":"hostile-frigate-1 fired at hostile-frigate-1","entityId":"hostile-frigate-1","pos":{"x":39994.96879050454,"y":9678.415103290807,"z":0}}}
+{"tick":310,"type":"WeaponFired","data":{"type":"WeaponFired","tick":311,"entityId":"hostile-frigate-1","targetId":"hostile-frigate-1","data":{"weaponProfileId":"76mm-shell","mountIndex":2}}}
+{"tick":311,"type":"state:paused","data":false}
+{"tick":311,"type":"tactical","data":{"type":"tactical","tick":312,"severity":"Info","category":"SENSORS","message":"New detection: hostile-frigate-1-76mm-shell-1778029091440-230 by friendly-f35-1","entityId":"friendly-f35-1","payload":{"targetId":"hostile-frigate-1-76mm-shell-1778029091440-230"}}}
+{"tick":312,"type":"state:paused","data":false}
+{"tick":313,"type":"state:paused","data":false}
+{"tick":314,"type":"state:paused","data":false}
+{"tick":315,"type":"state:paused","data":false}
+{"tick":316,"type":"state:paused","data":false}
+{"tick":317,"type":"state:paused","data":false}
+{"tick":317,"type":"Impact","data":{"type":"Impact","tick":318,"entityId":"hostile-frigate-1-76mm-shell-1778029091440-230","data":{"targetId":"TERRAIN","position":{"x":40552.45930568915,"y":9679.547663295863,"z":0}}}}
+{"tick":318,"type":"state:paused","data":false}
+{"tick":319,"type":"state:paused","data":false}
+{"tick":320,"type":"state:paused","data":false}
+{"tick":320,"type":"metrics:performance","data":{"type":"metrics:performance","tick":320,"data":{"lastMs":2.1560069999995903,"avgMs":9.695860490624996,"maxMs":320.82805099999996,"histogram":[{"limit":0.1,"count":0},{"limit":0.5,"count":0},{"limit":1,"count":0},{"limit":2,"count":122},{"limit":5,"count":170},{"limit":10,"count":2},{"limit":20,"count":2}],"overflow":24,"phases":{"externalCommands":0.00045899999986431794,"Environment":0.04751300000043557,"Doctrine":0.042682999999669846,"Perception":0.7046860000000379,"Lifecycle":0.06012099999952625,"Decision":0.02853300000060699,"Forces":0.029858000000785978,"Physics":0.03176400000029389,"resolveCommands":0.5166099999996732,"spatialGrid":0.005640000000312284,"Bridge":0.6709359999995286}}}}
+{"tick":320,"type":"tactical","data":{"type":"tactical","tick":321,"severity":"Combat","category":"WEAPONS","message":"hostile-frigate-1 fired at hostile-frigate-1","entityId":"hostile-frigate-1","pos":{"x":39998.11719749567,"y":9657.922562184087,"z":0}}}
+{"tick":320,"type":"WeaponFired","data":{"type":"WeaponFired","tick":321,"entityId":"hostile-frigate-1","targetId":"hostile-frigate-1","data":{"weaponProfileId":"76mm-shell","mountIndex":2}}}
+{"tick":321,"type":"state:paused","data":false}
+{"tick":321,"type":"tactical","data":{"type":"tactical","tick":322,"severity":"Info","category":"SENSORS","message":"New detection: hostile-frigate-1-76mm-shell-1778029091467-748 by friendly-f35-1","entityId":"friendly-f35-1","payload":{"targetId":"hostile-frigate-1-76mm-shell-1778029091467-748"}}}
+{"tick":322,"type":"state:paused","data":false}
+{"tick":323,"type":"state:paused","data":false}
+{"tick":324,"type":"state:paused","data":false}
+{"tick":325,"type":"state:paused","data":false}
+{"tick":326,"type":"state:paused","data":false}
+{"tick":327,"type":"state:paused","data":false}
+{"tick":327,"type":"Impact","data":{"type":"Impact","tick":328,"entityId":"hostile-frigate-1-76mm-shell-1778029091467-748","data":{"targetId":"TERRAIN","position":{"x":40553.98837236525,"y":9655.472350653572,"z":0}}}}
+{"tick":328,"type":"state:paused","data":false}
+{"tick":329,"type":"state:paused","data":false}
+{"tick":330,"type":"state:paused","data":false}
+{"tick":330,"type":"metrics:performance","data":{"type":"metrics:performance","tick":330,"data":{"lastMs":2.178479999999581,"avgMs":9.466383445454547,"maxMs":320.82805099999996,"histogram":[{"limit":0.1,"count":0},{"limit":0.5,"count":0},{"limit":1,"count":0},{"limit":2,"count":126},{"limit":5,"count":176},{"limit":10,"count":2},{"limit":20,"count":2}],"overflow":24,"phases":{"externalCommands":0.00024000000030355295,"Environment":0.05709800000022369,"Doctrine":0.03988500000014028,"Perception":0.7767389999999068,"Lifecycle":0.07026399999995192,"Decision":0.02091500000005908,"Forces":0.03472599999986414,"Physics":0.025899999999637657,"resolveCommands":0.5208870000005845,"spatialGrid":0.004947999999785679,"Bridge":0.6157690000000002}}}}
+{"tick":330,"type":"tactical","data":{"type":"tactical","tick":331,"severity":"Combat","category":"WEAPONS","message":"hostile-frigate-1 fired at hostile-frigate-1","entityId":"hostile-frigate-1","pos":{"x":40001.589707715866,"y":9636.771408426644,"z":0}}}
+{"tick":330,"type":"tactical","data":{"type":"tactical","tick":331,"severity":"Info","category":"SENSORS","message":"New detection: swarm-1 by friendly-f35-1","entityId":"friendly-f35-1","payload":{"targetId":"swarm-1"}}}
+{"tick":330,"type":"WeaponFired","data":{"type":"WeaponFired","tick":331,"entityId":"hostile-frigate-1","targetId":"hostile-frigate-1","data":{"weaponProfileId":"76mm-shell","mountIndex":2}}}
+{"tick":331,"type":"state:paused","data":false}
+{"tick":331,"type":"tactical","data":{"type":"tactical","tick":332,"severity":"Info","category":"SENSORS","message":"New detection: hostile-frigate-1-76mm-shell-1778029091495-530 by friendly-f35-1","entityId":"friendly-f35-1","payload":{"targetId":"hostile-frigate-1-76mm-shell-1778029091495-530"}}}
+{"tick":332,"type":"state:paused","data":false}
+{"tick":333,"type":"state:paused","data":false}
+{"tick":334,"type":"state:paused","data":false}
+{"tick":335,"type":"state:paused","data":false}
+{"tick":336,"type":"state:paused","data":false}
+{"tick":337,"type":"state:paused","data":false}
+{"tick":337,"type":"Impact","data":{"type":"Impact","tick":338,"entityId":"hostile-frigate-1-76mm-shell-1778029091495-530","data":{"targetId":"TERRAIN","position":{"x":40555.38067721758,"y":9635.490254035172,"z":0}}}}
+{"tick":338,"type":"state:paused","data":false}
+{"tick":339,"type":"state:paused","data":false}
+{"tick":340,"type":"state:paused","data":false}
+{"tick":340,"type":"metrics:performance","data":{"type":"metrics:performance","tick":340,"data":{"lastMs":2.1650960000006307,"avgMs":9.263970947058828,"maxMs":320.82805099999996,"histogram":[{"limit":0.1,"count":0},{"limit":0.5,"count":0},{"limit":1,"count":0},{"limit":2,"count":128},{"limit":5,"count":184},{"limit":10,"count":2},{"limit":20,"count":2}],"overflow":24,"phases":{"externalCommands":0.00032499999997526174,"Environment":0.04211899999972957,"Doctrine":0.035807999999633466,"Perception":0.602921000000606,"Lifecycle":0.13265899999987596,"Decision":0.027462000000014086,"Forces":0.029852000000573753,"Physics":0.02960799999982555,"resolveCommands":0.5697029999992083,"spatialGrid":0.004457999999431195,"Bridge":0.6801580000001195}}}}
+{"tick":340,"type":"tactical","data":{"type":"tactical","tick":341,"severity":"Combat","category":"WEAPONS","message":"hostile-frigate-1 fired at hostile-frigate-1","entityId":"hostile-frigate-1","pos":{"x":40005.37334859845,"y":9614.92796324303,"z":0}}}
+{"tick":340,"type":"WeaponFired","data":{"type":"WeaponFired","tick":341,"entityId":"hostile-frigate-1","targetId":"hostile-frigate-1","data":{"weaponProfileId":"76mm-shell","mountIndex":2}}}
+{"tick":341,"type":"state:paused","data":false}
+{"tick":341,"type":"tactical","data":{"type":"tactical","tick":342,"severity":"Info","category":"SENSORS","message":"New detection: swarm-2 by friendly-f35-1","entityId":"friendly-f35-1","payload":{"targetId":"swarm-2"}}}
+{"tick":341,"type":"tactical","data":{"type":"tactical","tick":342,"severity":"Info","category":"SENSORS","message":"New detection: hostile-frigate-1-76mm-shell-1778029091527-971 by friendly-f35-1","entityId":"friendly-f35-1","payload":{"targetId":"hostile-frigate-1-76mm-shell-1778029091527-971"}}}
+{"tick":342,"type":"state:paused","data":false}
+{"tick":343,"type":"state:paused","data":false}
+{"tick":344,"type":"state:paused","data":false}
+{"tick":345,"type":"state:paused","data":false}
+{"tick":346,"type":"state:paused","data":false}
+{"tick":347,"type":"state:paused","data":false}
+{"tick":347,"type":"Impact","data":{"type":"Impact","tick":348,"entityId":"hostile-frigate-1-76mm-shell-1778029091527-971","data":{"targetId":"TERRAIN","position":{"x":40561.4983219955,"y":9616.00073886349,"z":0}}}}
+{"tick":348,"type":"state:paused","data":false}
+{"tick":349,"type":"state:paused","data":false}
+{"tick":350,"type":"state:paused","data":false}
+{"tick":350,"type":"metrics:performance","data":{"type":"metrics:performance","tick":350,"data":{"lastMs":2.0940090000003693,"avgMs":9.048835611428585,"maxMs":320.82805099999996,"histogram":[{"limit":0.1,"count":0},{"limit":0.5,"count":0},{"limit":1,"count":0},{"limit":2,"count":136},{"limit":5,"count":186},{"limit":10,"count":2},{"limit":20,"count":2}],"overflow":24,"phases":{"externalCommands":0.0003329999999550637,"Environment":0.05871700000079727,"Doctrine":0.029351000000133354,"Perception":0.5623130000003584,"Lifecycle":0.05527799999981653,"Decision":0.024081000000478525,"Forces":0.027723000000150932,"Physics":0.028254000000742963,"resolveCommands":0.6117389999999432,"spatialGrid":0.004675000000133878,"Bridge":0.6828560000003563}}}}
+{"tick":350,"type":"tactical","data":{"type":"tactical","tick":351,"severity":"Combat","category":"WEAPONS","message":"hostile-frigate-1 fired at hostile-frigate-1","entityId":"hostile-frigate-1","pos":{"x":40009.4536127052,"y":9592.357611179621,"z":0}}}
+{"tick":350,"type":"WeaponFired","data":{"type":"WeaponFired","tick":351,"entityId":"hostile-frigate-1","targetId":"hostile-frigate-1","data":{"weaponProfileId":"76mm-shell","mountIndex":2}}}
+{"tick":351,"type":"state:paused","data":false}
+{"tick":351,"type":"tactical","data":{"type":"tactical","tick":352,"severity":"Info","category":"SENSORS","message":"New detection: hostile-frigate-1-76mm-shell-1778029091553-259 by friendly-f35-1","entityId":"friendly-f35-1","payload":{"targetId":"hostile-frigate-1-76mm-shell-1778029091553-259"}}}
+{"tick":352,"type":"state:paused","data":false}
+{"tick":353,"type":"state:paused","data":false}
+{"tick":354,"type":"state:paused","data":false}
+{"tick":355,"type":"state:paused","data":false}
+{"tick":356,"type":"state:paused","data":false}
+{"tick":357,"type":"state:paused","data":false}
+{"tick":357,"type":"Impact","data":{"type":"Impact","tick":358,"entityId":"hostile-frigate-1-76mm-shell-1778029091553-259","data":{"targetId":"TERRAIN","position":{"x":40566.31448467348,"y":9590.387181519447,"z":0}}}}
+{"tick":358,"type":"state:paused","data":false}
+{"tick":359,"type":"state:paused","data":false}
+{"tick":360,"type":"state:paused","data":false}
+{"tick":360,"type":"metrics:performance","data":{"type":"metrics:performance","tick":360,"data":{"lastMs":1.7923129999999219,"avgMs":8.845345813888901,"maxMs":320.82805099999996,"histogram":[{"limit":0.1,"count":0},{"limit":0.5,"count":0},{"limit":1,"count":0},{"limit":2,"count":144},{"limit":5,"count":188},{"limit":10,"count":2},{"limit":20,"count":2}],"overflow":24,"phases":{"externalCommands":0.00024699999994481914,"Environment":0.024545999999645574,"Doctrine":0.019607999999607273,"Perception":0.5137670000003709,"Lifecycle":0.03856700000051205,"Decision":0.01624400000036985,"Forces":0.019134000000121887,"Physics":0.0358989999995174,"resolveCommands":0.5042299999995521,"spatialGrid":0.005097000000205298,"Bridge":0.608976999999868}}}}
+{"tick":360,"type":"tactical","data":{"type":"tactical","tick":361,"severity":"Combat","category":"WEAPONS","message":"hostile-frigate-1 fired at hostile-frigate-1","entityId":"hostile-frigate-1","pos":{"x":40013.814339163626,"y":9569.024853742545,"z":0}}}
+{"tick":360,"type":"WeaponFired","data":{"type":"WeaponFired","tick":361,"entityId":"hostile-frigate-1","targetId":"hostile-frigate-1","data":{"weaponProfileId":"76mm-shell","mountIndex":2}}}
+{"tick":361,"type":"state:paused","data":false}
+{"tick":361,"type":"tactical","data":{"type":"tactical","tick":362,"severity":"Info","category":"SENSORS","message":"New detection: hostile-frigate-1-76mm-shell-1778029091575-332 by friendly-f35-1","entityId":"friendly-f35-1","payload":{"targetId":"hostile-frigate-1-76mm-shell-1778029091575-332"}}}
+{"tick":362,"type":"state:paused","data":false}
+{"tick":363,"type":"state:paused","data":false}
+{"tick":364,"type":"state:paused","data":false}
+{"tick":365,"type":"state:paused","data":false}
+{"tick":366,"type":"state:paused","data":false}
+{"tick":367,"type":"state:paused","data":false}
+{"tick":367,"type":"Impact","data":{"type":"Impact","tick":368,"entityId":"hostile-frigate-1-76mm-shell-1778029091575-332","data":{"targetId":"TERRAIN","position":{"x":40570.02952545853,"y":9569.792993360743,"z":0}}}}
+{"tick":368,"type":"state:paused","data":false}
+{"tick":369,"type":"state:paused","data":false}
+{"tick":370,"type":"state:paused","data":false}
+{"tick":370,"type":"metrics:performance","data":{"type":"metrics:performance","tick":370,"data":{"lastMs":2.912887999999839,"avgMs":8.660140881081093,"maxMs":320.82805099999996,"histogram":[{"limit":0.1,"count":0},{"limit":0.5,"count":0},{"limit":1,"count":0},{"limit":2,"count":150},{"limit":5,"count":192},{"limit":10,"count":2},{"limit":20,"count":2}],"overflow":24,"phases":{"externalCommands":0.0002120000008289935,"Environment":0.035090999999738415,"Doctrine":0.03162799999972776,"Perception":0.9718650000004345,"Lifecycle":0.09307199999966542,"Decision":0.034302000000025146,"Forces":0.03925299999991694,"Physics":0.07863199999974313,"resolveCommands":0.6421070000005784,"spatialGrid":0.0058250000001862645,"Bridge":0.9731270000002041}}}}
+{"tick":370,"type":"tactical","data":{"type":"tactical","tick":371,"severity":"Combat","category":"WEAPONS","message":"hostile-frigate-1 fired at hostile-frigate-1","entityId":"hostile-frigate-1","pos":{"x":40018.43759661202,"y":9544.893371516164,"z":0}}}
+{"tick":370,"type":"WeaponFired","data":{"type":"WeaponFired","tick":371,"entityId":"hostile-frigate-1","targetId":"hostile-frigate-1","data":{"weaponProfileId":"76mm-shell","mountIndex":2}}}
+{"tick":371,"type":"state:paused","data":false}
+{"tick":371,"type":"tactical","data":{"type":"tactical","tick":372,"severity":"Info","category":"SENSORS","message":"New detection: hostile-frigate-1-76mm-shell-1778029091603-357 by friendly-f35-1","entityId":"friendly-f35-1","payload":{"targetId":"hostile-frigate-1-76mm-shell-1778029091603-357"}}}
+{"tick":372,"type":"state:paused","data":false}
+{"tick":373,"type":"state:paused","data":false}
+{"tick":374,"type":"state:paused","data":false}
+{"tick":375,"type":"state:paused","data":false}
+{"tick":376,"type":"state:paused","data":false}
+{"tick":377,"type":"state:paused","data":false}
+{"tick":377,"type":"Impact","data":{"type":"Impact","tick":378,"entityId":"hostile-frigate-1-76mm-shell-1778029091603-357","data":{"targetId":"TERRAIN","position":{"x":40573.90866481112,"y":9545.541203976936,"z":0}}}}
+{"tick":378,"type":"state:paused","data":false}
+{"tick":379,"type":"state:paused","data":false}
+{"tick":380,"type":"state:paused","data":false}
+{"tick":380,"type":"metrics:performance","data":{"type":"metrics:performance","tick":380,"data":{"lastMs":2.774120000000039,"avgMs":8.771803389473698,"maxMs":320.82805099999996,"histogram":[{"limit":0.1,"count":0},{"limit":0.5,"count":0},{"limit":1,"count":0},{"limit":2,"count":151},{"limit":5,"count":200},{"limit":10,"count":2},{"limit":20,"count":2}],"overflow":25,"phases":{"externalCommands":0.00024399999983870657,"Environment":0.031371000000035565,"Doctrine":0.0309609999994791,"Perception":0.78063899999961,"Lifecycle":0.05144399999971938,"Decision":0.02679000000080123,"Forces":0.025230000000192376,"Physics":0.07069299999966461,"resolveCommands":0.8091450000001714,"spatialGrid":0.008284999999887077,"Bridge":0.9308259999997972}}}}
+{"tick":380,"type":"tactical","data":{"type":"tactical","tick":381,"severity":"Combat","category":"WEAPONS","message":"hostile-frigate-1 fired at hostile-frigate-1","entityId":"hostile-frigate-1","pos":{"x":40023.30356814783,"y":9519.926094734197,"z":0}}}
+{"tick":380,"type":"WeaponFired","data":{"type":"WeaponFired","tick":381,"entityId":"hostile-frigate-1","targetId":"hostile-frigate-1","data":{"weaponProfileId":"76mm-shell","mountIndex":2}}}
+{"tick":381,"type":"state:paused","data":false}
+{"tick":381,"type":"tactical","data":{"type":"tactical","tick":382,"severity":"Info","category":"SENSORS","message":"New detection: hostile-frigate-1-76mm-shell-1778029091737-728 by friendly-f35-1","entityId":"friendly-f35-1","payload":{"targetId":"hostile-frigate-1-76mm-shell-1778029091737-728"}}}
+{"tick":382,"type":"state:paused","data":false}
+{"tick":383,"type":"state:paused","data":false}
+{"tick":384,"type":"state:paused","data":false}
+{"tick":385,"type":"state:paused","data":false}
+{"tick":386,"type":"state:paused","data":false}
+{"tick":387,"type":"state:paused","data":false}
+{"tick":387,"type":"Impact","data":{"type":"Impact","tick":388,"entityId":"hostile-frigate-1-76mm-shell-1778029091737-728","data":{"targetId":"TERRAIN","position":{"x":40577.48485906572,"y":9517.949981170757,"z":0}}}}
+{"tick":388,"type":"state:paused","data":false}
+{"tick":389,"type":"state:paused","data":false}
+{"tick":390,"type":"state:paused","data":false}
+{"tick":390,"type":"metrics:performance","data":{"type":"metrics:performance","tick":390,"data":{"lastMs":2.9241030000002866,"avgMs":8.821206056410272,"maxMs":320.82805099999996,"histogram":[{"limit":0.1,"count":0},{"limit":0.5,"count":0},{"limit":1,"count":0},{"limit":2,"count":151},{"limit":5,"count":206},{"limit":10,"count":2},{"limit":20,"count":4}],"overflow":27,"phases":{"externalCommands":0.00040500000068277586,"Environment":0.0427719999997862,"Doctrine":0.03895900000043184,"Perception":0.8471310000004451,"Lifecycle":0.0657969999992929,"Decision":0.02930500000002212,"Forces":0.044319999999970605,"Physics":0.1333599999998114,"resolveCommands":0.9005159999996977,"spatialGrid":0.0045939999999973224,"Bridge":0.8048220000000583}}}}
+{"tick":391,"type":"state:paused","data":false}
+{"tick":391,"type":"tactical","data":{"type":"tactical","tick":392,"severity":"Combat","category":"WEAPONS","message":"hostile-frigate-1 fired at hostile-frigate-1","entityId":"hostile-frigate-1","pos":{"x":40028.88109718571,"y":9491.581137380568,"z":0}}}
+{"tick":391,"type":"WeaponFired","data":{"type":"WeaponFired","tick":392,"entityId":"hostile-frigate-1","targetId":"hostile-frigate-1","data":{"weaponProfileId":"76mm-shell","mountIndex":2}}}
+{"tick":392,"type":"state:paused","data":false}
+{"tick":392,"type":"tactical","data":{"type":"tactical","tick":393,"severity":"Info","category":"SENSORS","message":"New detection: hostile-frigate-1-76mm-shell-1778029091976-693 by friendly-f35-1","entityId":"friendly-f35-1","payload":{"targetId":"hostile-frigate-1-76mm-shell-1778029091976-693"}}}
+{"tick":393,"type":"state:paused","data":false}
+{"tick":394,"type":"state:paused","data":false}
+{"tick":395,"type":"state:paused","data":false}
+{"tick":396,"type":"state:paused","data":false}
+{"tick":397,"type":"state:paused","data":false}
+{"tick":398,"type":"state:paused","data":false}
+{"tick":398,"type":"Impact","data":{"type":"Impact","tick":399,"entityId":"hostile-frigate-1-76mm-shell-1778029091976-693","data":{"targetId":"TERRAIN","position":{"x":40582.86569453126,"y":9489.592861451656,"z":0}}}}
+{"tick":399,"type":"state:paused","data":false}
+{"tick":399,"type":"tactical","data":{"type":"tactical","tick":400,"severity":"Combat","category":"WEAPONS","message":"uss-arleigh-burke fired at hostile-frigate-1","entityId":"uss-arleigh-burke","pos":{"x":44.56172285228159,"y":346.3666756029391,"z":0}}}
+{"tick":399,"type":"WeaponFired","data":{"type":"WeaponFired","tick":400,"entityId":"uss-arleigh-burke","targetId":"hostile-frigate-1","data":{"weaponProfileId":"harpoon","mountIndex":1}}}
+{"tick":400,"type":"state:paused","data":false}
+{"tick":400,"type":"metrics:performance","data":{"type":"metrics:performance","tick":400,"data":{"lastMs":3.3870600000000195,"avgMs":9.569586790000018,"maxMs":320.82805099999996,"histogram":[{"limit":0.1,"count":0},{"limit":0.5,"count":0},{"limit":1,"count":0},{"limit":2,"count":152},{"limit":5,"count":212},{"limit":10,"count":2},{"limit":20,"count":4}],"overflow":30,"phases":{"externalCommands":0.00039600000036443816,"Environment":0.035310999999637716,"Doctrine":0.030262999999649765,"Perception":0.6105050000005576,"Lifecycle":0.20381100000031438,"Decision":0.0435299999999188,"Forces":0.03236099999958242,"Physics":0.03205499999967287,"resolveCommands":1.6150779999998122,"spatialGrid":0.006374999999934516,"Bridge":0.7627800000000207}}}}
+{"tick":401,"type":"state:paused","data":false}
+{"tick":401,"type":"tactical","data":{"type":"tactical","tick":402,"severity":"Combat","category":"WEAPONS","message":"hostile-frigate-1 fired at hostile-frigate-1","entityId":"hostile-frigate-1","pos":{"x":40033.99062659028,"y":9465.648167167723,"z":0}}}
+{"tick":401,"type":"tactical","data":{"type":"tactical","tick":402,"severity":"Info","category":"SENSORS","message":"New detection: uss-arleigh-burke-harpoon-1778029092301-676 by hostile-frigate-1","entityId":"hostile-frigate-1","payload":{"targetId":"uss-arleigh-burke-harpoon-1778029092301-676"}}}
+{"tick":401,"type":"tactical","data":{"type":"tactical","tick":402,"severity":"Info","category":"SENSORS","message":"New detection: uss-arleigh-burke by uss-arleigh-burke-harpoon-1778029092301-676","entityId":"uss-arleigh-burke-harpoon-1778029092301-676","payload":{"targetId":"uss-arleigh-burke"}}}
+{"tick":401,"type":"WeaponFired","data":{"type":"WeaponFired","tick":402,"entityId":"hostile-frigate-1","targetId":"hostile-frigate-1","data":{"weaponProfileId":"76mm-shell","mountIndex":2}}}
+{"tick":402,"type":"state:paused","data":false}
+{"tick":402,"type":"tactical","data":{"type":"tactical","tick":403,"severity":"Info","category":"SENSORS","message":"New detection: hostile-frigate-1-76mm-shell-1778029092315-129 by friendly-f35-1","entityId":"friendly-f35-1","payload":{"targetId":"hostile-frigate-1-76mm-shell-1778029092315-129"}}}
+{"tick":403,"type":"state:paused","data":false}
+{"tick":404,"type":"state:paused","data":false}
+{"tick":405,"type":"state:paused","data":false}
+{"tick":406,"type":"state:paused","data":false}
+{"tick":407,"type":"state:paused","data":false}
+{"tick":408,"type":"state:paused","data":false}
+{"tick":408,"type":"Impact","data":{"type":"Impact","tick":409,"entityId":"hostile-frigate-1-76mm-shell-1778029092315-129","data":{"targetId":"TERRAIN","position":{"x":40589.88567054733,"y":9464.692385755972,"z":0}}}}
+{"tick":409,"type":"state:paused","data":false}
+{"tick":410,"type":"state:paused","data":false}
+{"tick":410,"type":"metrics:performance","data":{"type":"metrics:performance","tick":410,"data":{"lastMs":2.1966150000007474,"avgMs":9.928365265853675,"maxMs":320.82805099999996,"histogram":[{"limit":0.1,"count":0},{"limit":0.5,"count":0},{"limit":1,"count":0},{"limit":2,"count":156},{"limit":5,"count":216},{"limit":10,"count":2},{"limit":20,"count":5}],"overflow":31,"phases":{"externalCommands":0.00019700000029843068,"Environment":0.03191999999944528,"Doctrine":0.0276400000002468,"Perception":0.6203270000005432,"Lifecycle":0.05392099999971833,"Decision":0.024225999999544,"Forces":0.027665000000524742,"Physics":0.029324000000087835,"resolveCommands":0.5604530000000523,"spatialGrid":0.005771000000095228,"Bridge":0.8078030000006038}}}}
+{"tick":411,"type":"state:paused","data":false}
+{"tick":411,"type":"tactical","data":{"type":"tactical","tick":412,"severity":"Combat","category":"WEAPONS","message":"hostile-frigate-1 fired at hostile-frigate-1","entityId":"hostile-frigate-1","pos":{"x":40039.106599893654,"y":9439.68708835433,"z":0}}}
+{"tick":411,"type":"WeaponFired","data":{"type":"WeaponFired","tick":412,"entityId":"hostile-frigate-1","targetId":"hostile-frigate-1","data":{"weaponProfileId":"76mm-shell","mountIndex":2}}}
+{"tick":412,"type":"state:paused","data":false}
+{"tick":412,"type":"tactical","data":{"type":"tactical","tick":413,"severity":"Info","category":"SENSORS","message":"New detection: hostile-frigate-1-76mm-shell-1778029092563-146 by friendly-f35-1","entityId":"friendly-f35-1","payload":{"targetId":"hostile-frigate-1-76mm-shell-1778029092563-146"}}}
+{"tick":413,"type":"state:paused","data":false}
+{"tick":414,"type":"state:paused","data":false}
+{"tick":415,"type":"state:paused","data":false}
+{"tick":416,"type":"state:paused","data":false}
+{"tick":417,"type":"state:paused","data":false}
+{"tick":418,"type":"state:paused","data":false}
+{"tick":418,"type":"Impact","data":{"type":"Impact","tick":419,"entityId":"hostile-frigate-1-76mm-shell-1778029092563-146","data":{"targetId":"TERRAIN","position":{"x":40595.91318049773,"y":9442.065213175916,"z":0}}}}
+{"tick":419,"type":"state:paused","data":false}
+{"tick":420,"type":"state:paused","data":false}
+{"tick":420,"type":"metrics:performance","data":{"type":"metrics:performance","tick":420,"data":{"lastMs":2.6460210000004736,"avgMs":10.583773395238117,"maxMs":320.82805099999996,"histogram":[{"limit":0.1,"count":0},{"limit":0.5,"count":0},{"limit":1,"count":0},{"limit":2,"count":158},{"limit":5,"count":220},{"limit":10,"count":3},{"limit":20,"count":5}],"overflow":34,"phases":{"externalCommands":0.0002119999999194988,"Environment":0.04251300000032643,"Doctrine":0.05629599999974744,"Perception":0.9323050000002695,"Lifecycle":0.057932000000619155,"Decision":0.023876000000200293,"Forces":0.02926500000012311,"Physics":0.03494700000010198,"resolveCommands":0.548240000000078,"spatialGrid":0.004801000000043132,"Bridge":0.9091719999996712}}}}
+{"tick":421,"type":"state:paused","data":false}
+{"tick":421,"type":"tactical","data":{"type":"tactical","tick":422,"severity":"Combat","category":"WEAPONS","message":"hostile-frigate-1 fired at hostile-frigate-1","entityId":"hostile-frigate-1","pos":{"x":40044.229060762256,"y":9413.697557020081,"z":0}}}
+{"tick":421,"type":"WeaponFired","data":{"type":"WeaponFired","tick":422,"entityId":"hostile-frigate-1","targetId":"hostile-frigate-1","data":{"weaponProfileId":"76mm-shell","mountIndex":2}}}
+{"tick":422,"type":"state:paused","data":false}
+{"tick":422,"type":"tactical","data":{"type":"tactical","tick":423,"severity":"Info","category":"SENSORS","message":"New detection: hostile-frigate-1-76mm-shell-1778029093071-130 by friendly-f35-1","entityId":"friendly-f35-1","payload":{"targetId":"hostile-frigate-1-76mm-shell-1778029093071-130"}}}
+{"tick":423,"type":"state:paused","data":false}
+{"tick":424,"type":"state:paused","data":false}
+{"tick":425,"type":"state:paused","data":false}
+{"tick":426,"type":"state:paused","data":false}
+{"tick":427,"type":"state:paused","data":false}
+{"tick":428,"type":"state:paused","data":false}
+{"tick":428,"type":"Impact","data":{"type":"Impact","tick":429,"entityId":"hostile-frigate-1-76mm-shell-1778029093071-130","data":{"targetId":"TERRAIN","position":{"x":40598.67806626158,"y":9412.06795964519,"z":0}}}}
+{"tick":429,"type":"state:paused","data":false}
+{"tick":430,"type":"state:paused","data":false}
+{"tick":430,"type":"metrics:performance","data":{"type":"metrics:performance","tick":430,"data":{"lastMs":2.5580399999998917,"avgMs":10.670845944186057,"maxMs":320.82805099999996,"histogram":[{"limit":0.1,"count":0},{"limit":0.5,"count":0},{"limit":1,"count":0},{"limit":2,"count":163},{"limit":5,"count":223},{"limit":10,"count":3},{"limit":20,"count":5}],"overflow":36,"phases":{"externalCommands":0.00017599999955564272,"Environment":0.03248199999961798,"Doctrine":0.024219999999331776,"Perception":0.6263479999997799,"Lifecycle":0.09527700000035111,"Decision":0.03990700000031211,"Forces":0.022837000000436092,"Physics":0.02521800000067742,"resolveCommands":0.5739559999992707,"spatialGrid":0.00539900000057969,"Bridge":1.1061710000003586}}}}
+{"tick":431,"type":"state:paused","data":false}
+{"tick":431,"type":"tactical","data":{"type":"tactical","tick":432,"severity":"Combat","category":"WEAPONS","message":"hostile-frigate-1 fired at hostile-frigate-1","entityId":"hostile-frigate-1","pos":{"x":40049.358093210794,"y":9387.679045321685,"z":0}}}
+{"tick":431,"type":"WeaponFired","data":{"type":"WeaponFired","tick":432,"entityId":"hostile-frigate-1","targetId":"hostile-frigate-1","data":{"weaponProfileId":"76mm-shell","mountIndex":2}}}
+{"tick":432,"type":"state:paused","data":false}
+{"tick":432,"type":"tactical","data":{"type":"tactical","tick":433,"severity":"Info","category":"SENSORS","message":"New detection: hostile-frigate-1-76mm-shell-1778029093093-650 by friendly-f35-1","entityId":"friendly-f35-1","payload":{"targetId":"hostile-frigate-1-76mm-shell-1778029093093-650"}}}
+{"tick":433,"type":"state:paused","data":false}
+{"tick":434,"type":"state:paused","data":false}
+{"tick":435,"type":"state:paused","data":false}
+{"tick":436,"type":"state:paused","data":false}
+{"tick":437,"type":"state:paused","data":false}
+{"tick":438,"type":"state:paused","data":false}
+{"tick":438,"type":"Impact","data":{"type":"Impact","tick":439,"entityId":"hostile-frigate-1-76mm-shell-1778029093093-650","data":{"targetId":"TERRAIN","position":{"x":40607.44528237334,"y":9385.850533059422,"z":0}}}}
+{"tick":439,"type":"state:paused","data":false}
+{"tick":440,"type":"state:paused","data":false}
+{"tick":440,"type":"metrics:performance","data":{"type":"metrics:performance","tick":440,"data":{"lastMs":2.46574099999998,"avgMs":10.47315897500001,"maxMs":320.82805099999996,"histogram":[{"limit":0.1,"count":0},{"limit":0.5,"count":0},{"limit":1,"count":0},{"limit":2,"count":168},{"limit":5,"count":228},{"limit":10,"count":3},{"limit":20,"count":5}],"overflow":36,"phases":{"externalCommands":0.00039899999956105603,"Environment":0.04378100000030827,"Doctrine":0.04251399999975547,"Perception":0.7356929999996282,"Lifecycle":0.15009700000064186,"Decision":0.029792999999699532,"Forces":0.03055099999983213,"Physics":0.036141000000498025,"resolveCommands":0.6053499999998166,"spatialGrid":0.005331999999725667,"Bridge":0.7728179999994609}}}}
+{"tick":441,"type":"state:paused","data":false}
+{"tick":441,"type":"tactical","data":{"type":"tactical","tick":442,"severity":"Combat","category":"WEAPONS","message":"hostile-frigate-1 fired at hostile-frigate-1","entityId":"hostile-frigate-1","pos":{"x":40054.49378326649,"y":9361.631008152077,"z":0}}}
+{"tick":441,"type":"WeaponFired","data":{"type":"WeaponFired","tick":442,"entityId":"hostile-frigate-1","targetId":"hostile-frigate-1","data":{"weaponProfileId":"76mm-shell","mountIndex":2}}}
+{"tick":442,"type":"state:paused","data":false}
+{"tick":442,"type":"tactical","data":{"type":"tactical","tick":443,"severity":"Info","category":"SENSORS","message":"New detection: hostile-frigate-1-76mm-shell-1778029093117-281 by friendly-f35-1","entityId":"friendly-f35-1","payload":{"targetId":"hostile-frigate-1-76mm-shell-1778029093117-281"}}}
+{"tick":443,"type":"state:paused","data":false}
+{"tick":444,"type":"state:paused","data":false}
+{"tick":445,"type":"state:paused","data":false}
+{"tick":446,"type":"state:paused","data":false}
+{"tick":447,"type":"state:paused","data":false}
+{"tick":448,"type":"state:paused","data":false}
+{"tick":448,"type":"Impact","data":{"type":"Impact","tick":449,"entityId":"hostile-frigate-1-76mm-shell-1778029093117-281","data":{"targetId":"TERRAIN","position":{"x":40610.78630782843,"y":9363.188810214788,"z":0}}}}
+{"tick":449,"type":"state:paused","data":false}
+{"tick":450,"type":"state:paused","data":false}
+{"tick":450,"type":"metrics:performance","data":{"type":"metrics:performance","tick":450,"data":{"lastMs":2.075966000000335,"avgMs":10.2818737088889,"maxMs":320.82805099999996,"histogram":[{"limit":0.1,"count":0},{"limit":0.5,"count":0},{"limit":1,"count":0},{"limit":2,"count":176},{"limit":5,"count":230},{"limit":10,"count":3},{"limit":20,"count":5}],"overflow":36,"phases":{"externalCommands":0.0002029999996011611,"Environment":0.030647999999928288,"Doctrine":0.020980999999665073,"Perception":0.5771770000001197,"Lifecycle":0.0491730000003372,"Decision":0.025482000000010885,"Forces":0.01995100000021921,"Physics":0.02393800000027113,"resolveCommands":0.5492089999997916,"spatialGrid":0.004789999999957217,"Bridge":0.7679600000001301}}}}
+{"tick":451,"type":"state:paused","data":false}
+{"tick":451,"type":"tactical","data":{"type":"tactical","tick":452,"severity":"Combat","category":"WEAPONS","message":"hostile-frigate-1 fired at hostile-frigate-1","entityId":"hostile-frigate-1","pos":{"x":40059.63621885235,"y":9335.552883154049,"z":0}}}
+{"tick":451,"type":"WeaponFired","data":{"type":"WeaponFired","tick":452,"entityId":"hostile-frigate-1","targetId":"hostile-frigate-1","data":{"weaponProfileId":"76mm-shell","mountIndex":2}}}
+{"tick":452,"type":"state:paused","data":false}
+{"tick":452,"type":"tactical","data":{"type":"tactical","tick":453,"severity":"Info","category":"SENSORS","message":"New detection: hostile-frigate-1-76mm-shell-1778029093144-253 by friendly-f35-1","entityId":"friendly-f35-1","payload":{"targetId":"hostile-frigate-1-76mm-shell-1778029093144-253"}}}
+{"tick":453,"type":"state:paused","data":false}
+{"tick":454,"type":"state:paused","data":false}
+{"tick":455,"type":"state:paused","data":false}
+{"tick":456,"type":"state:paused","data":false}
+{"tick":457,"type":"state:paused","data":false}
+{"tick":458,"type":"state:paused","data":false}
+{"tick":458,"type":"Impact","data":{"type":"Impact","tick":459,"entityId":"hostile-frigate-1-76mm-shell-1778029093144-253","data":{"targetId":"TERRAIN","position":{"x":40614.337388342734,"y":9335.501360563012,"z":0}}}}
+{"tick":459,"type":"state:paused","data":false}
+{"tick":459,"type":"tactical","data":{"type":"tactical","tick":460,"severity":"Combat","category":"WEAPONS","message":"hostile-frigate-1 fired at friendly-f35-1","entityId":"hostile-frigate-1","pos":{"x":40063.755084339,"y":9314.668330943176,"z":0}}}
+{"tick":459,"type":"WeaponFired","data":{"type":"WeaponFired","tick":460,"entityId":"hostile-frigate-1","targetId":"friendly-f35-1","data":{"weaponProfileId":"hq-16","mountIndex":0}}}
+{"tick":459,"type":"WeaponFired","data":{"type":"WeaponFired","tick":460,"entityId":"hostile-frigate-1","targetId":"friendly-f35-1","data":{"weaponProfileId":"hq-16","mountIndex":0}}}
+{"tick":460,"type":"state:paused","data":false}
+{"tick":460,"type":"metrics:performance","data":{"type":"metrics:performance","tick":460,"data":{"lastMs":2.869706999999835,"avgMs":10.105601334782618,"maxMs":320.82805099999996,"histogram":[{"limit":0.1,"count":0},{"limit":0.5,"count":0},{"limit":1,"count":0},{"limit":2,"count":181},{"limit":5,"count":235},{"limit":10,"count":3},{"limit":20,"count":5}],"overflow":36,"phases":{"externalCommands":0.00019299999985378236,"Environment":0.029941999999209656,"Doctrine":0.06873100000029808,"Perception":0.6132400000005873,"Lifecycle":0.13533299999926385,"Decision":0.022915999999895575,"Forces":0.02224000000023807,"Physics":0.028320000000348955,"resolveCommands":1.2466129999993427,"spatialGrid":0.008383999999750813,"Bridge":0.6866459999992003}}}}
+{"tick":460,"type":"tactical","data":{"type":"tactical","tick":461,"severity":"Info","category":"SENSORS","message":"New detection: hostile-frigate-1-hq-16-1778029093161-238 by friendly-f35-1","entityId":"friendly-f35-1","payload":{"targetId":"hostile-frigate-1-hq-16-1778029093161-238"}}}
+{"tick":460,"type":"tactical","data":{"type":"tactical","tick":461,"severity":"Info","category":"SENSORS","message":"New detection: hostile-frigate-1-hq-16-1778029093162-603 by friendly-f35-1","entityId":"friendly-f35-1","payload":{"targetId":"hostile-frigate-1-hq-16-1778029093162-603"}}}
+{"tick":461,"type":"state:paused","data":false}
+{"tick":461,"type":"tactical","data":{"type":"tactical","tick":462,"severity":"Combat","category":"WEAPONS","message":"hostile-frigate-1 fired at hostile-frigate-1","entityId":"hostile-frigate-1","pos":{"x":40064.78548969151,"y":9309.444090625126,"z":0}}}
+{"tick":461,"type":"tactical","data":{"type":"tactical","tick":462,"severity":"Info","category":"SENSORS","message":"New detection: hostile-frigate-1-hq-16-1778029093161-238 by uss-arleigh-burke","entityId":"uss-arleigh-burke","payload":{"targetId":"hostile-frigate-1-hq-16-1778029093161-238"}}}
+{"tick":461,"type":"tactical","data":{"type":"tactical","tick":462,"severity":"Info","category":"SENSORS","message":"New detection: hostile-frigate-1-hq-16-1778029093162-603 by uss-arleigh-burke","entityId":"uss-arleigh-burke","payload":{"targetId":"hostile-frigate-1-hq-16-1778029093162-603"}}}
+{"tick":461,"type":"WeaponFired","data":{"type":"WeaponFired","tick":462,"entityId":"hostile-frigate-1","targetId":"hostile-frigate-1","data":{"weaponProfileId":"76mm-shell","mountIndex":2}}}
+{"tick":462,"type":"state:paused","data":false}
+{"tick":462,"type":"tactical","data":{"type":"tactical","tick":463,"severity":"Info","category":"SENSORS","message":"New detection: hostile-frigate-1-76mm-shell-1778029093174-833 by friendly-f35-1","entityId":"friendly-f35-1","payload":{"targetId":"hostile-frigate-1-76mm-shell-1778029093174-833"}}}
+{"tick":463,"type":"state:paused","data":false}
+{"tick":464,"type":"state:paused","data":false}
+{"tick":465,"type":"state:paused","data":false}
+{"tick":466,"type":"state:paused","data":false}
+{"tick":467,"type":"state:paused","data":false}
+{"tick":468,"type":"state:paused","data":false}
+{"tick":468,"type":"Impact","data":{"type":"Impact","tick":469,"entityId":"hostile-frigate-1-76mm-shell-1778029093174-833","data":{"targetId":"TERRAIN","position":{"x":40622.687742700764,"y":9308.356146361786,"z":0}}}}
+{"tick":469,"type":"state:paused","data":false}
+{"tick":470,"type":"state:paused","data":false}
+{"tick":470,"type":"metrics:performance","data":{"type":"metrics:performance","tick":470,"data":{"lastMs":2.9396799999994982,"avgMs":10.070417568085116,"maxMs":320.82805099999996,"histogram":[{"limit":0.1,"count":0},{"limit":0.5,"count":0},{"limit":1,"count":0},{"limit":2,"count":183},{"limit":5,"count":242},{"limit":10,"count":3},{"limit":20,"count":5}],"overflow":37,"phases":{"externalCommands":0.00039900000047055073,"Environment":0.06668900000022404,"Doctrine":0.052308000000266475,"Perception":0.7767149999999674,"Lifecycle":0.08478399999967223,"Decision":0.03141200000027311,"Forces":0.0490060000001904,"Physics":0.0369620000001305,"resolveCommands":0.6943899999996574,"spatialGrid":0.008509000000231026,"Bridge":1.1155589999998483}}}}
+{"tick":471,"type":"state:paused","data":false}
+{"tick":471,"type":"tactical","data":{"type":"tactical","tick":472,"severity":"Combat","category":"WEAPONS","message":"hostile-frigate-1 fired at hostile-frigate-1","entityId":"hostile-frigate-1","pos":{"x":40069.94168719507,"y":9283.304033479571,"z":0}}}
+{"tick":471,"type":"WeaponFired","data":{"type":"WeaponFired","tick":472,"entityId":"hostile-frigate-1","targetId":"hostile-frigate-1","data":{"weaponProfileId":"76mm-shell","mountIndex":2}}}
+{"tick":472,"type":"state:paused","data":false}
+{"tick":472,"type":"tactical","data":{"type":"tactical","tick":473,"severity":"Info","category":"SENSORS","message":"New detection: hostile-frigate-1-76mm-shell-1778029093268-492 by friendly-f35-1","entityId":"friendly-f35-1","payload":{"targetId":"hostile-frigate-1-76mm-shell-1778029093268-492"}}}
+{"tick":473,"type":"state:paused","data":false}
+{"tick":474,"type":"state:paused","data":false}
+{"tick":475,"type":"state:paused","data":false}
+{"tick":476,"type":"state:paused","data":false}
+{"tick":477,"type":"state:paused","data":false}
+{"tick":478,"type":"state:paused","data":false}
+{"tick":478,"type":"Impact","data":{"type":"Impact","tick":479,"entityId":"hostile-frigate-1-76mm-shell-1778029093268-492","data":{"targetId":"TERRAIN","position":{"x":40624.83229059456,"y":9285.174459405776,"z":0}}}}
+{"tick":479,"type":"state:paused","data":false}
+{"tick":479,"type":"tactical","data":{"type":"tactical","tick":480,"severity":"Combat","category":"WEAPONS","message":"hostile-frigate-1 fired at friendly-f35-1","entityId":"hostile-frigate-1","pos":{"x":40074.071694823455,"y":9262.369064912496,"z":0}}}
+{"tick":479,"type":"WeaponFired","data":{"type":"WeaponFired","tick":480,"entityId":"hostile-frigate-1","targetId":"friendly-f35-1","data":{"weaponProfileId":"hq-16","mountIndex":0}}}
+{"tick":480,"type":"state:paused","data":false}
+{"tick":480,"type":"metrics:performance","data":{"type":"metrics:performance","tick":480,"data":{"lastMs":3.856388999999581,"avgMs":9.918224277083347,"maxMs":320.82805099999996,"histogram":[{"limit":0.1,"count":0},{"limit":0.5,"count":0},{"limit":1,"count":0},{"limit":2,"count":183},{"limit":5,"count":252},{"limit":10,"count":3},{"limit":20,"count":5}],"overflow":37,"phases":{"externalCommands":0.0003350000006321352,"Environment":0.05390299999999115,"Doctrine":0.040597999999590684,"Perception":0.7674470000001747,"Lifecycle":0.276372999999694,"Decision":0.0337149999995745,"Forces":0.04757500000050641,"Physics":0.0371129999994082,"resolveCommands":1.2769790000002104,"spatialGrid":0.012973999999303487,"Bridge":1.293311999999787}}}}
+{"tick":480,"type":"tactical","data":{"type":"tactical","tick":481,"severity":"Info","category":"SENSORS","message":"New detection: hostile-frigate-1-hq-16-1778029093290-478 by friendly-f35-1","entityId":"friendly-f35-1","payload":{"targetId":"hostile-frigate-1-hq-16-1778029093290-478"}}}
+{"tick":481,"type":"state:paused","data":false}
+{"tick":481,"type":"tactical","data":{"type":"tactical","tick":482,"severity":"Combat","category":"WEAPONS","message":"hostile-frigate-1 fired at hostile-frigate-1","entityId":"hostile-frigate-1","pos":{"x":40075.10490433314,"y":9257.132097270769,"z":0}}}
+{"tick":481,"type":"tactical","data":{"type":"tactical","tick":482,"severity":"Info","category":"SENSORS","message":"New detection: hostile-frigate-1-hq-16-1778029093290-478 by uss-arleigh-burke","entityId":"uss-arleigh-burke","payload":{"targetId":"hostile-frigate-1-hq-16-1778029093290-478"}}}
+{"tick":481,"type":"WeaponFired","data":{"type":"WeaponFired","tick":482,"entityId":"hostile-frigate-1","targetId":"hostile-frigate-1","data":{"weaponProfileId":"76mm-shell","mountIndex":2}}}
+{"tick":482,"type":"state:paused","data":false}
+{"tick":482,"type":"tactical","data":{"type":"tactical","tick":483,"severity":"Info","category":"SENSORS","message":"New detection: hostile-frigate-1-76mm-shell-1778029093303-965 by friendly-f35-1","entityId":"friendly-f35-1","payload":{"targetId":"hostile-frigate-1-76mm-shell-1778029093303-965"}}}
+{"tick":483,"type":"state:paused","data":false}
+{"tick":484,"type":"state:paused","data":false}
+{"tick":485,"type":"state:paused","data":false}
+{"tick":486,"type":"state:paused","data":false}
+{"tick":487,"type":"state:paused","data":false}
+{"tick":488,"type":"state:paused","data":false}
+{"tick":488,"type":"Impact","data":{"type":"Impact","tick":489,"entityId":"hostile-frigate-1-76mm-shell-1778029093303-965","data":{"targetId":"TERRAIN","position":{"x":40631.89364197989,"y":9257.557276197263,"z":0}}}}
+{"tick":489,"type":"state:paused","data":false}
+{"tick":490,"type":"state:paused","data":false}
+{"tick":490,"type":"metrics:performance","data":{"type":"metrics:performance","tick":490,"data":{"lastMs":3.1154859999996916,"avgMs":9.77454633469389,"maxMs":320.82805099999996,"histogram":[{"limit":0.1,"count":0},{"limit":0.5,"count":0},{"limit":1,"count":0},{"limit":2,"count":183},{"limit":5,"count":262},{"limit":10,"count":3},{"limit":20,"count":5}],"overflow":37,"phases":{"externalCommands":0.0002990000002682791,"Environment":0.044739999999364954,"Doctrine":0.05003899999974237,"Perception":1.0045719999998255,"Lifecycle":0.15526000000045315,"Decision":0.052083999999922526,"Forces":0.06546099999923172,"Physics":0.07048500000018976,"resolveCommands":0.7600130000000718,"spatialGrid":0.007914999999229622,"Bridge":0.8919319999995423}}}}
+{"tick":491,"type":"state:paused","data":false}
+{"tick":491,"type":"tactical","data":{"type":"tactical","tick":492,"severity":"Combat","category":"WEAPONS","message":"hostile-frigate-1 fired at hostile-frigate-1","entityId":"hostile-frigate-1","pos":{"x":40080.27523548872,"y":9230.927650276977,"z":0}}}
+{"tick":491,"type":"WeaponFired","data":{"type":"WeaponFired","tick":492,"entityId":"hostile-frigate-1","targetId":"hostile-frigate-1","data":{"weaponProfileId":"76mm-shell","mountIndex":2}}}
+{"tick":492,"type":"state:paused","data":false}
+{"tick":492,"type":"tactical","data":{"type":"tactical","tick":493,"severity":"Info","category":"SENSORS","message":"New detection: hostile-frigate-1-76mm-shell-1778029093336-146 by friendly-f35-1","entityId":"friendly-f35-1","payload":{"targetId":"hostile-frigate-1-76mm-shell-1778029093336-146"}}}
+{"tick":493,"type":"state:paused","data":false}
+{"tick":494,"type":"state:paused","data":false}
+{"tick":495,"type":"state:paused","data":false}
+{"tick":496,"type":"state:paused","data":false}
+{"tick":497,"type":"state:paused","data":false}
+{"tick":498,"type":"state:paused","data":false}
+{"tick":498,"type":"Impact","data":{"type":"Impact","tick":499,"entityId":"hostile-frigate-1-76mm-shell-1778029093336-146","data":{"targetId":"TERRAIN","position":{"x":40638.05754202886,"y":9230.952974081092,"z":0}}}}
+{"tick":499,"type":"state:paused","data":false}
+{"tick":499,"type":"tactical","data":{"type":"tactical","tick":500,"severity":"Combat","category":"WEAPONS","message":"uss-arleigh-burke fired at hostile-frigate-1","entityId":"uss-arleigh-burke","pos":{"x":50.493348548317904,"y":586.7203972616346,"z":0}}}
+{"tick":499,"type":"tactical","data":{"type":"tactical","tick":500,"severity":"Combat","category":"WEAPONS","message":"hostile-frigate-1 fired at friendly-f35-1","entityId":"hostile-frigate-1","pos":{"x":40084.41668673342,"y":9209.94024946305,"z":0}}}
+{"tick":499,"type":"WeaponFired","data":{"type":"WeaponFired","tick":500,"entityId":"uss-arleigh-burke","targetId":"hostile-frigate-1","data":{"weaponProfileId":"harpoon","mountIndex":1}}}
+{"tick":499,"type":"WeaponFired","data":{"type":"WeaponFired","tick":500,"entityId":"hostile-frigate-1","targetId":"friendly-f35-1","data":{"weaponProfileId":"hq-16","mountIndex":0}}}
+{"tick":500,"type":"state:paused","data":false}
+{"tick":500,"type":"metrics:performance","data":{"type":"metrics:performance","tick":500,"data":{"lastMs":99.11977500000012,"avgMs":9.819401262000017,"maxMs":320.82805099999996,"histogram":[{"limit":0.1,"count":0},{"limit":0.5,"count":0},{"limit":1,"count":0},{"limit":2,"count":183},{"limit":5,"count":271},{"limit":10,"count":3},{"limit":20,"count":5}],"overflow":38,"phases":{"externalCommands":0.00028899999961140566,"Environment":0.06081300000005285,"Doctrine":0.048104000000421365,"Perception":2.000554000000193,"Lifecycle":0.7368100000003324,"Decision":0.06170100000053935,"Forces":0.08000899999933608,"Physics":0.10355299999991985,"resolveCommands":94.9619730000004,"spatialGrid":0.015366999999969266,"Bridge":1.0345439999991868}}}}
+{"tick":500,"type":"tactical","data":{"type":"tactical","tick":501,"severity":"Info","category":"SENSORS","message":"New detection: hostile-frigate-1-hq-16-1778029093451-658 by friendly-f35-1","entityId":"friendly-f35-1","payload":{"targetId":"hostile-frigate-1-hq-16-1778029093451-658"}}}
+{"tick":501,"type":"state:paused","data":false}

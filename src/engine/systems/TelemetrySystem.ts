@@ -48,6 +48,7 @@ export class TelemetrySystem implements ISystem {
                     speedKts: speed,
                     altM: transform.position.z
                 });
+                if (entity.id === 'ship-1' && world.currentTick % 100 === 0) console.log(`Telemetry recorded for ship-1: ${tel.history.length} samples`);
             }
         }
 

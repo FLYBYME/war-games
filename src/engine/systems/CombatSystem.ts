@@ -65,7 +65,11 @@ export class CombatSystem implements ISystem {
                     const targetPos = targetTrack.position;
 
                     // 1. Fire Control Solution
+                    if (!mount || !mount.magazineIndices) continue;
                     const magIdx = mount.magazineIndices[mount.activeMagazineIndex];
+
+                    if (magIdx === undefined) continue;
+
                     const magazine = combat.magazines[magIdx];
                     const weaponProfile = magazine ? this.weaponProfiles.get(magazine.weaponProfileId) : undefined;
                     

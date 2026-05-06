@@ -37,8 +37,7 @@ import { HealthComponent } from '../components/Health.js';
 import { EnvironmentComponent } from '../components/Environment.js';
 import { TrackComponent } from '../components/Track.js';
 import { DoctrineComponent } from '../components/Doctrine.js';
-import { FacilityComponent } from '../components/Logistics.js';
-import { LogisticsComponent } from '../components/Logistics.js';
+import { FacilityComponent, LogisticsComponent } from '../components/Logistics.js';
 import { NavigationComponent, FormationComponent } from '../components/Navigation.js';
 import { GroupComponent } from '../components/Group.js';
 import { LoadoutRegistry } from './LoadoutRegistry.js';
@@ -52,6 +51,13 @@ import { Side } from './Types.js';
 import { logger } from './Logger.js';
 import { ComponentRegistry } from './ComponentRegistry.js';
 import { SimulationClock } from './SimulationClock.js';
+import { LogisticsSystem } from '../systems/LogisticsSystem.js';
+import { ThreatMapSystem } from '../systems/ThreatMapSystem.js';
+
+export interface SideLogistics {
+    fuelStockpileKg: number;
+    ammoStockpile: Map<string, number>; // weaponProfileId -> count
+}
 
 /**
  * World: The container for physical reality.
@@ -64,6 +70,14 @@ export class World implements IWorldView {
     private readonly systemsByPhase = new Map<SystemPhase, ISystem[]>();
     private readonly dispatcher = new CommandDispatcher();
     public readonly grid = new Octree();
+
+    // --- Advanced World State ---
+    public sideLogistics = new Map<Side, SideLogistics>();
+    public environmentDetails = {
+        thermalLayers: [] as { depth: number, temperature: number }[],
+        magVariation: 0,
+        ionosphereDensity: 1.0
+    };
 
     public currentTick: number = 0;
     public timestamp: number = 0;
@@ -83,7 +97,26 @@ export class World implements IWorldView {
         public readonly weaponProfiles: WeaponProfileRegistry = new WeaponProfileRegistry(),
         public readonly loadoutRegistry: LoadoutRegistry = new LoadoutRegistry()
     ) {
+        this.addSystem(new LogisticsSystem());
+        this.addSystem(new ThreatMapSystem(this.weaponProfiles));
         this.registerDefaultHandlers();
+        this.initAdvancedState();
+    }
+
+    private initAdvancedState() {
+        [Side.Blue, Side.Red, Side.Neutral].forEach(side => {
+            this.sideLogistics.set(side as Side, {
+                fuelStockpileKg: 1_000_000,
+                ammoStockpile: new Map()
+            });
+        });
+
+        // Simple default thermocline
+        this.environmentDetails.thermalLayers = [
+            { depth: 0, temperature: 18 },
+            { depth: 200, temperature: 12 },
+            { depth: 500, temperature: 4 }
+        ];
     }
 
     private registerDefaultHandlers(): void {
@@ -169,6 +202,7 @@ export class World implements IWorldView {
     private externalCommandQueue: Command[] = [];
 
     public queueExternalCommand(cmd: Command): void {
+        cmd.isExternal = true;
         this.externalCommandQueue.push(cmd);
     }
 
@@ -256,30 +290,35 @@ export class World implements IWorldView {
 
             // 2. Execute Simulation Loop
             const systemCommands: Command[] = [];
-            for (const phase of simulationPhases) {
-                const phaseStart = performance.now();
-                const systems = this.systemsByPhase.get(phase) || [];
-                for (const system of systems) {
-                    const sysCommands = await system.process(this, dt);
-                    systemCommands.push(...sysCommands);
+            try {
+                for (const phase of simulationPhases) {
+                    const phaseStart = performance.now();
+                    const systems = this.systemsByPhase.get(phase) || [];
+                    for (const system of systems) {
+                        const sysCommands = await system.process(this, dt);
+                        systemCommands.push(...sysCommands);
+                    }
+                    phaseTimes[SystemPhase[phase]] = performance.now() - phaseStart;
                 }
-                phaseTimes[SystemPhase[phase]] = performance.now() - phaseStart;
-            }
 
-            // 3. Resolve Simulation Commands
-            const resolveStart = performance.now();
-            this.resolveCommands(systemCommands);
-            phaseTimes['resolveCommands'] = performance.now() - resolveStart;
+                // 3. Resolve Simulation Commands
+                const resolveStart = performance.now();
+                this.resolveCommands(systemCommands);
+                phaseTimes['resolveCommands'] = performance.now() - resolveStart;
 
-            // 4. Update Spatial Partitioning
-            const spatialStart = performance.now();
-            for (const entity of this.entities.values()) {
-                const transform = entity.getComponent(TransformComponent);
-                if (transform) {
-                    this.grid.updateEntity(entity.id, transform.position);
+                // 4. Update Spatial Partitioning
+                const spatialStart = performance.now();
+                for (const entity of this.entities.values()) {
+                    const transform = entity.getComponent(TransformComponent);
+                    if (transform) {
+                        this.grid.updateEntity(entity.id, transform.position);
+                    }
                 }
+                phaseTimes['spatialGrid'] = performance.now() - spatialStart;
+            } catch (err: any) {
+                logger.error(`FATAL CRASH in Simulation Loop (Tick ${this.currentTick}): ${err.message}`, { stack: err.stack });
+                throw err;
             }
-            phaseTimes['spatialGrid'] = performance.now() - spatialStart;
         } else {
             // Even if paused, resolve external commands (e.g. SetROE, SetEMCON)
             if (externalCommands.length > 0) {

@@ -10,7 +10,7 @@ export class EventBus {
     private readonly anyHandlers = new Set<(event: SimulationEvent) => void>();
 
     public on<T extends SimulationEvent>(type: T['type'], handler: EventHandler<T>): void {
-        console.log(`[EventBus] Registering handler for: ${type}`);
+        //console.log(`[EventBus] Registering handler for: ${type}`);
         if (!this.handlers.has(type)) {
             this.handlers.set(type, new Set());
         }

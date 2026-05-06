@@ -328,6 +328,7 @@ export class ApplyDamageHandler implements CommandHandler<ApplyDamageCommand> {
             });
 
             if (wasAlive && health.hp === 0) {
+                health.isDestroyed = true;
                 world.events.emit({
                     type: 'EntityDestroyed',
                     tick: world.currentTick,
@@ -336,6 +337,12 @@ export class ApplyDamageHandler implements CommandHandler<ApplyDamageCommand> {
                         killerId: 'unknown'
                     }
                 });
+                
+                // Also immediately remove if it's a munition, otherwise let the world reaper handle it
+                const profile = world.profileRegistry.get(entity.profileId);
+                if (profile?.type === 'Weapon') {
+                    world.removeEntity(cmd.entityId);
+                }
             }
         }
     }
