@@ -3,6 +3,23 @@ import { BaseCommand } from '../core/BaseCommand.js';
 import { WarGamesClient } from '../../sdk/WarGamesClient.js';
 import { C } from '../core/Utils.js';
 
+interface ServerMetrics {
+    uptime: number;
+    sessions: number;
+    simulation: {
+        totalMatches: number;
+        totalEntities: number;
+        profilesCount: number;
+        weaponProfilesCount: number;
+    };
+    memory: {
+        rss: number;
+        heapUsed: number;
+        heapTotal: number;
+        external: number;
+    };
+}
+
 export class ServerMetricsCommand extends BaseCommand {
     public readonly name = 'metrics';
     public readonly description = 'Display server system metrics (uptime, memory, etc.)';
@@ -12,9 +29,9 @@ export class ServerMetricsCommand extends BaseCommand {
         program
             .command(this.name)
             .description(this.description)
-            .action((options, command) => {
+            .action((_options: unknown, command: CommanderCommand) => {
                 const globalOpts = command.optsWithGlobals();
-                this.execute(globalOpts.url);
+                this.execute(globalOpts.url as string);
             });
     }
 
@@ -25,14 +42,7 @@ export class ServerMetricsCommand extends BaseCommand {
         });
 
         try {
-            const httpUrl = url.replace(/^ws/, 'http');
-            const res = await fetch(`${httpUrl}/api/system/metrics`);
-            
-            if (!res.ok) {
-                throw new Error(`Server returned ${res.status}: ${res.statusText}`);
-            }
-
-            const metrics = await res.json() as any;
+            const metrics = await client.apiFetch<ServerMetrics>('/api/system/metrics');
 
             console.log(`\n${C.blue}${C.bold}--- Server System Metrics ---${C.reset}`);
             console.log(`Uptime:     ${C.yellow}${this.formatUptime(metrics.uptime)}${C.reset}`);
@@ -50,8 +60,9 @@ export class ServerMetricsCommand extends BaseCommand {
             console.log(` External:   ${this.formatMem(metrics.memory.external)}`);
             console.log();
 
-        } catch (err: any) {
-            console.error(`\n${C.red}${C.bold}✖ Error:${C.reset} ${err.message}`);
+        } catch (err: unknown) {
+            const error = err as Error;
+            console.error(`\n${C.red}${C.bold}✖ Error:${C.reset} ${error.message}`);
         } finally {
             client.disconnect();
         }
@@ -60,7 +71,7 @@ export class ServerMetricsCommand extends BaseCommand {
     private formatUptime(seconds: number): string {
         const h = Math.floor(seconds / 3600);
         const m = Math.floor((seconds % 3600) / 60);
-        const s = seconds % 60;
+        const s = Math.floor(seconds % 60);
         return `${h}h ${m}m ${s}s`;
     }
 

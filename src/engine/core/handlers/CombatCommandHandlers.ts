@@ -10,15 +10,14 @@ import { TransformComponent, KinematicsComponent } from '../../components/Physic
 import { HealthComponent } from '../../components/Health.js';
 import { WeaponStageComponent } from '../../components/WeaponStages.js';
 import { CollisionComponent } from '../../components/Collision.js';
-import { WeaponProfileRegistry } from '../WeaponProfileRegistry.js';
-import { Side } from '../Types.js';
+import { Side, SensorType, EMBand, SensorMode, MountingType, MissionType } from '../Types.js';
 import { EntityManager } from '../EntityManager.js';
 import { logger } from '../Logger.js';
 import { GuidanceComponent, GuidanceType as CompGuidanceType } from '../../components/Guidance.js';
 import { GuidanceType as ProfGuidanceType } from '../WeaponProfileRegistry.js';
 import { SensorComponent, DetectionComponent } from '../../components/Sensors.js';
 import { PropulsionComponent } from '../../components/Propulsion.js';
-import { SensorType, EMBand, SensorMode, MountingType } from '../Types.js';
+import { MissionComponent, MissionStatus } from '../../components/Missions.js';
 import { VectorMath } from '../../math/VectorMath.js';
 import { EnvironmentComponent } from '../../components/Environment.js';
 import { FireControl } from '../../math/FireControl.js';
@@ -94,11 +93,11 @@ export class FireWeaponHandler implements CommandHandler<FireWeaponCommand> {
                 
                 // Demo logic: We spawn a physical entity for the weapon if it's a missile or a shell
                 if (weaponProfile && (weaponProfile.type === 'Missile' || weaponProfile.type === 'Gun')) {
-                    const targetEntity = world.getEntity(cmd.targetId);
-                    if (targetEntity) {
-                        const targetTransform = targetEntity.getComponent(TransformComponent);
+                    const targetEntitySpawn = world.getEntity(cmd.targetId);
+                    if (targetEntitySpawn) {
+                        const targetTransform = targetEntitySpawn.getComponent(TransformComponent);
                         if (targetTransform) {
-                            const entityMgr = new EntityManager(world, (world as any).profileRegistry);
+                            const entityMgr = new EntityManager(world, world.profileRegistry);
                             
                              // Spawn the munition entity
                              const munitionId = `${cmd.entityId}-${magazine.weaponProfileId}-${Date.now()}-${Math.floor(Math.random() * 1000)}`;
@@ -110,7 +109,7 @@ export class FireWeaponHandler implements CommandHandler<FireWeaponCommand> {
 
                              const projectileProfile = weaponProfile.entityProfileId ? world.profileRegistry.get(weaponProfile.entityProfileId) : undefined;
                              const shooterVel = entity.getComponent(KinematicsComponent)?.velocity || { x: 0, y: 0, z: 0 };
-                             const targetVel = targetEntity.getComponent(KinematicsComponent)?.velocity || { x: 0, y: 0, z: 0 };
+                             const targetVel = targetEntitySpawn.getComponent(KinematicsComponent)?.velocity || { x: 0, y: 0, z: 0 };
                              const env = entity.getComponent(EnvironmentComponent) as EnvironmentComponent;
 
                              const solution = FireControl.calculateAdvancedBallisticSolution(
@@ -172,6 +171,14 @@ export class FireWeaponHandler implements CommandHandler<FireWeaponCommand> {
                                     compGuidanceType,
                                     cmd.targetId,
                                     compGuidanceType === CompGuidanceType.SARH ? cmd.entityId : undefined
+                                ));
+
+                                // Add Intercept mission as per directive
+                                munition.addComponent(new MissionComponent(
+                                    MissionType.Intercept,
+                                    { targetId: cmd.targetId },
+                                    MissionStatus.Active,
+                                    world.currentTick
                                 ));
 
                                 // If ARH, ensure it has a seeker sensor
@@ -236,7 +243,7 @@ export class FireSalvoHandler implements CommandHandler<FireSalvoCommand> {
                     if (targetEntity) {
                         const targetTransform = targetEntity.getComponent(TransformComponent);
                         if (targetTransform) {
-                             const entityMgr = new EntityManager(world, (world as any).profileRegistry);
+                             const entityMgr = new EntityManager(world, world.profileRegistry);
                              // Unique but deterministic ID for the salvo in this tick
                              const munitionId = `${cmd.entityId}-${magazine.weaponProfileId}-salvo-${world.currentTick}-${cmd.mountIndex}`;
                              const projectileProfileId = weaponProfile.entityProfileId || `${magazine.weaponProfileId}-projectile`;

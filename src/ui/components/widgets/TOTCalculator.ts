@@ -2,6 +2,7 @@ import { sdkClient } from '../../framework/Client.js';
 import { Component } from '../../framework/Component.js';
 import { UIStore } from '../../framework/UIStore.js';
 import { VectorMath } from '../../../engine/math/VectorMath.js';
+import { MissionType } from '../../../sdk/schemas/index.js';
 
 /**
  * TOTCalculator: Time-on-Target routing calculator.
@@ -26,7 +27,7 @@ export class TOTCalculator extends Component {
 
         const selectedId = UIStore.selectedEntityId.get();
         const vs = UIStore.viewState.get();
-        const unit = vs?.units.find((u: any) => u.id === selectedId);
+        const unit = vs?.units.find(u => u.id === selectedId);
         
         // Find a target (either from selection or first track)
         const targetTrack = vs?.tracks[0]; // Simplified for now
@@ -74,13 +75,13 @@ export class TOTCalculator extends Component {
         commitBtn.style.marginTop = 'var(--sp-2)';
         commitBtn.textContent = 'COMMIT STRIKE PLAN';
         commitBtn.addEventListener('click', () => {
-            if (unit && targetTrack) {
+            if (unit && targetTrack && vs) {
                 const targetEtaMin = (strikes[0].range / strikes[0].speed) * 60;
                 const targetTick = vs.tick + Math.round(targetEtaMin * 60 * 10);
                 sdkClient.dispatch({
                     type: 'SetMission',
                     entityId: unit.id,
-                    missionType: 'Strike',
+                    missionType: MissionType.Strike,
                     params: { targetId: targetTrack.id, timeOverTargetTick: targetTick }
                 });
             }
@@ -90,7 +91,7 @@ export class TOTCalculator extends Component {
         this.recalc(strikes, etaEls, result, commitBtn);
     }
 
-    private recalc(strikes: { range: number; speed: number }[], etaEls: HTMLElement[], resultEl?: HTMLElement, commitBtn?: HTMLButtonElement) {
+    private recalc(strikes: { range: number; speed: number }[], etaEls: HTMLElement[], resultEl?: HTMLElement, _commitBtn?: HTMLButtonElement) {
         let maxEta = 0;
         for (let i = 0; i < strikes.length; i++) {
             const eta = strikes[i].speed > 0 ? (strikes[i].range / strikes[i].speed) * 60 : 0;

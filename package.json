@@ -17,7 +17,7 @@
     "test:e2e": "playwright test",
     "lint": "eslint src --ext .ts",
     "cli": "tsx src/cli/index.ts",
-    "mcp": "tsx src/sdk/mcp/index.ts",
+    "mcp": "tsx src/mcp/index.ts",
     "verify-speed": "tsx src/scripts/verify_speed_control.ts",
     "extract-data": "tsx src/data-extractor/main.ts",
     "resize-terrain": "tsx src/scripts/resize-terrain.ts"

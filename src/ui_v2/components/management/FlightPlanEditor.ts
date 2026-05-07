@@ -1,6 +1,8 @@
 import { Component } from '../../framework/Component';
 import { UIStore } from '../../framework/UIStore';
-import { CommandDispatcher } from '../../framework/CommandDispatcher';
+import { ViewUnitPayload, EngineCommandPayload, Vector3 } from '../../../sdk/schemas';
+
+type Waypoint = NonNullable<ViewUnitPayload['waypoints']>[number];
 
 /**
  * FlightPlanEditor: Waypoint editor for NavigationComponent paths.
@@ -35,7 +37,7 @@ export class FlightPlanEditor extends Component {
     protected render() {
         const selectedId = UIStore.selectedEntityId.get();
         const vs = UIStore.viewState.get();
-        const unit = vs?.units.find((u: any) => u.id === selectedId);
+        const unit = vs?.units.find((u: ViewUnitPayload) => u.id === selectedId);
 
         this.element.innerHTML = '';
         const header = this.el('div', 'fp-title');
@@ -64,7 +66,7 @@ export class FlightPlanEditor extends Component {
         table.appendChild(thead);
 
         this.tableBody = document.createElement('tbody');
-        unit.waypoints.forEach((wp: any, i: number) => {
+        unit.waypoints.forEach((wp, i: number) => {
             const tr = document.createElement('tr');
             tr.appendChild(this.cell(String(i + 1)));
             
@@ -120,16 +122,16 @@ export class FlightPlanEditor extends Component {
         const id = UIStore.selectedEntityId.get();
         if (!id || !UIStore.client) return;
         // Logic to add a waypoint near the unit or at 0,0
-        UIStore.client.dispatch({ type: 'AddWaypoint', entityId: id, pos: { x: 0, y: 0, z: 1000 } } as any);
+        UIStore.client.dispatch({ type: 'AddWaypoint', entityId: id, position: { x: 0, y: 0, z: 1000 }, speedKts: 300 } as EngineCommandPayload);
     }
 
-    private updateWaypoint(entityId: string, wp: any) {
-        if (!UIStore.client) return;
-        UIStore.client.dispatch({ type: 'UpdateWaypoint', entityId, waypointId: wp.id, pos: wp.pos, speedKts: wp.speedKts } as any);
+    private updateWaypoint(entityId: string, wp: Waypoint) {
+        if (!UIStore.client || !wp.id) return;
+        UIStore.client.dispatch({ type: 'SetCourse', entityId, position: wp.pos, speedKts: wp.speedKts || 300 } as EngineCommandPayload);
     }
 
-    private deleteWaypoint(entityId: string, waypointId: string) {
+    private deleteWaypoint(entityId: string, _waypointId: string) {
         if (!UIStore.client) return;
-        UIStore.client.dispatch({ type: 'RemoveWaypoint', entityId, waypointId } as any);
+        UIStore.client.dispatch({ type: 'ClearWaypoints', entityId } as EngineCommandPayload);
     }
 }

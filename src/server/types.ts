@@ -1,7 +1,8 @@
 import { MatchService, ScenarioService, TerrainService } from '../sdk/index.js';
 import { SessionManager } from './core/SessionManager.js';
 import { WebSocket } from 'ws';
-import { Side } from '../engine/core/Types.js';
+import { Side, ViewStateSnapshot } from '../engine/core/Types.js';
+import { BugManager } from './core/BugManager.js';
 
 export interface ManagedWebSocket extends WebSocket {
     isAlive?: boolean;
@@ -13,7 +14,7 @@ export interface ClientSession {
     side?: Side;
     matchId?: string;
     lastPing: number;
-    send: (data: any) => void;
+    send: (data: unknown) => void;
     syncRateHz?: number;
     fullSyncIntervalMs?: number;
     lastSyncTime?: number;
@@ -26,6 +27,7 @@ declare module 'fastify' {
         scenarioService: ScenarioService;
         sessionManager: SessionManager;
         terrainService: TerrainService;
-        broadcastSnapshot: (matchId: string, snapshot: any) => void;
+        bugManager: BugManager;
+        broadcastSnapshot: (matchId: string, snapshot: ViewStateSnapshot) => void;
     }
 }

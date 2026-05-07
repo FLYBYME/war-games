@@ -2,7 +2,7 @@ import * as fs from 'fs/promises';
 import { existsSync } from 'fs';
 import * as path from 'path';
 import { PNG } from 'pngjs';
-import { IStorageProvider, ILogger, IImageProvider, IImage } from '../../sdk/services/types.js';
+import { IStorageProvider, IImageProvider, IImage } from '../../sdk/services/types.js';
 
 export class NodeStorageProvider implements IStorageProvider {
     async readFile(filePath: string, encoding?: 'utf8'): Promise<string | ArrayBuffer> {

@@ -1,7 +1,6 @@
 import { ISystem, IWorldView, SystemPhase } from '../core/ISystem.js';
-import { Command, ChangeSideCommand } from '../core/Command.js';
-import { BoardingComponent, BoardingStatus } from '../components/Boarding.js';
-import { MissionComponent, MissionStatus } from '../components/Missions.js';
+import { Command, UpdateLogisticsStateCommand } from '../core/Command.js';
+import { LogisticsComponent, TurnaroundState } from '../components/Logistics.js';
 import { TaskGraphComponent } from '../components/TaskGraph.js';
 import { TaskType, TaskStatus } from '../core/TaskGraph.js';
 import { VectorMath } from '../math/VectorMath.js';
@@ -9,71 +8,71 @@ import { TransformComponent } from '../components/Physics.js';
 import { logger } from '../core/Logger.js';
 
 /**
- * BoardingSystem: Processes the active boarding phase of a VBSS mission.
+ * BoardingSystem: Level 3 Task Processor for Boarding operations (VBSS).
+ * Periodically checks proximity and transitions task state.
  */
 export class BoardingSystem implements ISystem {
     readonly name = 'BoardingSystem';
-    readonly phase = SystemPhase.Lifecycle;
+    readonly phase = SystemPhase.Decision;
     readonly dependencies = ['TaskReconcilerSystem'];
 
-    public async process(world: IWorldView, dt: number): Promise<Command[]> {
+    public async process(world: IWorldView, _dt: number): Promise<Command[]> {
         const commands: Command[] = [];
 
         for (const entity of world.getEntities()) {
-            const boarding = entity.getComponent(BoardingComponent);
-            if (!boarding || boarding.status !== BoardingStatus.InProgress) continue;
+            const taskComp = entity.getComponent(TaskGraphComponent);
+            const transform = entity.getComponent(TransformComponent);
+            if (!taskComp || !transform) continue;
 
-            const target = world.getEntity(boarding.targetId);
-            if (!target) {
-                boarding.status = BoardingStatus.Failed;
-                continue;
-            }
+            const boardingTasks = taskComp.graph.getActiveTasks().filter(t => t.task.type === TaskType.Boarding);
 
-            // 1. Proximity Check (Must stay close during boarding)
-            const myPos = entity.getComponent(TransformComponent)?.position;
-            const targetPos = target.getComponent(TransformComponent)?.position;
-            if (myPos && targetPos) {
-                const dist = VectorMath.distance(myPos, targetPos);
-                if (dist > 200) { // Lost boarding position
-                    boarding.status = BoardingStatus.Failed;
+            for (const node of boardingTasks) {
+                const payload = node.task.payload as { targetId: string, durationTicks: number };
+                const target = world.getEntity(payload.targetId);
+
+                if (!target) {
+                    taskComp.graph.markFailed(node.id, 'Target lost');
                     continue;
                 }
-            }
 
-            // 1.5 Area Check (Polygon Constraint)
-            if (boarding.allowedArea && targetPos) {
-                const polyPoints = boarding.allowedArea.points.map(p => ({ x: (p as any).x, y: (p as any).y }));
-                const isInside = VectorMath.isPointInPolygon({ x: targetPos.x, y: targetPos.y }, polyPoints);
-                if (!isInside) {
-                    boarding.status = BoardingStatus.Failed;
-                    logger.warn(`Boarding failed: Target ${boarding.targetId} moved out of valid VBSS area`, { entityId: entity.id });
-                    continue;
-                }
-            }
+                const targetTransform = target.getComponent(TransformComponent);
+                if (targetTransform) {
+                    const dist = VectorMath.distance(transform.position, targetTransform.position);
+                    
+                    if (node.status === TaskStatus.Pending && dist < 100) {
+                        // Start boarding
+                        node.status = TaskStatus.Active;
+                        logger.info(`Boarding started: ${entity.id} -> ${target.id}`);
+                        
+                        // Tell logistics we're busy
+                        const log = entity.getComponent(LogisticsComponent);
+                        if (log) {
+                            commands.push(new UpdateLogisticsStateCommand(entity.id, TurnaroundState.Boarding, payload.durationTicks));
+                        }
 
-            // 2. Progress Timer
-            boarding.remainingTicks -= 1;
-
-            if (boarding.remainingTicks <= 0) {
-                boarding.status = BoardingStatus.Completed;
-                boarding.remainingTicks = 0;
-
-                // 3. SEIZURE: Change target side to match boarder
-                commands.push(new ChangeSideCommand(target.id, entity.side));
-
-                // 4. Update Task Graph
-                const taskComp = entity.getComponent(TaskGraphComponent);
-                if (taskComp) {
-                    const activeBoardingTask = taskComp.graph.getActiveTasks().find(t => t.task.type === TaskType.Boarding);
-                    if (activeBoardingTask) {
-                        taskComp.graph.markCompleted(activeBoardingTask.id, { success: true });
+                        world.recordEvent({
+                            tick: world.currentTick,
+                            type: 'BoardingStarted',
+                            entityId: entity.id,
+                            targetId: target.id
+                        });
                     }
-                }
 
-                // 5. Update Mission Status
-                const mission = entity.getComponent(MissionComponent);
-                if (mission) {
-                    mission.status = MissionStatus.Completed;
+                    if (node.status === TaskStatus.Active) {
+                        // Check completion
+                        const log = entity.getComponent(LogisticsComponent);
+                        if (log && log.state !== TurnaroundState.Boarding) {
+                            taskComp.graph.markCompleted(node.id, { success: true });
+                            logger.info(`Boarding completed: ${entity.id} -> ${target.id}`);
+                            
+                            world.recordEvent({
+                                tick: world.currentTick,
+                                type: 'BoardingCompleted',
+                                entityId: entity.id,
+                                targetId: target.id
+                            });
+                        }
+                    }
                 }
             }
         }

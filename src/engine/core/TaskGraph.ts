@@ -1,4 +1,4 @@
-import { EntityId, Vector3, AreaV3 } from './Types.js';
+import { Vector3, AreaV3 } from './Types.js';
 import { PatrolParams } from '../components/Missions.js';
 
 export enum TaskType {
@@ -91,7 +91,7 @@ export interface TaskNode<T extends TaskPayload = TaskPayload, R = TaskResult> {
     result?: R;
 }
 
-export function isNavigateTask(node: TaskNode<any, any>): node is TaskNode<NavigatePayload, TaskResult> {
+export function isNavigateTask(node: TaskNode<TaskPayload, TaskResult>): node is TaskNode<NavigatePayload, TaskResult> {
     return node.task.type === TaskType.Navigate;
 }
 

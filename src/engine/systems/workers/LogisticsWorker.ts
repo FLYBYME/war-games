@@ -11,7 +11,7 @@ import { LogisticsComponent, TurnaroundState } from '../../components/Logistics.
  * LogisticsWorker: Handles automated landing and takeoff tasks.
  */
 export class LogisticsWorker implements TaskWorker {
-    public reconcile(entity: Entity, taskNode: TaskNode<LogisticsPayload, TaskResult>, world: IWorldView, dt: number): Command[] {
+    public reconcile(entity: Entity, taskNode: TaskNode<LogisticsPayload, TaskResult>, world: IWorldView, _dt: number): Command[] {
         const payload = taskNode.task.payload;
         const transform = entity.getComponent(TransformComponent);
         const logistics = entity.getComponent(LogisticsComponent);

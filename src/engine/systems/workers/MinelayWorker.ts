@@ -4,7 +4,7 @@ import { Command, SpawnEntityCommand } from '../../core/Command.js';
 import { TaskWorker } from '../TaskReconcilerSystem.js';
 import { TransformComponent } from '../../components/Physics.js';
 import { VectorMath } from '../../math/VectorMath.js';
-import { TaskNode, TaskStatus, MinelayPayload, TaskResult } from '../../core/TaskGraph.js';
+import { TaskNode, MinelayPayload, TaskResult } from '../../core/TaskGraph.js';
 import { TaskGraphComponent } from '../../components/TaskGraph.js';
 import { Vector3 } from '../../core/Types.js';
 
@@ -15,7 +15,7 @@ export class MinelayWorker implements TaskWorker {
     private lastDropPos?: Vector3;
     private droppedCount = 0;
 
-    public reconcile(entity: Entity, taskNode: TaskNode<MinelayPayload, TaskResult>, world: IWorldView, dt: number): Command[] {
+    public reconcile(entity: Entity, taskNode: TaskNode<MinelayPayload, TaskResult>, _world: IWorldView, _dt: number): Command[] {
         const payload = taskNode.task.payload;
         const transform = entity.getComponent(TransformComponent);
         const taskComp = entity.getComponent(TaskGraphComponent);
@@ -30,7 +30,7 @@ export class MinelayWorker implements TaskWorker {
         const commands: Command[] = [];
         const currentPos = transform.position;
 
-        if (!this.lastDropPos || VectorMath.distance(this.lastDropPos as Vector3, currentPos as Vector3) >= payload.spacingM) {
+        if (!this.lastDropPos || VectorMath.distance(this.lastDropPos, currentPos) >= payload.spacingM) {
             // Drop a mine!
             const mineId = `mine-${entity.id}-${this.droppedCount}`;
             
@@ -42,7 +42,7 @@ export class MinelayWorker implements TaskWorker {
                 0
             ));
 
-            this.lastDropPos = { ...currentPos } as Vector3;
+            this.lastDropPos = { ...currentPos };
             this.droppedCount++;
         }
 

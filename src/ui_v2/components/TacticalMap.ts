@@ -21,7 +21,7 @@ import { UIStore } from '../framework/UIStore';
  * TacticalMap: The PixiJS-based tactical display.
  */
 export class TacticalMap extends Component {
-    private renderer: MapRenderer;
+    public renderer: MapRenderer;
     private coordsEl!: HTMLElement;
 
     constructor() {

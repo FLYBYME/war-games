@@ -6,7 +6,7 @@ export type EventHandler<T extends SimulationEvent> = (event: T) => void;
  * EventBus: Type-safe message passing for Engine V3.
  */
 export class EventBus {
-    private readonly handlers = new Map<string, Set<EventHandler<any>>>();
+    private readonly handlers = new Map<string, Set<EventHandler<SimulationEvent>>>();
     private readonly anyHandlers = new Set<(event: SimulationEvent) => void>();
 
     public on<T extends SimulationEvent>(type: T['type'], handler: EventHandler<T>): void {
@@ -14,11 +14,11 @@ export class EventBus {
         if (!this.handlers.has(type)) {
             this.handlers.set(type, new Set());
         }
-        this.handlers.get(type)!.add(handler);
+        this.handlers.get(type)?.add(handler as unknown as EventHandler<SimulationEvent>);
     }
 
     public off<T extends SimulationEvent>(type: T['type'], handler: EventHandler<T>): void {
-        this.handlers.get(type)?.delete(handler);
+        this.handlers.get(type)?.delete(handler as unknown as EventHandler<SimulationEvent>);
     }
 
     public onAny(handler: (event: SimulationEvent) => void): void {

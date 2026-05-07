@@ -2,7 +2,7 @@ import { Signal } from './Signal.js';
 import { logger } from './Logger.js';
 import { DatabaseService } from './DatabaseService.js';
 import { sdkClient } from './Client.js';
-import { ViewStatePayload, ViewUnitPayload, ViewTrackPayload, WarGamesClient } from '../shared/types.js';
+import { ViewStatePayload, ViewUnitPayload, ViewTrackPayload, WarGamesClient, SimulationEvent } from '../shared/types.js';
 import { Side } from '../../sdk/schemas/domain.js';
 
 export type ViewState = ViewStatePayload;
@@ -94,6 +94,13 @@ export class UIStore {
 
     static toggleLayer(id: string) { const sig = this.getLayerSignal(id); sig.set(!sig.get()); }
 
+    static getSelectedEntity(): ViewUnitPayload | ViewTrackPayload | null {
+        const vs = this.viewState.get();
+        const id = this.selectedEntityId.get();
+        if (!vs || !id) return null;
+        return vs.units.find(u => u.id === id) || vs.tracks.find(t => t.id === id) || null;
+    }
+
     static addLog(entry: LogEntry) {
         this.logs.update((arr: LogEntry[]) => {
             const next = [...arr, entry];
@@ -119,11 +126,11 @@ export class UIStore {
             this.processViewState(vs);
         });
 
-        this.client.events.on('event:tactical', (evt: any) => {
-            this.handleTacticalEvent(evt);
+        this.client.events.on('events:new', (evt: unknown) => {
+            this.handleTacticalEvent(evt as SimulationEvent);
         });
 
-        this.client.events.on('error', (err: any) => {
+        this.client.events.on('error', (err: unknown) => {
             logger.error('Client error', { err });
         });
     }
@@ -133,14 +140,15 @@ export class UIStore {
         this.client.joinMatch(side, matchId);
     }
 
-    private static handleTacticalEvent(evt: any) {
-        if (evt.type === 'weapon_fired' && this.autoPauseOnWeaponFired.get()) {
+    private static handleTacticalEvent(evt: SimulationEvent) {
+        if (evt.type === 'WeaponFired' && this.autoPauseOnWeaponFired.get()) {
             this.setPaused(true);
-            this.addLog({ tick: this.currentTick.get(), severity: 'Combat', category: 'COMBAT', message: `WEAPON FIRED: ${evt.shooterId} → ${evt.targetId}` });
+            const data = evt.data as { shooterId?: string, targetId?: string };
+            this.addLog({ tick: this.currentTick.get(), severity: 'Combat', category: 'COMBAT', message: `WEAPON FIRED: ${data.shooterId || 'unknown'} → ${data.targetId || 'unknown'}` });
         }
-        if (evt.type === 'unit_destroyed' && this.autoPauseOnUnitDestroyed.get()) {
+        if (evt.type === 'EntityDestroyed' && this.autoPauseOnUnitDestroyed.get()) {
             this.setPaused(true);
-            this.addLog({ tick: this.currentTick.get(), severity: 'Critical', category: 'COMBAT', message: `UNIT DESTROYED: ${evt.entityId} (${evt.side})` });
+            this.addLog({ tick: this.currentTick.get(), severity: 'Critical', category: 'COMBAT', message: `UNIT DESTROYED: ${evt.entityId || 'unknown'}` });
         }
     }
 
@@ -172,7 +180,6 @@ export class UIStore {
         }
 
         // 4. Regular state updates
-        const prevTick = this.currentTick.get();
         this.viewState.set(vs);
         this.currentTick.set(vs.tick);
 
@@ -187,7 +194,7 @@ export class UIStore {
             // New Hostile Contact
             if (this.autoPauseOnNewHostile.get()) {
                 for (const track of vs.tracks) {
-                    if (track.classification === 'Hostile' && !this.knownHostileTracks.has(track.id)) {
+                    if (track.identification === 'Hostile' && !this.knownHostileTracks.has(track.id)) {
                         shouldPause = true;
                         this.addLog({
                             tick: vs.tick,
@@ -206,7 +213,7 @@ export class UIStore {
 
         // Update known tracks
         for (const track of vs.tracks) {
-            if (track.classification === 'Hostile') {
+            if (track.identification === 'Hostile') {
                 this.knownHostileTracks.add(track.id);
             }
         }

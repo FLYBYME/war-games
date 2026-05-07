@@ -10,7 +10,7 @@ export class BordersLayer implements MapLayer {
     private _graphics: Graphics | null = null;
     
     private get graphics(): Graphics {
-        if (!this._graphics || (this._graphics as any).destroyed) {
+        if (!this._graphics || this._graphics.destroyed) {
             this._graphics = new Graphics();
             this.container.addChild(this._graphics);
         }

@@ -18,7 +18,21 @@ export interface MapRegion {
     };
     landPng: string;
     oceanPng: string;
-    metadata: any;
+    metadata: unknown;
+}
+
+interface WorkerMessage {
+    success: boolean;
+    lat: number;
+    lon: number;
+    engineEncoded: Uint8Array;
+    uiEncoded: Uint8Array;
+    error?: string;
+}
+
+interface TerrainJob {
+    resolve: (v: { engineData: Float32Array, uiEncoded: Uint8Array }) => void;
+    reject: (e: Error) => void;
 }
 
 /**
@@ -27,31 +41,33 @@ export interface MapRegion {
 export class TerrainService implements ITileProvider {
     private readonly engineDir: string;
     private readonly uiDir: string;
-    private readonly regionsDir: string;
+    private readonly _regionsDir: string;
     private readonly storage: IStorageProvider;
     private readonly logger: ILogger;
-    private readonly image?: IImageProvider;
+    private readonly _image?: IImageProvider;
     private regions: MapRegion[] = [];
     private readonly tileCache = new Map<string, Float32Array>();
     private readonly worker: Worker;
-    private readonly pendingJobs = new Map<string, Array<{ resolve: (v: any) => void, reject: (e: any) => void }>>();
+    private readonly pendingJobs = new Map<string, TerrainJob[]>();
 
     constructor(config: ServiceConfig) {
         this.storage = config.storage;
         this.logger = config.logger;
-        this.image = config.image;
+        this._image = config.image;
 
         const base = config.baseDir || '';
         this.engineDir = this.storage.join(base, 'data', 'terrain', 'engine');
         this.uiDir = this.storage.join(base, 'data', 'terrain', 'ui');
-        this.regionsDir = this.storage.join(base, 'metadata', 'grayscale-maps');
+        this._regionsDir = this.storage.join(base, 'metadata', 'grayscale-maps');
 
         // Start worker
         const workerPath = path.resolve(__dirname, '../../server/workers/terrain.worker.ts');
         this.worker = new Worker(workerPath, {
             execArgv: [...process.execArgv, '--no-warnings']
         });
-        this.worker.on('message', (msg) => this.handleWorkerMessage(msg));
+        this.worker.on('message', (msg: unknown) => {
+            void this.handleWorkerMessage(msg as WorkerMessage);
+        });
         this.worker.on('error', (err) => {
             this.logger.error('Terrain Worker Startup Error', {
                 message: err.message,
@@ -74,6 +90,7 @@ export class TerrainService implements ITileProvider {
 
     private async scanRegions() {
         this.logger.warn('Region cache is deprecated.');
+        return Promise.resolve();
     }
 
     public getRegions() { return this.regions; }
@@ -142,7 +159,8 @@ export class TerrainService implements ITileProvider {
         }
 
         // Dispatch to worker
-        return (await this.dispatchToWorker(floorLat, floorLon)).engineData;
+        const result = await this.dispatchToWorker(floorLat, floorLon);
+        return result.engineData;
     }
 
     public async getTileEncoded(lat: number, lon: number): Promise<Uint8Array | undefined> {
@@ -175,25 +193,25 @@ export class TerrainService implements ITileProvider {
         }
 
         return new Promise((resolve, reject) => {
-            this.pendingJobs.get(key)!.push({ resolve, reject });
+            this.pendingJobs.get(key)?.push({ resolve, reject });
         });
     }
 
-    private async handleWorkerMessage(msg: any) {
+    private async handleWorkerMessage(msg: WorkerMessage) {
         const { success, lat, lon, engineEncoded, uiEncoded, error } = msg;
         const key = `${lat},${lon}`;
         const waiters = this.pendingJobs.get(key) || [];
         this.pendingJobs.delete(key);
 
         if (!success) {
-            waiters.forEach(w => w.reject(new Error(error)));
+            waiters.forEach(w => w.reject(new Error(error || 'Worker failed without error message')));
             return;
         }
 
         // Write to disk cache
         const fileName = `${this.coordToName(lat, lon)}.wgt`;
-        await this.storage.writeFile(this.storage.join(this.engineDir, fileName), engineEncoded);
-        await this.storage.writeFile(this.storage.join(this.uiDir, fileName), uiEncoded);
+        await this.storage.writeFile(this.storage.join(this.engineDir, fileName), engineEncoded.buffer as ArrayBuffer);
+        await this.storage.writeFile(this.storage.join(this.uiDir, fileName), uiEncoded.buffer as ArrayBuffer);
 
         const decoded = WgtFormat.decode(engineEncoded.buffer);
         this.tileCache.set(key, decoded.data);

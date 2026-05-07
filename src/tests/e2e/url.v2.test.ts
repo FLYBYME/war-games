@@ -39,8 +39,8 @@ test.describe('V2 URL Synchronization', () => {
 
         // 2. Verify UIStore state
         const state = await page.evaluate(() => ({
-            view: (window as any).UIStore.activeView.get(),
-            matchId: (window as any).UIStore.currentMatchId.get()
+            view: (window as unknown as { [key: string]: unknown }).UIStore.activeView.get(),
+            matchId: (window as unknown as { [key: string]: unknown }).UIStore.currentMatchId.get()
         }));
 
         expect(state.view).toBe('tactical');

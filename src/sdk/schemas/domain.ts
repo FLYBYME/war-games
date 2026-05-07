@@ -12,18 +12,31 @@ export enum Side {
 export const SideSchema = z.nativeEnum(Side);
 
 export const Vector3Schema = z.object({
-    x: z.number(),
-    y: z.number(),
-    z: z.number()
+    x: z.number().describe("WGS84 Easting / Longitude offset in meters from origin"),
+    y: z.number().describe("WGS84 Northing / Latitude offset in meters from origin"),
+    z: z.number().describe("Altitude in meters. Positive is up.")
 });
 export type Vector3 = z.infer<typeof Vector3Schema>;
 
 export const LlaSchema = z.object({
-    lat: z.number(),
-    lon: z.number(),
-    alt: z.number()
+    lat: z.number().describe("Latitude in decimal degrees"),
+    lon: z.number().describe("Longitude in decimal degrees"),
+    alt: z.number().describe("Altitude in meters above sea level")
 });
 export type Lla = z.infer<typeof LlaSchema>;
+
+export enum MissionType {
+    Patrol = 'Patrol',
+    Strike = 'Strike',
+    ASW = 'ASW',
+    Escort = 'Escort',
+    Idle = 'Idle',
+    VBSS = 'VBSS',
+    Minelaying = 'Minelaying',
+    MCM = 'MCM',
+    Intercept = 'Intercept'
+}
+export const MissionTypeSchema = z.nativeEnum(MissionType);
 
 export const AreaV3Schema = z.object({
     id: z.string().optional(),
@@ -41,6 +54,33 @@ export type AreaLla = z.infer<typeof AreaLlaSchema>;
 
 export const AreaSchema = z.union([AreaV3Schema, AreaLlaSchema]);
 export type Area = AreaV3 | AreaLla;
+
+export const MissionParamsSchema = z.object({
+    center: Vector3Schema.optional().describe("Center of patrol or mission area"),
+    radiusM: z.number().optional().describe("Radius of mission area in meters"),
+    targetId: EntityIdSchema.optional().describe("Primary target for Strike/Escort/Intercept missions"),
+    searchPattern: z.string().optional().describe("Pattern type for searches"),
+    area: AreaSchema.optional().describe("Geographic constraint area"),
+    allowedArea: AreaSchema.optional().describe("VBSS/Boarding allowed area"),
+}).catchall(z.unknown());
+export type MissionParams = z.infer<typeof MissionParamsSchema>;
+
+export enum MissionStatus {
+    Pending = 'Pending',
+    Active = 'Active',
+    Completed = 'Completed',
+    Aborted = 'Aborted',
+    Failed = 'Failed',
+    Suspended = 'Suspended'
+}
+export const MissionStatusSchema = z.nativeEnum(MissionStatus);
+
+export const MissionSchema = z.object({
+    type: MissionTypeSchema.describe("The tactical objective type"),
+    status: MissionStatusSchema.describe("Execution status"),
+    params: MissionParamsSchema.optional()
+});
+export type Mission = z.infer<typeof MissionSchema>;
 
 export enum EntityCategory {
     Unknown = 0,
@@ -71,15 +111,15 @@ export const IdentificationStatusSchema = z.nativeEnum(IdentificationStatus);
 
 export const TrackSchema = z.object({
     id: z.string(),
-    trueEntityId: z.string(),
+    trueEntityId: z.string().describe("Hidden ground truth entity ID"),
     position: Vector3Schema,
     velocity: Vector3Schema,
     lastSeenTick: z.number(),
-    cepM: z.number(),
+    cepM: z.number().describe("Circular Error Probable in meters"),
     status: TrackStatusSchema,
-    classification: z.string(),
+    classification: z.string().describe("e.g. 'Air-Commercial', 'Surface-Combatant'"),
     identification: IdentificationStatusSchema,
-    confidence: z.number()
+    confidence: z.number().min(0).max(1).describe("Confidence in classification/ID")
 });
 export type Track = z.infer<typeof TrackSchema>;
 
@@ -87,7 +127,7 @@ export interface IComponent {
     readonly type: string;
 }
 
-export type ComponentConstructor<T extends IComponent> = new (...args: any[]) => T;
+export type ComponentConstructor<T extends IComponent> = new (...args: unknown[]) => T;
 
 export enum SensorType {
     Radar = 'Radar',
@@ -124,11 +164,35 @@ export enum MountingType {
 }
 export const MountingTypeSchema = z.nativeEnum(MountingType);
 
+export enum EMCONState {
+    Alpha = 'Alpha',   // Fully Active
+    Bravo = 'Bravo',   // Restricted
+    Charlie = 'Charlie', // Silent
+    Silent = 'Silent'
+}
+export const EMCONStateSchema = z.nativeEnum(EMCONState);
+
+export enum ROE {
+    FREE = 'Free',
+    TIGHT = 'Tight',
+    HOLD = 'Hold'
+}
+export const ROESchema = z.nativeEnum(ROE);
+
+export const WRARuleSchema = z.object({
+    targetType: z.string(),
+    weaponType: z.string(),
+    quantity: z.number(),
+    maxRangePct: z.number().optional(),
+    minRangeM: z.number().optional()
+});
+export type WRARule = z.infer<typeof WRARuleSchema>;
+
 // --- GeoJSON Types ---
 
 export const GeoJSONGeometrySchema = z.object({
     type: z.string(),
-    coordinates: z.any()
+    coordinates: z.unknown()
 });
 
 export const GeoJSONFeatureSchema = z.object({
@@ -157,9 +221,6 @@ export const MapRegionSchema = z.object({
         minLon: z.number(),
         maxLon: z.number()
     }),
-    metadata: z.object({
-        land: z.object({ minElevation: z.number(), maxElevation: z.number() }).optional(),
-        ocean: z.object({ minElevation: z.number(), maxElevation: z.number() }).optional()
-    }).catchall(z.any())
+    metadata: z.record(z.unknown()).optional().describe("Additional region metadata")
 });
 export type MapRegion = z.infer<typeof MapRegionSchema>;

@@ -7,8 +7,7 @@ const wsUrl = `ws://${hostname}:3000/ws`;
 
 export const sdkClient = new WarGamesClient({ 
     url: wsUrl,
-    connectTimeoutMs: 10000,
-    maxReconnectAttempts: 20
+    connectTimeoutMs: 10000
 });
 
 // Setup a default match

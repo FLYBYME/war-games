@@ -205,8 +205,8 @@ export class RadarRingsLayer implements MapLayer {
         for (const u of state.units) {
             const ox = u.pos.x * SCALE;
             const oy = -u.pos.y * SCALE;
-            const sensors = (u as any).sensors || [];
-            const maxRange = sensors.length > 0 ? Math.max(...sensors.map((s: any) => s.rangeM)) : 0;
+            const sensors = u.sensors || [];
+            const maxRange = sensors.length > 0 ? Math.max(...sensors.map(s => s.rangeM)) : 0;
             if (maxRange > 0) {
                 g.circle(ox, oy, maxRange * SCALE);
             }
@@ -249,7 +249,8 @@ export class WEZLayer implements MapLayer {
         for (const u of state.units) {
             const ox = u.pos.x * SCALE;
             const oy = -u.pos.y * SCALE;
-            const r = (u as any).wezRadius || 0;
+            // wezRadius is not currently in the schema, using 0 as fallback
+            const r = (u as unknown as { wezRadius?: number }).wezRadius || 0;
             if (r > 0) {
                 g.circle(ox, oy, r * SCALE);
             }
@@ -267,12 +268,12 @@ export class DatalinkLayer implements MapLayer {
 
     update(state: ViewState, viewScale: number) {
         this.container.removeChildren();
-        const graph = (state as any).datalinkGraph;
+        const graph = state.datalinkGraph;
         if (!graph || !graph.edges) return;
         const g = new Graphics();
         for (const edge of graph.edges) {
-            const a = state.units.find((u: any) => u.id === edge.a);
-            const b = state.units.find((u: any) => u.id === edge.b);
+            const a = state.units.find(u => u.id === edge.a);
+            const b = state.units.find(u => u.id === edge.b);
             if (a && b) {
                 g.moveTo(a.pos.x * SCALE, -a.pos.y * SCALE);
                 g.lineTo(b.pos.x * SCALE, -b.pos.y * SCALE);

@@ -1,5 +1,5 @@
 import { World } from './World.js';
-import { EntityManager } from './EntityManager.js';
+import { EntityManager, SpawnParams } from './EntityManager.js';
 import { ScenarioAutomationSystem } from '../systems/ScenarioAutomationSystem.js';
 import { MissionComponent, MissionType } from '../components/Missions.js';
 import { DoctrineComponent, ROE, EMCONState } from '../components/Doctrine.js';
@@ -8,7 +8,7 @@ import { FacilityComponent, LogisticsComponent, TurnaroundState } from '../compo
 import { PropulsionComponent, EngineState } from '../components/Propulsion.js';
 import { logger } from './Logger.js';
 
-import type { ScenarioManifest, ScenarioEvent, ScenarioAssertion, ScenarioIntent } from '../../sdk/schemas/index.js';
+import type { ScenarioManifest, ScenarioEvent, ScenarioAssertion, ScenarioIntent, Vector3 } from '../../sdk/schemas/index.js';
 export type { ScenarioManifest, ScenarioEvent, ScenarioAssertion, ScenarioIntent };
 
 /**
@@ -38,13 +38,24 @@ export class ScenarioLoader {
 
         // 2. Spawn Entities
         for (const entityDef of manifest.entities) {
-            const params: any = { ...entityDef };
+            const params: SpawnParams = { 
+                id: entityDef.id,
+                profileId: entityDef.profileId,
+                profile: entityDef.profile,
+                side: entityDef.side,
+                speedKts: entityDef.speedKts,
+                heading: entityDef.heading
+            };
             
             // Normalize position: schema allows Vector3 or tuple, but EntityManager expects Vector3 | [number, number, number]
             if (entityDef.position) {
-                params.pos = entityDef.position;
+                params.position = entityDef.position;
             } else if (entityDef.pos) {
-                params.pos = entityDef.pos;
+                if (Array.isArray(entityDef.pos)) {
+                    params.pos = [entityDef.pos[0], entityDef.pos[1], entityDef.pos[2]];
+                } else {
+                    params.pos = entityDef.pos as Vector3;
+                }
             }
 
             this.entityMgr.spawn(params);
@@ -91,9 +102,11 @@ export class ScenarioLoader {
                             if (intent.emcon) doctrine.emcon = intent.emcon as EMCONState;
                             if (intent.wra) {
                                 doctrine.wraRules = intent.wra.map(r => ({
-                                    ...r,
+                                    targetType: r.targetType,
+                                    weaponType: r.weaponType,
+                                    quantity: r.quantity ?? 1,
                                     maxRangePct: r.maxRangePct ?? 1.0,
-                                    quantity: r.quantity ?? 1
+                                    minRangeM: r.minRangeM
                                 }));
                             }
                         } else {
@@ -114,9 +127,11 @@ export class ScenarioLoader {
                                 if (intent.emcon) doctrine.emcon = intent.emcon as EMCONState;
                                 if (intent.wra) {
                                     doctrine.wraRules = intent.wra.map(r => ({
-                                        ...r,
+                                        targetType: r.targetType,
+                                        weaponType: r.weaponType,
+                                        quantity: r.quantity ?? 1,
                                         maxRangePct: r.maxRangePct ?? 1.0,
-                                        quantity: r.quantity ?? 1
+                                        minRangeM: r.minRangeM
                                     }));
                                 }
                             }

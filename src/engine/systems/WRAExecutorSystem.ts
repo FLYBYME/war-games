@@ -1,7 +1,7 @@
 import { ISystem, IWorldView, SystemPhase } from '../core/ISystem.js';
 import { Command, FireWeaponCommand, FireSalvoCommand } from '../core/Command.js';
 import { DoctrineComponent, ROE } from '../components/Doctrine.js';
-import { IdentificationStatus, Vector3 } from '../core/Types.js';
+import { IdentificationStatus } from '../core/Types.js';
 import { CombatComponent } from '../components/Combat.js';
 import { TrackComponent } from '../components/Track.js';
 import { TransformComponent } from '../components/Physics.js';
@@ -9,8 +9,6 @@ import { WeaponProfileRegistry } from '../core/WeaponProfileRegistry.js';
 import { VectorMath } from '../math/VectorMath.js';
 import { logger } from '../core/Logger.js';
 import { GuidanceComponent } from '../components/Guidance.js';
-import { KinematicsComponent } from '../components/Physics.js';
-import { EnvironmentComponent } from '../components/Environment.js';
 
 /**
  * WRAExecutorSystem: Evaluates WRA rules and triggers automated engagements.
@@ -51,7 +49,7 @@ export class WRAExecutorSystem implements ISystem {
 
                 // 2. WRA Rule Matching
                 const targetType = track.classification || 'Unknown';
-                const dist = VectorMath.distance(transform.position, track.position as Vector3);
+                const dist = VectorMath.distance(transform.position, track.position);
 
                 let rulesToEvaluate = doctrine.wraRules.filter(r => r.targetType === 'Any' || r.targetType === targetType);
 
@@ -95,12 +93,9 @@ export class WRAExecutorSystem implements ISystem {
                         if (dist >= minRange && dist <= maxEffectiveRange) {
                             // 5. Alignment Check
                             // We need to ensure the mount is pointed at the target before firing
-                            const shooterVel = entity.getComponent(KinematicsComponent)?.velocity || { x: 0, y: 0, z: 0 };
-                            const targetVel = (track as any).velocity || { x: 0, y: 0, z: 0 };
-                            const env = entity.getComponent(EnvironmentComponent);
                             
                             // Calculate required angles
-                            const vToTarget = VectorMath.subtract(track.position as Vector3, transform.position);
+                            const vToTarget = VectorMath.subtract(track.position, transform.position);
                             const azimuthDegWorld = (Math.atan2(vToTarget.y, vToTarget.x) * (180 / Math.PI) + 360) % 360;
                             const groundDist = Math.sqrt(vToTarget.x * vToTarget.x + vToTarget.y * vToTarget.y);
                             const elevationDegWorld = Math.atan2(vToTarget.z, groundDist) * (180 / Math.PI);

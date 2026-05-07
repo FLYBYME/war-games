@@ -6,12 +6,14 @@ import { NodeStorageProvider, NodeImageProvider } from './core/NodeProviders.js'
 import { SessionManager } from './core/SessionManager.js';
 import { registerRoutes } from './routes/root.js';
 import { TickManager } from './core/TickManager.js';
+import { BugManager } from './core/BugManager.js';
+import { AddressInfo } from 'net';
 
 export async function startServer(port?: number, logLevel?: string) {
     if (logLevel) {
-        logger.setLevel(logLevel as any);
+        logger.setLevel(logLevel as 'debug' | 'info' | 'warn' | 'error');
     } else {
-        logger.setLevel(serverConfig.logLevel);
+        logger.setLevel(serverConfig.logLevel as 'debug' | 'info' | 'warn' | 'error');
     }
 
     const app = await createApp();
@@ -25,9 +27,11 @@ export async function startServer(port?: number, logLevel?: string) {
     const matchService = new MatchService(serviceConfig);
     const scenarioService = new ScenarioService(serviceConfig);
     const sessionManager = new SessionManager();
+    const bugManager = new BugManager(logger);
 
     await matchService.init();
     await scenarioService.init();
+    await bugManager.init();
 
     const tickManager = new TickManager(matchService, logger);
 
@@ -36,6 +40,7 @@ export async function startServer(port?: number, logLevel?: string) {
     app.decorate('scenarioService', scenarioService);
     app.decorate('sessionManager', sessionManager);
     app.decorate('terrainService', matchService.terrainService);
+    app.decorate('bugManager', bugManager);
 
     // Register Routes
     await registerRoutes(app);
@@ -56,8 +61,8 @@ export async function startServer(port?: number, logLevel?: string) {
     tickManager.startLoop('default');
 
     const finalPort = port !== undefined ? port : serverConfig.port;
-    const address = await app.listen({ port: finalPort, host: '0.0.0.0' });
-    const listeningPort = (app.server.address() as any).port;
+    await app.listen({ port: finalPort, host: '0.0.0.0' });
+    const listeningPort = (app.server.address() as AddressInfo).port;
     logger.info(`Server listening on port ${listeningPort} (Fastify)`);
 
     return {

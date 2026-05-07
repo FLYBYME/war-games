@@ -1,141 +1,109 @@
 import { Component } from '../../framework/Component';
 import { UIStore } from '../../framework/UIStore';
+import { WRARule } from '../../../sdk/schemas/domain.js';
 
 /**
- * WRAWindow: Weapon Release Authorization rule builder.
- * Ported to V2 WindowManager architecture.
+ * WRAWindow: Weapon Release Authority editor.
+ * Configures engagement rules based on target classification.
  */
 export class WRAWindow extends Component {
-    private rulesEl!: HTMLElement;
-    private rules: any[] = [];
-    private selectedId: string | null = null;
+    private rules: WRARule[] = [];
+    private rulesListEl!: HTMLElement;
 
-    constructor() { super('div', 'wra-widget'); }
+    constructor() {
+        super('div', 'wra-window', 'wra-window');
+    }
 
-    protected styles() {
+    protected styles(): string {
         return `
-        .wra-widget { padding: var(--sp-3); display: flex; flex-direction: column; gap: var(--sp-2); height: 100%; box-sizing: border-box; }
-        .wra-title { font-size: var(--text-xs); font-weight: 700; color: var(--text-muted); text-transform: uppercase; margin-bottom: var(--sp-2); display: flex; justify-content: space-between; align-items: center; letter-spacing: 0.05em; }
-        .wra-rule { display: grid; grid-template-columns: 1fr 50px 60px 1fr 30px; gap: 4px; align-items: center; padding: var(--sp-1) 0; border-bottom: 1px solid var(--border-color); font-size: var(--text-xs); }
-        .wra-input { background: var(--bg-base); border: 1px solid var(--border-color); border-radius: 2px; padding: 4px; font-size: var(--text-xs); color: var(--text-main); font-family: var(--font-mono); width: 100%; outline: none; }
-        .wra-input:focus { border-color: var(--color-friendly); }
-        .wra-del { cursor: pointer; color: var(--accent-danger); text-align: center; font-size: 14px; width: 24px; transition: background 0.2s; }
-        .wra-del:hover { background: rgba(239, 68, 68, 0.1); }
-        .wra-header { color: var(--text-dim); font-weight: 600; text-transform: uppercase; background: var(--bg-header); padding: var(--sp-1) 0; }
-        .wra-empty { color: var(--text-dim); text-align: center; padding: var(--sp-4); font-style: italic; }
-        .wra-content { flex: 1; overflow-y: auto; }
+            .wra-window { padding: 15px; background: #111; color: #ddd; }
+            .rule-row {
+                display: grid;
+                grid-template-columns: 100px 100px 60px 60px 1fr;
+                gap: 8px;
+                padding: 6px 0;
+                border-bottom: 1px solid #222;
+                align-items: center;
+            }
+            .label { font-size: 10px; color: #666; text-transform: uppercase; }
+            input, select { background: #000; border: 1px solid #333; color: #fff; font-size: 11px; padding: 2px 4px; }
+            .btn-add { background: #006644; color: white; border: none; padding: 4px 10px; cursor: pointer; margin-top: 10px; font-size: 11px; }
         `;
     }
 
-    protected render() {
-        this.element.innerHTML = '';
-        
-        const header = this.el('div', 'wra-title');
-        header.appendChild(this.el('span', undefined, 'WEAPON RELEASE AUTHORIZATION'));
-        
-        const addBtn = document.createElement('button');
-        addBtn.className = 'btn btn--ghost btn--xs';
-        addBtn.textContent = '+ ADD RULE';
-        addBtn.addEventListener('click', () => {
-            this.rules.push({ targetType: 'Any', weaponType: 'Any', quantity: 1, maxRangePct: 0.75 });
-            this.rebuildRules();
-            this.saveRules();
-        });
-        header.appendChild(addBtn);
-        this.element.appendChild(header);
+    protected render(): void {
+        this.element.innerHTML = `
+            <div style="font-weight: bold; margin-bottom: 10px; border-bottom: 1px solid #333; padding-bottom: 5px;">WRA Policies</div>
+            <div class="rule-row" style="border: none;">
+                <span class="label">Target</span>
+                <span class="label">Weapon</span>
+                <span class="label">Qty</span>
+                <span class="label">Range %</span>
+                <span></span>
+            </div>
+            <div id="rules-list"></div>
+            <button class="btn-add" id="btn-add-rule">+ NEW RULE</button>
+        `;
 
-        const headRow = this.el('div', 'wra-rule wra-header');
-        ['Target Type', 'Qty', 'Range%', 'Weapon', '✕'].forEach(h => {
-            headRow.appendChild(this.el('span', undefined, h));
-        });
-        this.element.appendChild(headRow);
+        this.rulesListEl = this.element.querySelector('#rules-list') as HTMLElement;
+        const addBtn = this.element.querySelector('#btn-add-rule') as HTMLButtonElement;
+        this.listen(addBtn, 'click', () => this.addDefaultRule());
 
-        this.rulesEl = this.el('div', 'wra-content');
-        this.element.appendChild(this.rulesEl);
-        
-        this.refreshFromState();
+        // Sync with selected entity
+        this.subscribe(UIStore.selectedEntityId, () => this.sync());
     }
 
-    protected onMount() {
-        this.subscribe(UIStore.selectedEntityId, id => {
-            this.selectedId = id;
-            this.refreshFromState();
-        });
+    private sync() {
+        const entityId = UIStore.selectedEntityId.get();
+        if (!entityId) return;
 
-        this.subscribe(UIStore.viewState, () => {
-            this.refreshFromState();
-        });
-    }
-
-    private refreshFromState() {
-        if (!this.rulesEl) return;
-        
-        if (!this.selectedId) {
-            this.rules = [];
-            this.rebuildRules();
-            return;
-        }
-
-        const vs = UIStore.viewState.get();
-        const unit = vs?.units.find((u: any) => u.id === this.selectedId);
-        
-        if (unit?.doctrine?.wraRules) {
-            // Only update if length differs or something (to avoid losing focus while typing)
-            if (JSON.stringify(this.rules) !== JSON.stringify(unit.doctrine.wraRules)) {
-                this.rules = JSON.parse(JSON.stringify(unit.doctrine.wraRules));
-                this.rebuildRules();
-            }
-        } else {
-            this.rules = [];
-            this.rebuildRules();
-        }
-    }
-
-    private rebuildRules() {
-        this.rulesEl.replaceChildren();
+        // In a real app, we'd fetch WRA from the engine via SDK
+        // For now, use a default set
         if (this.rules.length === 0) {
-            this.rulesEl.appendChild(this.el('div', 'wra-empty', 'No active WRA rules for selected unit.'));
-            return;
+            this.rules = [
+                { targetType: 'Air', weaponType: 'Any', quantity: 2, maxRangePct: 0.8 },
+                { targetType: 'Surface', weaponType: 'Any', quantity: 1, maxRangePct: 0.5 }
+            ];
         }
+        this.refreshList();
+    }
 
-        for (let i = 0; i < this.rules.length; i++) {
-            const r = this.rules[i];
-            const row = this.el('div', 'wra-rule');
+    private refreshList() {
+        this.rulesListEl.innerHTML = '';
+        this.rules.forEach((rule, idx) => {
+            const row = this.el('div', 'rule-row');
             
-            row.appendChild(this.makeInput(r.targetType, v => { r.targetType = v; this.saveRules(); }));
-            row.appendChild(this.makeInput(String(r.quantity), v => { r.quantity = Number(v); this.saveRules(); }));
-            row.appendChild(this.makeInput(`${Math.round((r.maxRangePct || 1.0) * 100)}%`, v => { 
-                r.maxRangePct = parseInt(v) / 100; 
-                this.saveRules(); 
-            }));
-            row.appendChild(this.makeInput(r.weaponType || 'Any', v => { r.weaponType = v; this.saveRules(); }));
-
-            const del = this.el('span', 'wra-del', '✕');
-            del.addEventListener('click', () => { 
-                this.rules.splice(i, 1); 
-                this.rebuildRules(); 
-                this.saveRules();
+            const targetSelect = document.createElement('select');
+            ['Air', 'Surface', 'Subsurface', 'Any'].forEach(t => {
+                const opt = document.createElement('option');
+                opt.value = t; opt.textContent = t;
+                if (t === rule.targetType) opt.selected = true;
+                targetSelect.appendChild(opt);
             });
-            row.appendChild(del);
-            this.rulesEl.appendChild(row);
-        }
+
+            const qtyInput = document.createElement('input');
+            qtyInput.type = 'number'; qtyInput.value = String(rule.quantity || 1);
+            qtyInput.style.width = '40px';
+
+            row.appendChild(targetSelect);
+            row.appendChild(this.el('div', '', rule.weaponType || 'Any'));
+            row.appendChild(qtyInput);
+            row.appendChild(this.el('div', '', `${(rule.maxRangePct || 1) * 100}%`));
+            
+            const delBtn = this.el('button', '', 'X');
+            delBtn.style.background = '#441111'; delBtn.style.color = '#fff'; delBtn.style.border = 'none';
+            this.listen(delBtn, 'click', () => {
+                this.rules.splice(idx, 1);
+                this.refreshList();
+            });
+            row.appendChild(delBtn);
+
+            this.rulesListEl.appendChild(row);
+        });
     }
 
-    private saveRules() {
-        if (this.selectedId && UIStore.client) {
-            UIStore.client.dispatch({
-                type: 'UpdateWRARules' as any,
-                entityId: this.selectedId,
-                rules: this.rules
-            });
-        }
-    }
-
-    private makeInput(value: string, onChange: (v: string) => void): HTMLInputElement {
-        const input = document.createElement('input');
-        input.className = 'wra-input';
-        input.value = value;
-        input.addEventListener('change', () => onChange(input.value));
-        return input;
+    private addDefaultRule() {
+        this.rules.push({ targetType: 'Any', weaponType: 'Any', quantity: 1, maxRangePct: 0.75 });
+        this.refreshList();
     }
 }

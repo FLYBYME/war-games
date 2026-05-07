@@ -122,9 +122,10 @@ export class OllamaAdapter extends EventEmitter {
                             role: 'tool',
                             content,
                         });
-                    } catch (err: any) {
-                        const errorMsg = `Error executing tool ${tool.name}: ${err.message}`;
-                        this.emit('tool:error', { name: tool.name, error: err.message });
+                    } catch (err: unknown) {
+                        const error = err as Error;
+                        const errorMsg = `Error executing tool ${tool.name}: ${error.message}`;
+                        this.emit('tool:error', { name: tool.name, error: error.message });
                         this.messages.push({ role: 'tool', content: errorMsg });
                     }
                 }
@@ -141,13 +142,13 @@ export class OllamaAdapter extends EventEmitter {
 /**
  * Helper to map WarGamesTool to Ollama's ToolDefinition format.
  */
-export function getToolDefinition(tool: WarGamesTool<any, any>): ToolDefinition {
-    const shape = tool.inputSchema.shape;
+export function getToolDefinition(tool: WarGamesTool): ToolDefinition {
+    const shape = tool.inputSchema.shape as Record<string, Z.ZodTypeAny>;
     const properties: Record<string, { type: string; description: string }> = {};
     const required: string[] = [];
 
     for (const [key, value] of Object.entries(shape)) {
-        const zodValue = value as Z.ZodTypeAny;
+        const zodValue = value;
         properties[key] = {
             type: getJsonType(zodValue),
             description: zodValue.description || `The ${key}`

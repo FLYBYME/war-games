@@ -1,5 +1,5 @@
-import { parentPort, workerData } from 'worker_threads';
-import { WgtFormat } from '../../engine/environment/utils/WgtFormat.ts';
+import { parentPort } from 'worker_threads';
+import { WgtFormat } from '../../engine/environment/utils/WgtFormat.js';
 
 interface WorkerJob {
     lat: number;
@@ -31,12 +31,13 @@ parentPort.on('message', async (job: WorkerJob) => {
             engineEncoded,
             uiEncoded
         });
-    } catch (err: any) {
+    } catch (err: unknown) {
+        const error = err as Error;
         parentPort!.postMessage({
             success: false,
             lat: job.lat,
             lon: job.lon,
-            error: err.message
+            error: error.message
         });
     }
 });

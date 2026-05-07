@@ -1,132 +1,134 @@
 import { Component } from '../../framework/Component';
 import { UIStore } from '../../framework/UIStore';
+import { sdkClient } from '../../framework/Client';
+import { MissionType } from '../../../sdk/schemas';
 
 /**
- * AdvancedMissionPlanner: A sophisticated tool for defining CAP, Strike, and Patrol missions.
+ * AdvancedMissionPlanner: UI for complex multi-unit missions (Strike, Patrol, etc).
  */
 export class AdvancedMissionPlanner extends Component {
-    private missionType: string = 'CAP';
-    private configArea!: HTMLElement;
+    private missionTypeSelect!: HTMLSelectElement;
+    private targetSelect!: HTMLSelectElement;
+    private unitListEl!: HTMLElement;
 
     constructor() {
-        super('div', 'mission-planner-adv');
+        super('div', 'mission-planner', 'mission-planner');
     }
 
     protected styles(): string {
         return `
-            .mission-planner-adv { padding: var(--sp-4); display: flex; flex-direction: column; gap: var(--sp-4); height: 100%; box-sizing: border-box; }
-            .mp-header { display: flex; justify-content: space-between; align-items: center; border-bottom: 1px solid var(--border-color); padding-bottom: var(--sp-3); }
-            .mp-title { font-size: var(--text-md); font-weight: 700; color: var(--color-friendly); text-transform: uppercase; letter-spacing: 0.05em; }
-            .mp-type-selector { display: flex; gap: var(--sp-1); background: var(--bg-base); padding: 2px; border-radius: var(--radius-sm); border: 1px solid var(--border-color); }
-            .type-btn { padding: 4px 10px; font-size: 10px; font-weight: 600; cursor: pointer; border-radius: 2px; transition: all 0.1s; color: var(--text-dim); }
-            .type-btn:hover { color: var(--text-main); }
-            .type-btn.active { background: var(--color-friendly); color: #000; }
-
-            .mp-config-section { background: var(--bg-surface); border: 1px solid var(--border-color); border-radius: var(--radius-md); padding: var(--sp-3); }
-            .mp-section-label { font-size: 10px; font-weight: 700; color: var(--text-muted); text-transform: uppercase; margin-bottom: var(--sp-2); }
-            .mp-row { display: flex; justify-content: space-between; align-items: center; padding: 4px 0; border-bottom: 1px solid rgba(255,255,255,0.03); }
-            .mp-label { font-size: var(--text-xs); color: var(--text-main); }
-            .mp-input { background: var(--bg-base); border: 1px solid var(--border-color); color: var(--color-friendly); padding: 4px 8px; border-radius: 2px; font-family: var(--font-mono); font-size: 11px; width: 80px; text-align: right; }
-
-            .mp-footer { margin-top: auto; padding-top: var(--sp-4); display: flex; gap: var(--sp-2); }
-            .btn-create { flex: 1; background: var(--color-friendly); color: #000; border: none; padding: 10px; border-radius: var(--radius-sm); font-weight: 700; cursor: pointer; text-transform: uppercase; font-size: 11px; }
-            .btn-cancel { flex: 0.5; background: var(--bg-hover); color: var(--text-main); border: 1px solid var(--border-color); padding: 10px; border-radius: var(--radius-sm); font-weight: 600; cursor: pointer; text-transform: uppercase; font-size: 11px; }
+            .mission-planner {
+                padding: var(--sp-4);
+                background: var(--bg-panel);
+                border: 1px solid var(--border-color);
+                display: flex;
+                flex-direction: column;
+                gap: var(--sp-4);
+            }
+            .form-group {
+                display: flex;
+                flex-direction: column;
+                gap: var(--sp-2);
+            }
+            .form-label { font-size: var(--text-xs); color: var(--text-muted); }
+            select, button {
+                background: var(--bg-active);
+                border: 1px solid var(--border-color);
+                color: var(--text-main);
+                padding: var(--sp-2);
+                font-size: var(--text-sm);
+            }
+            button.primary {
+                background: var(--color-friendly);
+                color: white;
+                font-weight: 600;
+                margin-top: var(--sp-2);
+            }
         `;
     }
 
     protected render(): void {
-        this.element.innerHTML = '';
-        
-        const header = this.el('div', 'mp-header');
-        header.appendChild(this.el('div', 'mp-title', 'MISSION DESIGNER'));
-        
-        const selector = this.el('div', 'mp-type-selector');
-        ['CAP', 'STRIKE', 'ASW', 'AEW'].forEach(type => {
-            const btn = this.el('div', `type-btn ${this.missionType === type ? 'active' : ''}`, type);
-            btn.onclick = () => {
-                this.missionType = type;
-                this.render();
-            };
-            selector.appendChild(btn);
+        this.element.innerHTML = `
+            <div class="form-group">
+                <span class="form-label">MISSION TYPE</span>
+                <select id="mission-type">
+                    <option value="${MissionType.Patrol}">Patrol</option>
+                    <option value="${MissionType.Strike}">Strike</option>
+                    <option value="${MissionType.ASW}">ASW</option>
+                </select>
+            </div>
+            <div class="form-group">
+                <span class="form-label">ASSIGN UNITS</span>
+                <div id="mission-unit-list" style="max-height: 100px; overflow-y: auto; background: rgba(0,0,0,0.2); padding: 4px;">
+                    <!-- Checkboxes populate here -->
+                </div>
+            </div>
+            <div class="form-group">
+                <span class="form-label">TARGET / AREA</span>
+                <select id="mission-target">
+                    <option value="">None / Geographic</option>
+                </select>
+            </div>
+            <button class="primary" id="btn-assign-mission">CREATE MISSION</button>
+        `;
+
+        this.missionTypeSelect = this.element.querySelector('#mission-type') as HTMLSelectElement;
+        this.targetSelect = this.element.querySelector('#mission-target') as HTMLSelectElement;
+        this.unitListEl = this.element.querySelector('#mission-unit-list') as HTMLElement;
+
+        const btn = this.element.querySelector('#btn-assign-mission') as HTMLButtonElement;
+        this.listen(btn, 'click', () => this.handleCreateMission());
+
+        // Reactive sync
+        this.subscribe(UIStore.viewState, () => this.sync());
+    }
+
+    private sync() {
+        const vs = UIStore.viewState.get();
+        if (!vs) return;
+
+        // Sync Units
+        this.unitListEl.innerHTML = '';
+        vs.units.forEach(u => {
+            const label = document.createElement('label');
+            label.style.display = 'flex';
+            label.style.gap = '8px';
+            label.style.fontSize = '12px';
+            label.innerHTML = `<input type="checkbox" value="${u.id}"> ${u.id}`;
+            this.unitListEl.appendChild(label);
         });
-        header.appendChild(selector);
 
-        this.configArea = this.el('div', 'mp-config-area');
-        this.renderConfig();
-
-        const footer = this.el('div', 'mp-footer');
-        const createBtn = this.el('button', 'btn-create', 'CREATE MISSION');
-        createBtn.onclick = () => this.createMission();
-        const cancelBtn = this.el('button', 'btn-cancel', 'CANCEL');
-        
-        footer.appendChild(cancelBtn);
-        footer.appendChild(createBtn);
-
-        this.element.appendChild(header);
-        this.element.appendChild(this.configArea);
-        this.element.appendChild(footer);
+        // Sync Targets (Tracks)
+        const currentTarget = this.targetSelect.value;
+        this.targetSelect.innerHTML = '<option value="">Geographic Area</option>';
+        vs.tracks.forEach(t => {
+            const opt = document.createElement('option');
+            opt.value = t.id;
+            opt.textContent = `${t.id} (${t.classification})`;
+            if (t.id === currentTarget) opt.selected = true;
+            this.targetSelect.appendChild(opt);
+        });
     }
 
-    private renderConfig() {
-        this.configArea.innerHTML = '';
-        
-        const general = this.el('div', 'mp-config-section');
-        general.appendChild(this.el('div', 'mp-section-label', 'General Parameters'));
-        general.appendChild(this.createRow('On-Station Min', '2 units'));
-        general.appendChild(this.createRow('BINGO Logic', 'RTB @ 15%'));
-        general.appendChild(this.createRow('EMCON', 'A-SILENT'));
-        this.configArea.appendChild(general);
+    private async handleCreateMission() {
+        const type = this.missionTypeSelect.value as MissionType;
+        const targetId = this.targetSelect.value;
+        const selectedUnits = Array.from(this.unitListEl.querySelectorAll('input:checked')).map(i => (i as HTMLInputElement).value);
 
-        const specific = this.el('div', 'mp-config-section', '', 'specific-config');
-        specific.style.marginTop = '16px';
-        
-        if (this.missionType === 'CAP') {
-            specific.appendChild(this.el('div', 'mp-section-label', 'Patrol Orbit'));
-            specific.appendChild(this.createRow('Radius', '50 nm', true));
-            specific.appendChild(this.createRow('Min Alt', '8,000 m', true));
-            specific.appendChild(this.createRow('Max Alt', '12,000 m', true));
-        } else if (this.missionType === 'STRIKE') {
-            specific.appendChild(this.el('div', 'mp-section-label', 'Strike Profile'));
-            specific.appendChild(this.createRow('Ingress Speed', '450 kts', true));
-            specific.appendChild(this.createRow('Strike Alt', '150 m', true));
-            specific.appendChild(this.createRow('Escort Dist', '10 nm', true));
-        }
+        if (selectedUnits.length === 0) return;
 
-        this.configArea.appendChild(specific);
-    }
+        console.log(`Creating mission: ${type} for units ${selectedUnits.join(', ')}`);
 
-    private createRow(label: string, value: string, editable = false): HTMLElement {
-        const row = this.el('div', 'mp-row');
-        row.appendChild(this.el('span', 'mp-label', label));
-        if (editable) {
-            const input = document.createElement('input');
-            input.className = 'mp-input';
-            input.value = value;
-            row.appendChild(input);
-        } else {
-            row.appendChild(this.el('span', 'mp-value', value));
-        }
-        return row;
-    }
+        for (const unitId of selectedUnits) {
+            try {
+                const params: Record<string, unknown> = {};
+                if (targetId) params.targetId = targetId;
 
-    private createMission() {
-        const selectedId = UIStore.selectedEntityId.get();
-        if (!selectedId) {
-            alert('Select units to assign to the new mission.');
-            return;
-        }
-
-        UIStore.client.dispatch({
-            type: 'SetMission',
-            entityId: selectedId,
-            missionType: this.missionType,
-            params: {
-                // In a real impl we'd pull from inputs
-                onStationMin: 2,
-                autoRTB: true
+                await sdkClient.scenario.setMission(unitId, type, params);
+            } catch (err: unknown) {
+                const error = err as Error;
+                console.error(`Failed to assign mission to ${unitId}`, error);
             }
-        } as any);
-
-        alert(`Mission ${this.missionType} Created!`);
+        }
     }
 }

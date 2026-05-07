@@ -81,13 +81,13 @@ export abstract class Component {
         this.cleanupTasks.push(unsub);
     }
 
-    protected listen<K extends keyof HTMLElementEventMap>(
-        el: HTMLElement,
-        event: K,
-        handler: (e: HTMLElementEventMap[K]) => void
+    protected listen<E extends Event>(
+        el: Element | Window | Document,
+        event: string,
+        handler: (e: E) => void
     ) {
-        el.addEventListener(event, handler);
-        this.cleanupTasks.push(() => el.removeEventListener(event, handler));
+        el.addEventListener(event, handler as EventListener);
+        this.cleanupTasks.push(() => el.removeEventListener(event, handler as EventListener));
     }
 
     private injectStyles() {

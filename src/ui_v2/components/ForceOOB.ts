@@ -1,5 +1,5 @@
 import { Component } from '../framework/Component';
-import { UIStore, ViewUnit } from '../framework/UIStore';
+import { UIStore, ViewUnit, ViewState } from '../framework/UIStore';
 import { ListManager } from '../framework/ListManager';
 
 /**
@@ -180,8 +180,9 @@ export class ForceOOB extends Component {
         this.listen(list, 'scroll', () => this.syncVirtualList());
 
         // Subscribe to ViewState for unit updates
-        this.subscribe(UIStore.viewState, vs => {
-            this.units = vs?.units || [];
+        this.subscribe(UIStore.viewState, (vs: ViewState | null) => {
+            if (!vs) return;
+            this.units = vs.units;
             this.syncVirtualList();
             this.updateSummary(vs);
         });
@@ -198,7 +199,7 @@ export class ForceOOB extends Component {
         const containerHeight = container.clientHeight;
 
         const totalItems = this.units.length;
-        const spacer = container.querySelector('#oob-spacer') as HTMLElement;
+        const spacer = container.querySelector('[data-testid="oob-spacer"]') as HTMLElement;
         if (spacer) spacer.style.height = `${totalItems * this.itemHeight}px`;
 
         const startIndex = Math.max(0, Math.floor(scrollTop / this.itemHeight) - this.buffer);
@@ -216,7 +217,7 @@ export class ForceOOB extends Component {
         });
     }
 
-    private updateSummary(vs: any) {
+    private updateSummary(vs: ViewState) {
         if (!this.summaryArea || !vs || !this.unitsStatEl || !this.lossesStatEl) return;
         
         const unitsCount = vs.units.length;
@@ -263,9 +264,9 @@ export class ForceOOB extends Component {
 
         // Update fuel (dynamic)
         const fuelFill = element.querySelector('[data-testid="fuel-fill"]') as HTMLElement;
-        fuelFill.style.width = `${unit.fuelPct}%`;
+        fuelFill.style.width = `${unit.fuelPct * 100}%`;
         fuelFill.classList.remove('low', 'critical');
-        if (unit.fuelPct < 30) fuelFill.classList.add('low');
-        if (unit.fuelPct < 15) fuelFill.classList.add('critical');
+        if (unit.fuelPct < 0.3) fuelFill.classList.add('low');
+        if (unit.fuelPct < 0.15) fuelFill.classList.add('critical');
     }
 }

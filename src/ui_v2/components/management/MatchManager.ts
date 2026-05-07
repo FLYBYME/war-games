@@ -22,7 +22,7 @@ interface ScenarioSummary {
 export class MatchManager extends Component {
     private matchListEl!: HTMLElement;
     private scenarioListEl!: HTMLElement;
-    private timer: any;
+    private timer: ReturnType<typeof setInterval> | undefined;
 
     constructor() {
         super('div', 'match-manager', 'match-manager');

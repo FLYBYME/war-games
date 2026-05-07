@@ -1,5 +1,5 @@
 import { WarGamesClient } from '../sdk/WarGamesClient.js';
-import { Side } from '../sdk/schemas/domain.js';
+import { Side, ViewStatePayload } from '../sdk/schemas/index.js';
 
 async function verifyFixes() {
     const client = new WarGamesClient({ url: 'ws://localhost:3000' });
@@ -21,7 +21,7 @@ async function verifyFixes() {
     console.log('Waiting for 0.5 simulation minutes (should be ~30 seconds / 300 ticks)...');
     
     await new Promise((resolve) => {
-        const handler = (vs: any) => {
+        const handler = (vs: ViewStatePayload) => {
             if (vs.tick - startTick >= 300) {
                 client.events.off('state:viewState', handler);
                 resolve(null);
@@ -59,7 +59,7 @@ async function verifyFixes() {
         await new Promise(r => setTimeout(r, 2000));
         const vs2 = await client.getLatestViewState();
         
-        const hasTrack = vs2?.tracks.some((t: any) => t.id.includes(u2.id) || t.id.includes(u1.id));
+        const hasTrack = vs2?.tracks.some((t) => t.id.includes(u2.id) || t.id.includes(u1.id));
         if (hasTrack) {
             console.log('SUCCESS: Stationary units detected each other.');
         } else {
@@ -82,7 +82,7 @@ async function verifyFixes() {
                 console.error(`FAILURE: Profile ${p} not found in registry.`);
                 allFound = false;
             }
-        } catch (e) {
+        } catch (err: unknown) {
             console.error(`FAILURE: Error fetching profile ${p}`);
             allFound = false;
         }
@@ -107,4 +107,4 @@ async function verifyFixes() {
     client.disconnect();
 }
 
-verifyFixes().catch(console.error);
+void verifyFixes().catch(console.error);

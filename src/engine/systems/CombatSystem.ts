@@ -1,9 +1,9 @@
 import { ISystem, IWorldView, SystemPhase } from '../core/ISystem.js';
 import { Command, FireWeaponCommand } from '../core/Command.js';
-import { CombatComponent } from '../components/Combat.js';
+import { CombatComponent, Mount } from '../components/Combat.js';
 import { TrackComponent } from '../components/Track.js';
-import { DoctrineComponent, ROE } from '../components/Doctrine.js';
-import { IdentificationStatus, Vector3 } from '../core/Types.js';
+import { DoctrineComponent } from '../components/Doctrine.js';
+import { Vector3, WeaponProfile, EntityProfile } from '../core/Types.js';
 import { WeaponProfileRegistry, GuidanceType } from '../core/WeaponProfileRegistry.js';
 import { FireControl } from '../math/FireControl.js';
 import { KinematicsComponent, TransformComponent } from '../components/Physics.js';
@@ -11,8 +11,8 @@ import { EnvironmentComponent } from '../components/Environment.js';
 import { VectorMath } from '../math/VectorMath.js';
 import { Physics } from '../PhysicsConstants.js';
 import { HealthComponent, SubsystemType } from '../components/Health.js';
-import { EventSeverity } from '../components/Telemetry.js';
 import { logger } from '../core/Logger.js';
+import { ProfileRegistry } from '../core/ProfileRegistry.js';
 
 /**
  * CombatSystem: Manages weapon engagement logic.
@@ -50,11 +50,11 @@ export class CombatSystem implements ISystem {
                 const targetId = mount.currentTargetId || combat.currentTargetId;
 
                 if (targetId) {
-                    const tracks = entity.getComponent(TrackComponent);
-                    if (!tracks) continue;
+                    const unitTracks = entity.getComponent(TrackComponent);
+                    if (!unitTracks) continue;
 
                     let targetTrack = undefined;
-                    for (const t of tracks.tracks.values()) {
+                    for (const t of unitTracks.tracks.values()) {
                         if (t.trueEntityId === targetId) {
                             targetTrack = t;
                             break;
@@ -74,11 +74,11 @@ export class CombatSystem implements ISystem {
                     const weaponProfile = magazine ? this.weaponProfiles.get(magazine.weaponProfileId) : undefined;
                     
                     const shooterVel = entity.getComponent(KinematicsComponent)?.velocity || { x: 0, y: 0, z: 0 };
-                    const targetVel = (targetTrack as any).velocity || { x: 0, y: 0, z: 0 };
+                    const targetVel = targetTrack.velocity;
                     const env = entity.getComponent(EnvironmentComponent);
                     
                     // We use a default profile for slewing if no weapon is loaded, or the actual weapon profile
-                    const solution = this.calculateSolution(world, weaponProfile || { maxSpeedKts: 2000 } as any, transform.position, shooterVel, targetPos, targetVel, env);
+                    const solution = this.calculateSolution(world, weaponProfile || { guidance: GuidanceType.Ballistic, maxSpeedKts: 2000 } as unknown as WeaponProfile, transform.position, shooterVel, targetPos, targetVel, env);
                     
                     let isAligned = false;
                     if (solution) {
@@ -108,11 +108,13 @@ export class CombatSystem implements ISystem {
                         
                         world.recordEvent({
                             tick: world.currentTick,
-                            severity: EventSeverity.Combat,
-                            category: 'WEAPONS',
-                            message: `${entity.id} fired at ${targetTrack.trueEntityId}`,
+                            type: 'WeaponFired',
                             entityId: entity.id,
-                            pos: transform.position
+                            targetId: targetTrack.trueEntityId,
+                            data: {
+                                weaponProfileId: weaponProfile.id,
+                                mountIndex: i
+                            }
                         });
                     }
                 }
@@ -122,16 +124,17 @@ export class CombatSystem implements ISystem {
         return commands;
     }
 
-    private calculateSolution(world: IWorldView, profile: any, pos: Vector3, vel: Vector3, targetPos: Vector3, targetVel: Vector3, env?: any) {
+    private calculateSolution(world: IWorldView, profile: WeaponProfile, pos: Vector3, vel: Vector3, targetPos: Vector3, targetVel: Vector3, env?: EnvironmentComponent) {
         if (profile.guidance === GuidanceType.Ballistic) {
             // Fetch Projectile Profile for mass/drag if available
-            const projectileProfile = profile.entityProfileId ? world.profileRegistry.get(profile.entityProfileId) : undefined;
+            const profileRegistry = world.profileRegistry as ProfileRegistry;
+            const projectileProfile = profile.entityProfileId ? profileRegistry.get(profile.entityProfileId) as EntityProfile : undefined;
             
             return FireControl.calculateAdvancedBallisticSolution(
                 pos,
-                vel || { x: 0, y: 0, z: 0 },
+                vel,
                 targetPos,
-                targetVel || { x: 0, y: 0, z: 0 },
+                targetVel,
                 profile.maxSpeedKts * Physics.KTS_TO_MPS,
                 projectileProfile?.kinematics?.massKg || 10,
                 projectileProfile?.kinematics?.dragCoeff || 0.05,
@@ -148,7 +151,7 @@ export class CombatSystem implements ISystem {
         }
     }
 
-    private updateMountSlew(mount: any, targetAz: number, targetEl: number, dt: number): boolean {
+    private updateMountSlew(mount: Mount, targetAz: number, targetEl: number, dt: number): boolean {
         if (mount.slewRate <= 0) {
             mount.currentAzimuth = targetAz;
             mount.currentElevation = targetEl;

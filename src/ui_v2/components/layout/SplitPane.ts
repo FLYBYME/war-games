@@ -85,9 +85,9 @@ export class SplitPane extends Component {
         this.addChild(this.rightChild, this.rightContainer);
 
         // Drag logic
-        this.listen(divider, 'mousedown', (e) => this.startDrag(e));
-        this.listen(window as any, 'mousemove', (e) => this.onDrag(e as MouseEvent));
-        this.listen(window as any, 'mouseup', () => this.stopDrag());
+        this.listen(divider, 'mousedown', (e) => this.startDrag(e as MouseEvent));
+        this.listen(window, 'mousemove', (e) => this.onDrag(e as MouseEvent));
+        this.listen(window, 'mouseup', () => this.stopDrag());
     }
 
     private startDrag(e: MouseEvent) {

@@ -1,9 +1,9 @@
 import { Entity } from '../../core/Entity.js';
-import { TaskNode, TaskStatus, NavigatePayload, TaskResult } from '../../core/TaskGraph.js';
+import { TaskNode, NavigatePayload, TaskResult } from '../../core/TaskGraph.js';
 import { IWorldView } from '../../core/ISystem.js';
 import { Command, SetHeadingCommand, SetSpeedCommand, SetAltitudeCommand } from '../../core/Command.js';
 import { TaskWorker } from '../TaskReconcilerSystem.js';
-import { TransformComponent, KinematicsComponent } from '../../components/Physics.js';
+import { TransformComponent } from '../../components/Physics.js';
 import { VectorMath } from '../../math/VectorMath.js';
 import { Physics } from '../../PhysicsConstants.js';
 import { TaskGraphComponent } from '../../components/TaskGraph.js';
@@ -12,7 +12,7 @@ import { TaskGraphComponent } from '../../components/TaskGraph.js';
  * NavigationWorker: Reconciles a 'Navigate' task into heading, speed, and altitude commands.
  */
 export class NavigationWorker implements TaskWorker {
-    public reconcile(entity: Entity, taskNode: TaskNode<NavigatePayload, TaskResult>, world: IWorldView, dt: number): Command[] {
+    public reconcile(entity: Entity, taskNode: TaskNode<NavigatePayload, TaskResult>, world: IWorldView, _dt: number): Command[] {
         const payload = taskNode.task.payload;
         const transform = entity.getComponent(TransformComponent);
         const taskComp = entity.getComponent(TaskGraphComponent);

@@ -14,7 +14,7 @@ export interface ToolDefinition {
     };
 }
 
-export abstract class BaseTool<TSchema extends z.ZodObject<any>> {
+export abstract class BaseTool<TSchema extends z.ZodObject<z.ZodRawShape>> {
     abstract readonly name: string;
     abstract readonly description: string;
     abstract readonly schema: TSchema;
@@ -61,16 +61,16 @@ export abstract class BaseTool<TSchema extends z.ZodObject<any>> {
 
 export class ToolAgent {
     private ollama: Ollama;
-    private tools: BaseTool<any>[];
-    private toolMap: Record<string, BaseTool<any>>;
+    private tools: BaseTool<z.ZodObject<z.ZodRawShape>>[];
+    private toolMap: Record<string, BaseTool<z.ZodObject<z.ZodRawShape>>>;
 
-    constructor(baseUrl: string, tools: BaseTool<any>[]) {
+    constructor(baseUrl: string, tools: BaseTool<z.ZodObject<z.ZodRawShape>>[]) {
         this.ollama = new Ollama({ host: baseUrl });
         this.tools = tools;
         this.toolMap = Object.fromEntries(tools.map(t => [t.name, t]));
     }
 
-    async chat(model: string, messages: Message[]) {
+    async chat(model: string, messages: Message[]): Promise<string> {
         const currentMessages = [...messages];
         let processing = true;
 
@@ -117,10 +117,11 @@ export class ToolAgent {
                         
                         currentMessages.push({
                             role: 'tool',
-                            content: output.toString(),
+                            content: String(output),
                         });
-                    } catch (err: any) {
-                        currentMessages.push({ role: 'tool', content: `Error: ${err.message}` });
+                    } catch (err: unknown) {
+                        const error = err as Error;
+                        currentMessages.push({ role: 'tool', content: `Error: ${error.message}` });
                     }
                 }
             } else {

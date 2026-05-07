@@ -6,7 +6,7 @@ import * as Z from "zod";
  * Serves as the foundation for UI, CLI, AI Agents, and MCP.
  */
 export interface WarGamesTool<
-    TInput extends Z.ZodObject<any> = Z.ZodObject<any>,
+    TInput extends Z.ZodObject<Z.ZodRawShape> = Z.ZodObject<Z.ZodRawShape>,
     TOutput extends Z.ZodTypeAny = Z.ZodTypeAny
 > {
     name: string;
@@ -25,7 +25,7 @@ export interface WarGamesTool<
 /**
  * defineTool: Helper for type-safe tool definitions.
  */
-export function defineTool<TInput extends Z.ZodObject<any>, TOutput extends Z.ZodTypeAny>(
+export function defineTool<TInput extends Z.ZodObject<Z.ZodRawShape>, TOutput extends Z.ZodTypeAny>(
     tool: WarGamesTool<TInput, TOutput>
 ): WarGamesTool<TInput, TOutput> {
     return tool;

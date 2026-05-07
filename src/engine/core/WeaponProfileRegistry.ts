@@ -14,6 +14,14 @@ export class WeaponProfileRegistry {
         return this.profiles.get(id);
     }
 
+    public list(): WeaponProfile[] {
+        return Array.from(this.profiles.values());
+    }
+
+    public getInternalMap(): Map<string, WeaponProfile> {
+        return this.profiles;
+    }
+
     /**
      * getEffectiveMaxRange: Calculates Rmax based on aerodynamic modifiers.
      */

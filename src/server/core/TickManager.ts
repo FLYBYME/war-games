@@ -6,7 +6,7 @@ import { ILogger } from '../../sdk/services/types.js';
  * This is the core of the multi-tenant simulation architecture.
  */
 export class TickManager {
-    private timers = new Map<string, any>();
+    private timers = new Map<string, NodeJS.Timeout | NodeJS.Immediate>();
 
     constructor(
         private matchService: MatchService,
@@ -41,8 +41,12 @@ export class TickManager {
     public stopLoop(matchId: string) {
         const timer = this.timers.get(matchId);
         if (timer) {
-            if (typeof timer === 'object') clearTimeout(timer);
-            else clearImmediate(timer);
+            // Using type guards for timer types
+            if ('unref' in timer && typeof timer.unref === 'function') {
+                clearTimeout(timer as NodeJS.Timeout);
+            } else {
+                clearImmediate(timer as NodeJS.Immediate);
+            }
             this.timers.delete(matchId);
         }
     }
@@ -51,7 +55,7 @@ export class TickManager {
      * stopAll: Terminates all active heartbeats.
      */
     public stopAll() {
-        for (const matchId of this.timers.keys()) {
+        for (const matchId of Array.from(this.timers.keys())) {
             this.stopLoop(matchId);
         }
     }
@@ -87,13 +91,14 @@ export class TickManager {
                 } else {
                     this.timers.set(matchId, setTimeout(runTick, Math.max(1, schedule.delayMs)));
                 }
-            } catch (err: any) {
-                this.logger.error(`Simulation tick failed for match ${matchId}`, { error: err.message });
+            } catch (err: unknown) {
+                const error = err as Error;
+                this.logger.error(`Simulation tick failed for match ${matchId}`, { error: error.message });
                 // Retry after a safety delay
                 this.timers.set(matchId, setTimeout(runTick, 1000));
             }
         };
 
-        runTick();
+        void runTick();
     }
 }

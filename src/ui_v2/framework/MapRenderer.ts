@@ -1,4 +1,4 @@
-import { Application, Container } from 'pixi.js';
+import { Application } from 'pixi.js';
 import { Viewport } from 'pixi-viewport';
 import { UIStore, ViewState } from './UIStore';
 import { logger } from './Logger';
@@ -19,7 +19,7 @@ export class MapRenderer {
     constructor() {
         this.app = new Application();
         // Viewport will be initialized after app.init
-        this.viewport = null as any;
+        this.viewport = null!;
     }
 
     async init(containerElement: HTMLElement) {
@@ -82,8 +82,8 @@ export class MapRenderer {
                         // Clear layers to avoid coordinate artifacts
                         this.layers.forEach(layer => {
                             if (layer.id === 'terrain') {
-                                (layer as any).destroy?.();
-                                (layer as any).init?.();
+                                layer.destroy?.();
+                                void layer.init?.();
                             }
                         });
 

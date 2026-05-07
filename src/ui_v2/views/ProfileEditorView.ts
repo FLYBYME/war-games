@@ -1,5 +1,5 @@
 import { Component } from '../framework/Component';
-import { UIStore } from '../framework/UIStore';
+
 
 /**
  * ProfileEditorView: Visual editor for DB3000 unit profiles.

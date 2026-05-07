@@ -11,7 +11,7 @@ export class SDKError extends Error {
 }
 
 export class NetworkError extends SDKError {
-    constructor(message: string, public readonly cause?: any) {
+    constructor(message: string, public readonly cause?: unknown) {
         super(message, 'NETWORK_ERROR');
         this.name = 'NetworkError';
     }

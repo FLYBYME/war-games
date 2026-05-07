@@ -1,17 +1,16 @@
-import { EntityId, EntityCategory, Side, Vector3 } from './Types.js';
+import { Side, Vector3 } from './Types.js';
 import { Entity } from './Entity.js';
 import { CollisionComponent } from '../components/Collision.js';
 import { World } from './World.js';
 import { ProfileRegistry } from './ProfileRegistry.js';
-import type { MountProfile } from './ProfileRegistry.js';
 import { TransformComponent, KinematicsComponent } from '../components/Physics.js';
 import { SensorComponent, DetectionComponent } from '../components/Sensors.js';
 import { SensorType, EMBand, SensorMode, MountingType } from './Types.js';
 import { TrackComponent } from '../components/Track.js';
 import { CombatComponent, Magazine, Mount } from '../components/Combat.js';
-import { HealthComponent, SubsystemType } from '../components/Health.js';
-import { PropulsionComponent, FuelComponent, EngineState } from '../components/Propulsion.js';
-import { WeaponStageComponent } from '../components/WeaponStages.js';
+import { HealthComponent } from '../components/Health.js';
+import { PropulsionComponent, FuelComponent } from '../components/Propulsion.js';
+import { WeaponStageComponent, WeaponStage as CompWeaponStage } from '../components/WeaponStages.js';
 import { AeroComponent } from '../components/Aero.js';
 import { EnvironmentComponent } from '../components/Environment.js';
 import { NavigationComponent } from '../components/Navigation.js';
@@ -24,7 +23,7 @@ import { TaskGraphComponent } from '../components/TaskGraph.js';
 import { RCSComponent } from '../components/Signatures.js';
 import { AcousticSignatureComponent } from '../components/Subsurface.js';
 
-import type { EntityProfile, MagazineProfile } from '../../sdk/schemas/index.js';
+import type { EntityProfile } from '../../sdk/schemas/index.js';
 
 import { TelemetryComponent } from '../components/Telemetry.js';
 
@@ -51,7 +50,7 @@ export class EntityManager {
     ) { }
 
     public spawn(params: SpawnParams): Entity {
-        const id = params.id || `entity-${Math.random().toString(36).substr(2, 9)}`;
+        const id = params.id || `entity-${Math.random().toString(36).substring(2, 11)}`;
         const profile = params.profile || (params.profileId ? this.profiles.get(params.profileId) : undefined);
 
         if (!profile) {
@@ -159,13 +158,20 @@ export class EntityManager {
         }
 
         if (profile.stages && profile.stages.length > 0) {
-            entity.addComponent(new WeaponStageComponent(profile.stages as any));
+            const stages: CompWeaponStage[] = profile.stages.map((s, idx) => ({
+                name: s.name || `Stage-${idx}`,
+                durationTicks: s.durationTicks || 0,
+                thrustN: s.thrustN || 0,
+                burnTimeS: s.burnTimeS,
+                guidanceMode: s.guidanceMode,
+                separateOnComplete: s.separateOnComplete || false
+            }));
+            entity.addComponent(new WeaponStageComponent(stages));
         }
 
         if (profile.sensors) {
             entity.addComponent(new DetectionComponent());
             entity.addComponent(new TrackComponent());
-            const sensorAlt = profile.type === 'Ship' ? 25 : 2; // Mount higher on ships
             for (const s of profile.sensors) {
                 entity.addComponent(new SensorComponent(
                     s.type as SensorType,
@@ -197,7 +203,7 @@ export class EntityManager {
                 maxElevation: 90,
                 currentAzimuth: 0,
                 currentElevation: 0,
-                slewRate: m.slewRate ?? 30,
+                slewRate: m.slewRate,
                 alignmentThresholdDeg: m.alignmentThresholdDeg ?? 1.0
             }));
             entity.addComponent(new CombatComponent(mounts, magazines));

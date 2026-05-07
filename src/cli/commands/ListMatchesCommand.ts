@@ -12,9 +12,9 @@ export class ListMatchesCommand extends BaseCommand {
         program
             .command(this.name)
             .description(this.description)
-            .action((options, command) => {
+            .action((_options: unknown, command: CommanderCommand) => {
                 const globalOpts = command.optsWithGlobals();
-                this.execute(globalOpts.url);
+                this.execute(globalOpts.url as string);
             });
     }
 
@@ -25,16 +25,7 @@ export class ListMatchesCommand extends BaseCommand {
         });
 
         try {
-            // Using fetch via the SDK's internal base URL derivation logic if possible, 
-            // but for simplicity here we'll just derive the HTTP URL.
-            const httpUrl = url.replace(/^ws/, 'http');
-            const res = await fetch(`${httpUrl}/api/matches`);
-            
-            if (!res.ok) {
-                throw new Error(`Server returned ${res.status}: ${res.statusText}`);
-            }
-
-            const matches = await res.json() as any[];
+            const matches = await client.listMatches();
 
             if (matches.length === 0) {
                 console.log(`${C.yellow}No active matches found on server.${C.reset}`);
@@ -48,8 +39,9 @@ export class ListMatchesCommand extends BaseCommand {
                 console.log();
             }
 
-        } catch (err: any) {
-            console.error(`\n${C.red}${C.bold}✖ Error:${C.reset} ${err.message}`);
+        } catch (err: unknown) {
+            const error = err as Error;
+            console.error(`\n${C.red}${C.bold}✖ Error:${C.reset} ${error.message}`);
         } finally {
             client.disconnect();
         }

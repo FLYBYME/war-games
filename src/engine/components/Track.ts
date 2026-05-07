@@ -1,4 +1,4 @@
-import { IComponent, Track, IdentificationStatus } from '../core/Types.js';
+import { IComponent, Track } from '../core/Types.js';
 
 /**
  * TrackComponent: Stores the current picture of the world as seen by an entity or group.

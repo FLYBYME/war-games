@@ -1,4 +1,4 @@
-import { GuidanceType, ScenarioManifest, SensorType, Side, WarheadType } from "../sdk/index.js"
+import { GuidanceType, ScenarioManifest, SensorType, Side, WarheadType, MissionType } from "../sdk/index.js"
 
 export const scenarios: ScenarioManifest[] = [
     {
@@ -77,13 +77,13 @@ export const scenarios: ScenarioManifest[] = [
             {
                 type: 'Mission',
                 actorId: 'ship-1',
-                missionType: 'Patrol',
+                missionType: MissionType.Patrol,
                 params: { center: { x: 0, y: 0, z: 0 }, radiusM: 0, speedKts: 30 }
             },
             {
                 type: 'Mission',
                 actorId: 'plane-1',
-                missionType: 'Strike',
+                missionType: MissionType.Strike,
                 params: { targetId: 'ship-1', speedKts: 600 }
             },
             {
@@ -243,19 +243,19 @@ export const scenarios: ScenarioManifest[] = [
             {
                 type: 'Mission',
                 actorId: 'uss-arleigh-burke',
-                missionType: 'Patrol',
+                missionType: MissionType.Patrol,
                 params: { center: { x: 10000, y: 0, z: 0 }, radiusM: 5000, speedKts: 20 }
             },
             {
                 type: 'Mission',
                 actorId: 'friendly-f35-1',
-                missionType: 'Patrol',
+                missionType: MissionType.Patrol,
                 params: { center: { x: 20000, y: 10000, z: 10000 }, radiusM: 10000, speedKts: 500 }
             },
             {
                 type: 'Mission',
                 actorId: 'hostile-frigate-1',
-                missionType: 'Strike',
+                missionType: MissionType.Strike,
                 params: { targetId: 'uss-arleigh-burke' }
             },
             {
@@ -314,13 +314,13 @@ export const scenarios: ScenarioManifest[] = [
             {
                 type: 'Mission',
                 actorId: 'uss-arleigh-burke',
-                missionType: 'Patrol',
+                missionType: MissionType.Patrol,
                 params: { center: { x: 5000, y: 0, z: 0 }, radiusM: 0, speedKts: 25 }
             },
             {
                 type: 'Mission',
                 actorId: 'hostile-frigate-1',
-                missionType: 'Patrol',
+                missionType: MissionType.Patrol,
                 params: { center: { x: 10000, y: 0, z: 0 }, radiusM: 0, speedKts: 20 }
             },
             {
@@ -381,7 +381,7 @@ export const scenarios: ScenarioManifest[] = [
                 command: {
                     type: "SetMission",
                     entityId: "hornet-1",
-                    missionType: "Patrol",
+                    missionType: MissionType.Patrol,
                     params: { center: { x: 5000, y: 5000, z: 5000 }, radiusM: 2000, speedKts: 400 }
                 }
             },
@@ -394,7 +394,7 @@ export const scenarios: ScenarioManifest[] = [
                 command: {
                     type: "SetMission",
                     entityId: "hornet-2",
-                    missionType: "Patrol",
+                    missionType: MissionType.Patrol,
                     params: { center: { x: -5000, y: 5000, z: 5000 }, radiusM: 2000, speedKts: 400 }
                 }
             }
@@ -413,7 +413,7 @@ export const scenarios: ScenarioManifest[] = [
             {
                 type: "Mission",
                 actorId: "cvn-78",
-                missionType: "Patrol",
+                missionType: MissionType.Patrol,
                 params: { center: { x: 20000, y: 0, z: 0 }, radiusM: 0, speedKts: 25 }
             }
         ]
@@ -444,7 +444,7 @@ export const scenarios: ScenarioManifest[] = [
             {
                 type: 'Mission',
                 actorId: 'marching-helo',
-                missionType: 'VBSS',
+                missionType: MissionType.VBSS,
                 params: {
                     targetId: 'suspect-vessel',
                     boardingDurationTicks: 300,
@@ -461,7 +461,7 @@ export const scenarios: ScenarioManifest[] = [
             {
                 type: 'Mission',
                 actorId: 'suspect-vessel',
-                missionType: 'Patrol',
+                missionType: MissionType.Patrol,
                 params: {
                     center: { x: 15000, y: 5000, z: 0 },
                     radiusM: 0,
@@ -492,7 +492,7 @@ export const scenarios: ScenarioManifest[] = [
             {
                 type: 'Mission',
                 actorId: 'transit-ship',
-                missionType: 'Patrol',
+                missionType: MissionType.Patrol,
                 params: {
                     center: { x: 5000, y: 0, z: 0 },
                     radiusM: 0,
@@ -527,7 +527,7 @@ export const scenarios: ScenarioManifest[] = [
             {
                 type: 'Mission',
                 actorId: 'mcm-ship',
-                missionType: 'MCM',
+                missionType: MissionType.MCM,
                 params: {
                     method: 'Sweep',
                     area: {
@@ -576,13 +576,13 @@ export const scenarios: ScenarioManifest[] = [
             {
                 type: 'Mission',
                 actorId: 'ship-1',
-                missionType: 'Patrol',
+                missionType: MissionType.Patrol,
                 params: { center: { x: 0, y: 20000, z: 0 }, radiusM: 0, speedKts: 30 }
             },
             {
                 type: 'Mission',
                 actorId: 'plane-1',
-                missionType: 'Patrol',
+                missionType: MissionType.Patrol,
                 params: { center: { x: -5000, y: 40000, z: 5000 }, radiusM: 0, speedKts: 500 }
             }
         ]

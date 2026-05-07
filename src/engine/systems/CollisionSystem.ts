@@ -7,9 +7,10 @@ import { LogisticsComponent, TurnaroundState } from '../components/Logistics.js'
 import { BallisticBurstComponent } from '../components/Ballistics.js';
 import { SalvoComponent } from '../components/Combat.js';
 import { Octree } from '../core/Octree.js';
-import { EntityId, Vector3 } from '../core/Types.js';
+import { Vector3 } from '../core/Types.js';
 import { VectorMath } from '../math/VectorMath.js';
 import { logger } from '../core/Logger.js';
+import { ProfileRegistry } from '../core/ProfileRegistry.js';
 
 /**
  * CollisionSystem: Detects physical intersections between entities and terrain.
@@ -25,6 +26,7 @@ export class CollisionSystem implements ISystem {
         const commands: Command[] = [];
         const entities = world.getEntities();
         const checkedPairs = new Set<string>();
+        const profileRegistry = world.profileRegistry as ProfileRegistry;
 
         for (const entity of entities) {
             const transform = entity.getComponent(TransformComponent);
@@ -92,8 +94,8 @@ export class CollisionSystem implements ISystem {
                     if (hits > 0) {
                         logger.info(`Salvo hit: ${entity.id} -> ${otherId} | Hits: ${hits}/${salvo.quantity}`);
                         // Apply damage for all hits
-                        const weaponProfile = entity.profileId ? world.profileRegistry.get(entity.profileId) : undefined;
-                        const damagePerHit = (weaponProfile as any)?.damage || 20;
+                        const targetProfile = otherEntity.profileId ? profileRegistry.get(otherEntity.profileId) : undefined;
+                        const damagePerHit = (targetProfile as { damage?: number } | undefined)?.damage || 20;
                         commands.push(new ApplyDamageCommand(otherId, hits * damagePerHit));
 
                         // Salvo is partially or fully consumed? 
@@ -115,7 +117,7 @@ export class CollisionSystem implements ISystem {
 
                         // Proximity Fuse: If missile (layer 'missile') and target is Air, expand hit radius to 15m
                         const isMissile = collision.layer === 'missile';
-                        const otherProfile = otherEntity.profileId ? world.profileRegistry.get(otherEntity.profileId) : undefined;
+                        const otherProfile = otherEntity.profileId ? profileRegistry.get(otherEntity.profileId) : undefined;
                         const isAirTarget = otherProfile?.type === 'Aircraft' || otherProfile?.type === 'Helicopter';
 
                         const effectiveMinDist = (isMissile && isAirTarget) ? Math.max(minDistance, 15) : minDistance;
@@ -139,7 +141,7 @@ export class CollisionSystem implements ISystem {
 
             // 2. Terrain/Surface Collision (Impact)
             const env = entity.getComponent(EnvironmentComponent);
-            const profile = entity.profileId ? world.profileRegistry.get(entity.profileId) : undefined;
+            const profile = entity.profileId ? profileRegistry.get(entity.profileId) : undefined;
 
             // Identify Air Entities: Aircraft, Helos, and non-torpedo Weapons
             const isAirEntity = profile?.type === 'Aircraft' ||
@@ -159,7 +161,7 @@ export class CollisionSystem implements ISystem {
                     if (!isLanding && !isHosted) {
                         logger.debug(`Surface impact check: ${entity.id} z=${transform.position.z.toFixed(2)} alt=${surfaceAlt.toFixed(2)} isHosted=${isHosted} baseId=${logistics?.currentBaseId} state=${logistics?.state}`);
                         commands.push(new DestroyEntityCommand(entity.id));
-                        world.events.emit({
+                        world.recordEvent({
                             type: 'Impact',
                             tick: world.currentTick,
                             entityId: entity.id,
@@ -232,8 +234,8 @@ export class CollisionSystem implements ISystem {
     }
 
     private handleCollision(
-        idA: EntityId, colA: CollisionComponent,
-        idB: EntityId, colB: CollisionComponent,
+        idA: string, colA: CollisionComponent,
+        idB: string, colB: CollisionComponent,
         commands: Command[]
     ): void {
         // High-velocity impact (Missiles)

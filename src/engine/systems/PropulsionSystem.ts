@@ -21,10 +21,10 @@ export class PropulsionSystem implements ISystem {
         const commands: Command[] = [];
 
         for (const entity of world.getEntities()) {
-            const prop = entity.getComponent(PropulsionComponent) as PropulsionComponent;
-            const env = entity.getComponent(EnvironmentComponent) as EnvironmentComponent;
-            const aero = entity.getComponent(AeroComponent) as AeroComponent;
-            const fuel = entity.getComponent(FuelComponent) as FuelComponent;
+            const prop = entity.getComponent(PropulsionComponent);
+            const env = entity.getComponent(EnvironmentComponent);
+            const aero = entity.getComponent(AeroComponent);
+            const fuel = entity.getComponent(FuelComponent);
             const health = entity.getComponent(HealthComponent);
 
             if (!prop) continue;
@@ -98,7 +98,7 @@ export class PropulsionSystem implements ISystem {
                     const baseTransform = base?.getComponent(TransformComponent);
                     if (baseTransform) {
                         const distToBaseM = VectorMath.distance(transform.position, baseTransform.position);
-                        const kinematics = entity.getComponent(KinematicsComponent) as any;
+                        const kinematics = entity.getComponent(KinematicsComponent);
                         const speed = kinematics?.velocity ? VectorMath.magnitude(kinematics.velocity) : 250; // default 250 m/s
                         
                         const timeToBaseS = distToBaseM / Math.max(1, speed);

@@ -1,5 +1,5 @@
 import { Entity } from '../../core/Entity.js';
-import { TaskNode, TaskStatus, InterceptPayload, TaskResult } from '../../core/TaskGraph.js';
+import { TaskNode, InterceptPayload, TaskResult } from '../../core/TaskGraph.js';
 import { IWorldView } from '../../core/ISystem.js';
 import { Command, SetHeadingCommand, SetSpeedCommand, SetAltitudeCommand } from '../../core/Command.js';
 import { TaskWorker } from '../TaskReconcilerSystem.js';
@@ -9,12 +9,13 @@ import { VectorMath } from '../../math/VectorMath.js';
 import { Physics } from '../../PhysicsConstants.js';
 import { TaskGraphComponent } from '../../components/TaskGraph.js';
 import { logger } from '../../core/Logger.js';
+import { Vector3 } from '../../core/Types.js';
 
 /**
  * InterceptWorker: Dynamic intercept and station-keeping.
  */
 export class InterceptWorker implements TaskWorker {
-    public reconcile(entity: Entity, taskNode: TaskNode<InterceptPayload, TaskResult>, world: IWorldView, dt: number): Command[] {
+    public reconcile(entity: Entity, taskNode: TaskNode<InterceptPayload, TaskResult>, world: IWorldView, _dt: number): Command[] {
         const payload = taskNode.task.payload;
         const transform = entity.getComponent(TransformComponent);
         const taskComp = entity.getComponent(TaskGraphComponent);
@@ -72,17 +73,17 @@ export class InterceptWorker implements TaskWorker {
         return commands;
     }
 
-    private resolveTarget(observer: Entity, targetId: string, world: IWorldView): { pos: any, vel: any } | undefined {
+    private resolveTarget(observer: Entity, targetId: string, world: IWorldView): { pos: Vector3, vel: Vector3 } | undefined {
         if (targetId.startsWith('TRK-')) {
             const trackComp = observer.getComponent(TrackComponent);
             const track = trackComp?.tracks.get(targetId);
-            if (track) return { pos: track.position, vel: track.velocity };
+            if (track) return { pos: { ...track.position }, vel: { ...track.velocity } };
         } else {
             const ent = world.getEntity(targetId);
             if (ent) {
                 const t = ent.getComponent(TransformComponent);
                 const k = ent.getComponent(KinematicsComponent);
-                if (t && k) return { pos: t.position, vel: k.velocity };
+                if (t && k) return { pos: { ...t.position }, vel: { ...k.velocity } };
             }
         }
         return undefined;

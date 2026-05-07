@@ -1,26 +1,20 @@
-import {
-    EngineCommandPayload,
-    ClientMessage,
-    ServerMessage,
-    EntityId,
-    Vector3,
-    ViewStatePayload as ViewState,
-    ScenarioManifest,
+import { 
+    ViewStatePayload as ViewState, 
+    Side, 
+    MatchInfo, 
+    EngineCommandPayload, 
+    ServerMessage, 
+    ClientMessage, 
     ScenarioIntent,
+    Vector3,
+    TacticalEvent,
     EntityProfile,
-    MapRegion
-} from './schemas/index.js';
-import { DeltaDecoder } from './DeltaDecoder.js';
-import { EventEmitter } from './EventEmitter.js';
-import {
-    NetworkError,
-    ConnectionTimeoutError,
-    CommandRejectedError,
-    NotConnectedError,
-    NotJoinedError,
-    CommandValidationError
-} from './errors.js';
-import { ToolDispatcher } from './ToolDispatcher.js';
+    MissionType
+} from "./schemas/index.js";
+import { BugReport } from "./schemas/bugs.js";
+import { EventEmitter } from "./EventEmitter.js";
+import { ToolDispatcher } from "./ToolDispatcher.js";
+import { NotJoinedError, ConnectionTimeoutError } from "./errors.js";
 
 // ─── SDK Types ───────────────────────────────────────────────
 
@@ -36,63 +30,35 @@ export interface ClientConfig {
     /** Server WebSocket URL (e.g. ws://localhost:3000) */
     url: string;
     /** Max reconnection attempts before giving up (default: 10) */
-    maxReconnectAttempts?: number;
-    /** Initial reconnection delay in ms (default: 1000) */
     reconnectDelayMs?: number;
     /** Connection timeout in ms (default: 5000) */
     connectTimeoutMs?: number;
     /** Maximum time to wait for a COMMAND_ACK (default: 5000) */
     commandTimeoutMs?: number;
-    /** Queue commands when disconnected and flush on reconnect (default: true) */
-    offlineQueueEnabled?: boolean;
-    /** Requested target frequency of delta updates (e.g. 2 for 2Hz). Defaults to server tick rate. */
+    /** Request a specific viewstate sync rate from the server */
     syncRateHz?: number;
-    /** Interval to request a full baseline snapshot instead of a delta. Defaults to 0 (never). */
+    /** Request a full sync interval in ms */
     fullSyncIntervalMs?: number;
+    /** Whether to queue commands when disconnected */
+    offlineQueueEnabled?: boolean;
 }
 
 interface PendingCommand {
-    resolve: (ack: { commandType: string; success: boolean }) => void;
+    resolve: (res: { commandType: string; success: boolean }) => void;
     reject: (err: Error) => void;
-    timer: ReturnType<typeof setTimeout>;
+    timeout: ReturnType<typeof setTimeout>;
 }
 
-export interface MatchInfo {
-    id: string;
-    tick: number;
-    entityCount: number;
-    isPaused: boolean;
-    timeCompression: number;
-}
-
-export interface WinState {
-    over: boolean;
-    winner?: string;
-    reason?: string;
-}
-
-export interface TacticalEvent {
-    tick: number;
-    type?: string;
-    severity: string;
-    category: string;
-    message: string;
-    entityId?: string;
-    pos?: Vector3;
-    payload?: Record<string, any>;
-}
-
-// ─── Core Client ─────────────────────────────────────────────
-
+/**
+ * WarGamesClient: Primary SDK entry point.
+ */
 export class WarGamesClient {
-    // Sub-modules (lazy-initialized)
     public readonly nav: NavigationModule;
     public readonly combat: CombatModule;
-    public readonly sensors: SensorsModule;
-    public readonly logistics: LogisticsModule;
-    public readonly doctrine: DoctrineModule;
+    public readonly sensors: SensorModule;
     public readonly scenario: ScenarioModule;
     public readonly terrain: TerrainModule;
+    public readonly bugs: BugModule;
     public readonly tools: ToolDispatcher;
     public readonly events: EventEmitter;
 
@@ -100,36 +66,32 @@ export class WarGamesClient {
     private config: Required<ClientConfig>;
     private state: ConnectionState = ConnectionState.Disconnected;
     private matchId: string | null = null;
-    private side: string | null = null;
+    public side: Side | null = null;
     private reconnectAttempts = 0;
-    private reconnectTimer: ReturnType<typeof setTimeout> | null = null;
     private offlineQueue: ClientMessage[] = [];
     private pendingCommands = new Map<string, PendingCommand>();
     private commandSequence = 0;
-    private lastSequence = -1;
     private currentTick = 0;
     private lastViewState: ViewState | null = null;
 
     constructor(config: ClientConfig) {
         this.config = {
-            url: config.url,
-            maxReconnectAttempts: config.maxReconnectAttempts ?? 10,
-            reconnectDelayMs: config.reconnectDelayMs ?? 1000,
-            connectTimeoutMs: config.connectTimeoutMs ?? 5000,
-            commandTimeoutMs: config.commandTimeoutMs ?? 5000,
-            offlineQueueEnabled: config.offlineQueueEnabled ?? true,
-            syncRateHz: config.syncRateHz,
-            fullSyncIntervalMs: config.fullSyncIntervalMs
+            reconnectDelayMs: 1000,
+            connectTimeoutMs: 5000,
+            commandTimeoutMs: 5000,
+            syncRateHz: 10,
+            fullSyncIntervalMs: 500,
+            offlineQueueEnabled: true,
+            ...config
         };
 
         this.events = new EventEmitter();
         this.nav = new NavigationModule(this);
         this.combat = new CombatModule(this);
-        this.sensors = new SensorsModule(this);
-        this.logistics = new LogisticsModule(this);
-        this.doctrine = new DoctrineModule(this);
+        this.sensors = new SensorModule(this);
         this.scenario = new ScenarioModule(this);
         this.terrain = new TerrainModule(this);
+        this.bugs = new BugModule(this);
         this.tools = new ToolDispatcher(this);
     }
 
@@ -141,7 +103,7 @@ export class WarGamesClient {
         return `${protocol}//${url.host}`;
     }
 
-    public async apiFetch<T = any>(path: string, init?: RequestInit): Promise<T> {
+    public async apiFetch<T>(path: string, init?: RequestInit): Promise<T> {
         const url = `${this.apiBaseUrl}${path}`;
         const response = await fetch(url, {
             ...init,
@@ -156,8 +118,11 @@ export class WarGamesClient {
             try {
                 const errJson = await response.json();
                 errorText = JSON.stringify(errJson);
-            } catch (e) {
-                try { errorText = await response.text(); } catch (e2) {}
+            } catch (e: unknown) {
+                try { errorText = await response.text(); } catch (e2: unknown) {
+                    const error = e as Error;
+                    errorText = error.message;
+                }
             }
             throw new Error(`API Request failed (${response.status}) on ${path}: ${errorText}`);
         }
@@ -176,13 +141,14 @@ export class WarGamesClient {
 
     get connectionState(): ConnectionState { return this.state; }
     get currentMatchId(): string | null { return this.matchId; }
-    get currentSide(): string | null { return this.side; }
+    get currentSide(): Side | null { return this.side; }
 
     async connect(): Promise<void> {
         if (this.state === ConnectionState.Connected) return;
+
         this.setState(ConnectionState.Connecting);
 
-        return new Promise<void>((resolve, reject) => {
+        return new Promise((resolve, reject) => {
             const timeout = setTimeout(() => {
                 this.ws?.close();
                 reject(new ConnectionTimeoutError(this.config.url, this.config.connectTimeoutMs));
@@ -190,56 +156,40 @@ export class WarGamesClient {
 
             try {
                 this.ws = new WebSocket(this.config.url);
-                this.ws.binaryType = 'arraybuffer';
-
                 this.ws.onopen = () => {
                     clearTimeout(timeout);
-                    this.reconnectAttempts = 0;
-                    this.setState(ConnectionState.Connected);
-                    this.flushOfflineQueue();
+                    this.onConnected();
                     resolve();
                 };
 
-                this.ws.onmessage = (event) => this.handleMessage(event);
-
-                this.ws.onclose = () => {
-                    this.setState(ConnectionState.Disconnected);
-                    this.scheduleReconnect();
+                this.ws.onmessage = (event) => this.onMessage(event);
+                this.ws.onclose = () => this.onDisconnected();
+                this.ws.onerror = (err) => {
+                    this.events.emit('error', err);
+                    if (this.state === ConnectionState.Connecting) {
+                        clearTimeout(timeout);
+                        reject(err);
+                    }
                 };
-
-                this.ws.onerror = (e) => {
-                    clearTimeout(timeout);
-                    this.setState(ConnectionState.Error);
-                    reject(new NetworkError('WebSocket connection failed', e));
-                };
-            } catch (e) {
+            } catch (err) {
                 clearTimeout(timeout);
-                reject(new NetworkError('Failed to create WebSocket', e));
+                reject(err);
             }
         });
     }
 
     disconnect(): void {
-        if (this.reconnectTimer) clearTimeout(this.reconnectTimer);
-        this.reconnectTimer = null;
-        this.reconnectAttempts = this.config.maxReconnectAttempts; // prevent auto-reconnect
         this.ws?.close();
-        this.ws = null;
-        this.matchId = null;
-        this.side = null;
-        this.offlineQueue = [];
-        this.rejectAllPending('Client disconnected');
         this.setState(ConnectionState.Disconnected);
         this.events.removeAllListeners();
     }
 
     // ─── Session & Match ─────────────────────────────────────
 
-    joinMatch(side: string, matchId = 'default'): void {
+    joinMatch(side: Side, matchId = 'default'): void {
         this.matchId = matchId;
         this.side = side;
         this.currentTick = 0;
-        this.lastSequence = -1;
         this.send({ 
             type: 'JOIN_MATCH', 
             matchId, 
@@ -256,85 +206,25 @@ export class WarGamesClient {
 
     // ─── Command Pipeline ────────────────────────────────────
 
-    public getTickCount(): number {
-        return this.currentTick;
-    }
-
-    public async getLatestViewState(): Promise<ViewState | null> {
-        if (!this.matchId) return this.lastViewState;
-        try {
-            const vs = await this.apiFetch<ViewState>(`/api/matches/${this.matchId}/viewstate?side=${this.side || 'Neutral'}`);
-            this.lastViewState = vs;
-            this.currentTick = vs.tick;
-            return vs;
-        } catch (err) {
-            return this.lastViewState;
-        }
-    }
-
-    public async listMatches(): Promise<MatchInfo[]> {
-        try {
-            return await this.apiFetch<MatchInfo[]>('/api/matches');
-        } catch (err) {
-            return [];
-        }
-    }
-
-    public async deleteMatch(matchId: string): Promise<{ success: boolean }> {
-        try {
-            return await this.apiFetch<{ success: boolean }>(`/api/matches/${encodeURIComponent(matchId)}`, { method: 'DELETE' });
-        } catch (err) {
-            return { success: false };
-        }
-    }
-
-    public async queryWinState(matchId: string): Promise<WinState> {
-        try {
-            return await this.apiFetch<WinState>(`/api/matches/${encodeURIComponent(matchId)}/winstate`);
-        } catch (err) {
-            return { over: false };
-        }
-    }
-
-    public async getRecentEvents(matchId: string, count: number = 50): Promise<TacticalEvent[]> {
-        try {
-            return await this.apiFetch<TacticalEvent[]>(`/api/matches/${encodeURIComponent(matchId)}/events?count=${count}`);
-        } catch (err) {
-            return [];
-        }
-    }
-
-    public async getProfile(profileId: string): Promise<any> {
-        try {
-            return await this.apiFetch<any>(`/api/matches/profiles/${encodeURIComponent(profileId)}`);
-        } catch (err) {
-            return null;
-        }
-    }
-
-    /**
-     * Dispatch a command to the server.
-     * Returns a Promise that resolves when the server ACKs the command.
-     */
-    dispatch(command: EngineCommandPayload): Promise<{ commandType: string; success: boolean }> {
+    async dispatch(command: EngineCommandPayload): Promise<{ commandType: string; success: boolean }> {
         if (!this.matchId) throw new NotJoinedError();
 
+        const sequence = String(++this.commandSequence);
         return new Promise((resolve, reject) => {
-            const key = `${command.type}-${this.commandSequence++}`;
-            const timer = setTimeout(() => {
-                this.pendingCommands.delete(key);
-                reject(new CommandRejectedError(command.type, 'Command timed out'));
+            const timeout = setTimeout(() => {
+                this.pendingCommands.delete(sequence);
+                reject(new Error(`Command ${command.type} timed out after ${this.config.commandTimeoutMs}ms`));
             }, this.config.commandTimeoutMs);
 
-            this.pendingCommands.set(key, { resolve, reject, timer });
+            this.pendingCommands.set(sequence, { resolve, reject, timeout });
             this.send({ type: 'ISSUE_COMMAND', matchId: this.matchId!, command });
         });
     }
 
     /** Fire-and-forget variant for high-frequency commands (e.g. heading updates) */
-    dispatchImmediate(command: EngineCommandPayload): void {
+    dispatchImmediate(command: ClientMessage): void {
         if (!this.matchId) throw new NotJoinedError();
-        this.send({ type: 'ISSUE_COMMAND', matchId: this.matchId, command });
+        this.send(command);
     }
 
     /** 
@@ -353,10 +243,10 @@ export class WarGamesClient {
     /**
      * REST-based deterministic stepping.
      */
-    async stepRest(durationMinutes: number): Promise<{ success: boolean; elapsedSeconds: number; interruptedByEvent: boolean; events: any[]; currentTick: number; elapsedTicks: number }> {
+    async stepRest(durationMinutes: number): Promise<{ success: boolean; elapsedSeconds: number; interruptedByEvent: boolean; events: unknown[] }> {
         if (!this.matchId) throw new NotJoinedError();
 
-        return await this.apiFetch<{ success: boolean; elapsedSeconds: number; interruptedByEvent: boolean; events: any[]; currentTick: number; elapsedTicks: number }>(`/api/matches/${this.matchId}/step`, {
+        return await this.apiFetch<{ success: boolean; elapsedSeconds: number; interruptedByEvent: boolean; events: unknown[] }>(`/api/matches/${this.matchId}/step`, {
             method: 'POST',
             body: JSON.stringify({ durationMinutes, side: this.side || 'Neutral' })
         });
@@ -372,195 +262,197 @@ export class WarGamesClient {
     pause(): void { this.setTimeCompression(0); }
     resume(rate = 1): void { this.setTimeCompression(rate); }
 
-    // ─── Internal Transport ──────────────────────────────────
+    // ─── Data Access ─────────────────────────────────────────
 
-    /** @internal — used by sub-modules */
-    send(msg: ClientMessage): void {
-        if (this.ws && this.state === ConnectionState.Connected) {
-            this.ws.send(JSON.stringify(msg));
-        } else if (this.config.offlineQueueEnabled) {
-            this.offlineQueue.push(msg);
-        } else {
-            throw new NotConnectedError();
+    public getTickCount(): number {
+        return this.currentTick;
+    }
+
+    public async getLatestViewState(): Promise<ViewState | null> {
+        if (!this.matchId) return this.lastViewState;
+        try {
+            const vs = await this.apiFetch<ViewState>(`/api/matches/${this.matchId}/viewstate?side=${this.side || 'Neutral'}`);
+            this.lastViewState = vs;
+            this.currentTick = vs.tick;
+            return vs;
+        } catch (err: unknown) {
+            return this.lastViewState;
         }
     }
 
-    private handleMessage(event: MessageEvent): void {
-        if (event.data instanceof ArrayBuffer) {
-            try {
-                const vs = DeltaDecoder.decode(event.data);
-                this.processViewState(vs);
-            } catch { }
-            return;
+    public async listMatches(): Promise<MatchInfo[]> {
+        try {
+            return await this.apiFetch<MatchInfo[]>('/api/matches');
+        } catch (err: unknown) {
+            return [];
+        }
+    }
+
+    public async deleteMatch(matchId: string): Promise<{ success: boolean }> {
+        try {
+            return await this.apiFetch<{ success: boolean }>(`/api/matches/${encodeURIComponent(matchId)}`, { method: 'DELETE' });
+        } catch (err: unknown) {
+            return { success: false };
+        }
+    }
+
+    public async queryWinState(matchId: string): Promise<{ over: boolean, winner?: string }> {
+        try {
+            return await this.apiFetch<{ over: boolean, winner?: string }>(`/api/matches/${encodeURIComponent(matchId)}/winstate`);
+        } catch (err: unknown) {
+            return { over: false };
+        }
+    }
+
+    public async getRecentEvents(matchId: string, count: number = 50): Promise<TacticalEvent[]> {
+        try {
+            return await this.apiFetch<TacticalEvent[]>(`/api/matches/${encodeURIComponent(matchId)}/events?count=${count}`);
+        } catch (err: unknown) {
+            return [];
+        }
+    }
+
+    public async getProfile(profileId: string): Promise<EntityProfile | null> {
+        try {
+            return await this.apiFetch<EntityProfile>(`/api/matches/profiles/${encodeURIComponent(profileId)}`);
+        } catch (err: unknown) {
+            return null;
+        }
+    }
+
+    // ─── Internal ────────────────────────────────────────────
+
+    private setState(state: ConnectionState): void {
+        this.state = state;
+        this.events.emit('connection:state', state);
+    }
+
+    private onConnected(): void {
+        this.setState(ConnectionState.Connected);
+        this.reconnectAttempts = 0;
+        
+        // Rejoin match if we were in one
+        if (this.matchId && this.side) {
+            this.joinMatch(this.side, this.matchId);
         }
 
+        // Process offline queue
+        while (this.offlineQueue.length > 0) {
+            const msg = this.offlineQueue.shift();
+            if (msg) this.send(msg);
+        }
+    }
+
+    private onDisconnected(): void {
+        if (this.state !== ConnectionState.Disconnected) {
+            this.scheduleReconnect();
+        }
+    }
+
+    private scheduleReconnect(): void {
+        this.setState(ConnectionState.Reconnecting);
+        this.reconnectAttempts++;
+        setTimeout(() => {
+            void this.connect();
+        }, this.config.reconnectDelayMs);
+    }
+
+    private onMessage(event: MessageEvent): void {
         try {
-            const msg = JSON.parse(event.data) as ServerMessage;
-
+            const msg = JSON.parse(event.data as string) as ServerMessage;
             switch (msg.type) {
-                case 'VIEW_STATE':
-                    const vs = msg.payload as any;
-                    this.currentTick = vs.tick;
-                    this.processViewState(vs);
+                case 'VIEW_STATE': {
+                    this.lastViewState = msg.payload;
+                    this.currentTick = msg.payload.tick;
+                    this.events.emit('state:viewState', msg.payload);
                     break;
+                }
 
-                case 'COMMAND_ACK':
-                    this.resolveCommand(msg.payload as { commandType: string; success: boolean; error?: string });
-                    break;
-
-                case 'SCENARIO_IMPORTED':
-                    this.lastSequence = -1;
-                    this.currentTick = 0;
-                    if ((msg.payload as any).matchId) {
-                        this.matchId = (msg.payload as any).matchId;
+                case 'COMMAND_ACK': {
+                    const payload = msg.payload;
+                    const pending = this.pendingCommands.get(payload.commandType);
+                    if (pending) {
+                        clearTimeout(pending.timeout);
+                        this.pendingCommands.delete(payload.commandType);
+                        if (payload.success) {
+                            pending.resolve({ commandType: payload.commandType, success: true });
+                        } else {
+                            pending.reject(new Error(payload.error || 'Unknown error'));
+                        }
                     }
-                    this.resolveCommand(msg.payload as any);
-                    this.events.emit('scenario:imported', msg.payload);
                     break;
+                }
 
-                case 'EVENT':
-                   const evt = msg.payload as any;
+                case 'EVENT': {
+                   const evt = msg.payload;
                    this.events.emit('events:new', evt);
                    if (evt.type) {
                        this.events.emit(`event:${evt.type}`, evt);
                    }
                    break;
-                case 'ERROR':
+                }
+
+                case 'ERROR': {
                     this.events.emit('error', msg.payload);
                     break;
+                }
 
-                case 'SCENARIO_EXPORTED':
+                case 'SCENARIO_EXPORTED': {
                     this.events.emit('scenario:exported', msg.payload);
                     break;
+                }
 
-                case 'PROFILE_LIST':
-                    this.events.emit('profiles:loaded', msg.payload);
+                case 'SCENARIO_IMPORTED': {
+                    this.events.emit('scenario:imported', msg.payload);
                     break;
+                }
             }
-        } catch (err) {
+        } catch (err: unknown) {
             this.events.emit('error', { message: 'Failed to parse message', data: event.data });
         }
     }
 
-    private processViewState(vs: ViewState): void {
-        if (vs.tick < this.currentTick || (vs.tick === 0 && vs.sequence < this.lastSequence)) {
-            this.lastSequence = -1;
-            this.currentTick = vs.tick;
+    private send(msg: ClientMessage): void {
+        if (this.ws && this.ws.readyState === WebSocket.OPEN) {
+            this.ws.send(JSON.stringify(msg));
+        } else if (this.config.offlineQueueEnabled) {
+            this.offlineQueue.push(msg);
         }
-
-        if (vs.sequence <= this.lastSequence) return;
-        
-        this.lastSequence = vs.sequence;
-        this.currentTick = vs.tick;
-        this.lastViewState = vs;
-        this.events.emit('state:viewState', vs);
-        this.events.emit('state:paused', vs.isPaused);
-    }
-
-    private resolveCommand(ack: { commandType: string; success: boolean; error?: string }): void {
-        for (const [key, pending] of this.pendingCommands) {
-            if (key.startsWith(ack.commandType)) {
-                clearTimeout(pending.timer);
-                this.pendingCommands.delete(key);
-
-                if (ack.success) {
-                    pending.resolve({ commandType: ack.commandType, success: true });
-                } else {
-                    pending.reject(new CommandRejectedError(ack.commandType, ack.error || 'Unknown'));
-                }
-                return;
-            }
-        }
-    }
-
-    private scheduleReconnect(): void {
-        if (this.reconnectAttempts >= this.config.maxReconnectAttempts) {
-            this.events.emit('error', { message: 'Max reconnection attempts reached' });
-            return;
-        }
-
-        this.setState(ConnectionState.Reconnecting);
-        const delay = this.config.reconnectDelayMs * Math.pow(2, this.reconnectAttempts);
-        this.reconnectAttempts++;
-
-        this.reconnectTimer = setTimeout(async () => {
-            try {
-                await this.connect();
-                if (this.matchId && this.side) {
-                    this.joinMatch(this.side, this.matchId);
-                }
-            } catch {
-                this.scheduleReconnect();
-            }
-        }, Math.min(delay, 30000));
-    }
-
-    private flushOfflineQueue(): void {
-        const queue = [...this.offlineQueue];
-        this.offlineQueue = [];
-        for (const msg of queue) {
-            this.send(msg);
-        }
-    }
-
-    private rejectAllPending(reason: string): void {
-        for (const [key, pending] of this.pendingCommands) {
-            clearTimeout(pending.timer);
-            pending.reject(new NetworkError(reason));
-        }
-        this.pendingCommands.clear();
-    }
-
-    private setState(state: ConnectionState): void {
-        if (this.state === state) return;
-        this.state = state;
-        this.events.emit('connection:stateChanged', state);
     }
 }
 
-// ─── Sub-Modules ─────────────────────────────────────────────
+// ─── SDK Modules ─────────────────────────────────────────────
 
 export class NavigationModule {
     constructor(private client: WarGamesClient) { }
-    setCourse(entityId: EntityId, position: Vector3, speedKts: number) { return this.client.dispatch({ type: 'SetCourse', entityId, position, speedKts }); }
-    addWaypoint(entityId: EntityId, position: Vector3, speedKts: number) { return this.client.dispatch({ type: 'AddWaypoint', entityId, position, speedKts }); }
-    clearWaypoints(entityId: EntityId) { return this.client.dispatch({ type: 'ClearWaypoints', entityId }); }
-    setHeading(entityId: EntityId, heading: number) { this.client.dispatchImmediate({ type: 'SetHeading', entityId, heading }); }
-    setSpeed(entityId: EntityId, speedKts: number) { if (speedKts < 0) throw new CommandValidationError('SetSpeed', 'Speed cannot be negative'); return this.client.dispatch({ type: 'SetSpeed', entityId, speedKts }); }
-    setAltitude(entityId: EntityId, altitudeM: number) { return this.client.dispatch({ type: 'SetAltitude', entityId, altitudeM }); }
-    joinFormation(entityId: EntityId, leaderId: EntityId, offset: Vector3) { return this.client.dispatch({ type: 'JoinFormation', entityId, leaderId, offset }); }
-    breakFormation(entityId: EntityId) { return this.client.dispatch({ type: 'BreakFormation', entityId }); }
+    setCourse(entityId: string, position: Vector3, speedKts: number) { return this.client.dispatch({ type: 'SetCourse', entityId, position, speedKts }); }
+    addWaypoint(entityId: string, position: Vector3, speedKts: number) { return this.client.dispatch({ type: 'AddWaypoint', entityId, position, speedKts }); }
+    clearWaypoints(entityId: string) { return this.client.dispatch({ type: 'ClearWaypoints', entityId }); }
+    setHeading(entityId: string, heading: number) { return this.client.dispatch({ type: 'SetHeading', entityId, heading }); }
+    setSpeed(entityId: string, speedKts: number) { return this.client.dispatch({ type: 'SetSpeed', entityId, speedKts }); }
+    setAltitude(entityId: string, altitudeM: number) { return this.client.dispatch({ type: 'SetAltitude', entityId, altitudeM }); }
 }
 
 export class CombatModule {
     constructor(private client: WarGamesClient) { }
-    fireWeapon(entityId: EntityId, mountIndex: number, targetId: EntityId) { if (mountIndex < 0) throw new CommandValidationError('FireWeapon', 'Mount index cannot be negative'); return this.client.dispatch({ type: 'FireWeapon', entityId, mountIndex, targetId }); }
-    assignWeapon(entityId: EntityId, mount: string, targetId: EntityId) { return this.client.dispatch({ type: 'AssignWeapon', entityId, mount, targetId }); }
-    assignSensor(entityId: EntityId, sensor: string, targetId: EntityId) { return this.client.dispatch({ type: 'AssignSensor' as any, entityId, sensor, targetId }); }
-    applyDamage(entityId: EntityId, damage: number) { return this.client.dispatch({ type: 'ApplyDamage', entityId, damage }); }
-    destroyEntity(entityId: EntityId) { return this.client.dispatch({ type: 'DestroyEntity', entityId }); }
-}
-
-export class SensorsModule {
-    constructor(private client: WarGamesClient) { }
-    setSensorState(entityId: EntityId, sensor: string, active: boolean) { return this.client.dispatch({ type: 'SetSensorState', entityId, sensor, active }); }
-    setEMCON(state: string, entityId?: EntityId) { return this.client.dispatch({ type: 'SetEMCON', entityId, state }); }
-}
-
-export class LogisticsModule {
-    constructor(private client: WarGamesClient) { }
-    landAtFacility(entityId: EntityId, facilityId: EntityId) { return this.client.dispatch({ type: 'LandAtFacility', entityId, facilityId }); }
-    transferResources(fromId: EntityId, toId: EntityId, fuelKg: number) { return this.client.dispatch({ type: 'TransferResources', fromId, toId, fuelKg }); }
-    setLoadout(loadout: string) { return this.client.dispatch({ type: 'SetLoadout', loadout }); }
-}
-
-export class DoctrineModule {
-    constructor(private client: WarGamesClient) { }
-    setUnitROE(entityId: EntityId, roe: string) { return this.client.dispatch({ type: 'SetUnitROE', entityId, roe }); }
+    fireWeapon(shooterId: string, mountIndex: number, targetId: string) { return this.client.dispatch({ type: 'FireWeapon', entityId: shooterId, mountIndex, targetId }); }
+    setUnitROE(entityId: string, roe: string) { return this.client.dispatch({ type: 'SetUnitROE', entityId, roe }); }
     setGlobalROE(roe: string) { return this.client.dispatch({ type: 'SetGlobalROE', roe }); }
-    setMissionROE(roe: string) { return this.client.dispatch({ type: 'SetMissionROE', roe }); }
-    setMission(entityId: EntityId, missionType: string, params: any) { return this.client.dispatch({ type: 'SetMission', entityId, missionType, params }); }
-    setEnvironment(key: string, value: number) { return this.client.dispatch({ type: 'SetEnvironment', key, value }); }
+}
+
+export class SensorModule {
+    constructor(private client: WarGamesClient) { }
+    setSensorState(entityId: string, sensorName: string, active: boolean) { return this.client.dispatch({ type: 'SetSensorState', entityId, sensor: sensorName, active }); }
+    setEMCON(state: string, entityId?: string) { return this.client.dispatch({ type: 'SetEMCON', entityId, state }); }
+}
+
+export class BugModule {
+    constructor(private client: WarGamesClient) { }
+    async list() { return await this.client.apiFetch<BugReport[]>('/api/bugs'); }
+    async get(id: string) { return await this.client.apiFetch<BugReport>(`/api/bugs/${id}`); }
+    async report(data: unknown) { return await this.client.apiFetch<BugReport>('/api/bugs', { method: 'POST', body: JSON.stringify(data) }); }
+    async update(id: string, updates: unknown) { return await this.client.apiFetch<BugReport>(`/api/bugs/${id}`, { method: 'PATCH', body: JSON.stringify(updates) }); }
+    async comment(id: string, data: unknown) { return await this.client.apiFetch<unknown>(`/api/bugs/${id}/comments`, { method: 'POST', body: JSON.stringify(data) }); }
 }
 
 export class ScenarioModule {
@@ -568,29 +460,47 @@ export class ScenarioModule {
     async getCurrentState(): Promise<ViewState | null> { return await this.client.getLatestViewState(); }
     async listMatches(): Promise<MatchInfo[]> { return await this.client.listMatches(); }
     async deleteMatch(matchId: string): Promise<{ success: boolean }> { return await this.client.deleteMatch(matchId); }
-    async queryWinState(matchId: string): Promise<WinState> { return await this.client.queryWinState(matchId); }
+    async queryWinState(matchId: string): Promise<{ over: boolean, winner?: string }> { return await this.client.queryWinState(matchId); }
     async getRecentEvents(matchId: string, count: number = 50): Promise<TacticalEvent[]> { return await this.client.getRecentEvents(matchId, count); }
-    async getProfile(profileId: string): Promise<any> { return await this.client.getProfile(profileId); }
+    async getProfile(profileId: string): Promise<EntityProfile | null> { return await this.client.getProfile(profileId); }
     pause() { this.client.pause(); }
     resume(rate = 1) { this.client.resume(rate); }
-    spawnEntity(id: string, profileId: string, side: string, position: Vector3, heading: number = 0) { return this.client.dispatch({ type: 'SpawnEntity', id, profileId, side, position, heading } as any); }
+    spawnEntity(id: string, profileId: string, side: Side, position: Vector3, heading: number = 0) { return this.client.dispatch({ type: 'SpawnEntity', id, profileId, side, position, heading }); }
     setTimeCompression(rate: number) { this.client.setTimeCompression(rate); }
     setIntent(intent: ScenarioIntent) { return this.client.dispatch({ type: 'SetIntent', intent }); }
-    exportScenario(): Promise<ScenarioManifest> { return new Promise((resolve) => { this.client.events.once('scenario:exported', (payload: ScenarioManifest) => { resolve(payload); }); this.client.send({ type: 'EXPORT_SCENARIO' as any, matchId: this.client.currentMatchId || 'default' }); }); }
-    importScenario(payload: ScenarioManifest, options: { matchId?: string; side?: string } = {}): Promise<{ success: boolean }> { if (options.side) { (this.client as any).side = options.side; } return new Promise((resolve) => { this.client.events.once('scenario:imported', (result: any) => { resolve(result); }); this.client.send({ type: 'IMPORT_SCENARIO' as any, matchId: options.matchId || (this.client as any).matchId || 'default', payload }); }); }
-    async fetchProfiles(): Promise<{ units: [string, EntityProfile][], weapons: [string, any][] }> { return await this.client.apiFetch('/api/database/profiles'); }
+    setMission(entityId: string, missionType: MissionType, params: unknown) { 
+        return this.client.dispatch({ 
+            type: 'SetMission', 
+            entityId, 
+            missionType, 
+            params: params as Record<string, unknown> 
+        }); 
+    }
+    exportScenario(): Promise<unknown> { return new Promise((resolve) => { this.client.events.once('scenario:exported', (payload: unknown) => { resolve(payload); }); this.client.dispatchImmediate({ type: 'EXPORT_SCENARIO', matchId: this.client.currentMatchId || 'default' } as unknown as ClientMessage); }); }
+    importScenario(payload: unknown, options: { matchId?: string; side?: Side } = {}): Promise<{ success: boolean }> { 
+        if (options.side) { this.client.side = options.side; } 
+        return new Promise((resolve) => { 
+            this.client.events.once('scenario:imported', (result: { success: boolean }) => { resolve(result); }); 
+            this.client.dispatchImmediate({ 
+                type: 'IMPORT_SCENARIO', 
+                matchId: options.matchId || this.client.currentMatchId || 'default', 
+                payload: payload as unknown as Record<string, unknown> 
+            } as unknown as ClientMessage); 
+        }); 
+    }
+    async fetchProfiles(): Promise<{ units: [string, EntityProfile][], weapons: [string, unknown][] }> { return await this.client.apiFetch('/api/database/profiles'); }
     async saveProfile(id: string, profile: EntityProfile): Promise<{ success: boolean }> { return await this.client.apiFetch('/api/database/profiles', { method: 'POST', body: JSON.stringify({ id, profile }) }); }
     async listScenarios(): Promise<{ filename: string; name: string; description: string; entityCount: number }[]> { return await this.client.apiFetch('/api/scenarios'); }
-    async getScenario(filename: string): Promise<ScenarioManifest> { return await this.client.apiFetch(`/api/scenarios/${encodeURIComponent(filename)}`); }
-    async saveScenario(filename: string, manifest: ScenarioManifest): Promise<{ success: boolean }> { return await this.client.apiFetch('/api/scenarios', { method: 'POST', body: JSON.stringify({ filename, manifest }) }); }
+    async getScenario(filename: string): Promise<unknown> { return await this.client.apiFetch(`/api/scenarios/${encodeURIComponent(filename)}`); }
+    async saveScenario(filename: string, manifest: unknown): Promise<{ success: boolean }> { return await this.client.apiFetch('/api/scenarios', { method: 'POST', body: JSON.stringify({ filename, manifest }) }); }
     async deleteScenario(filename: string): Promise<{ success: boolean }> { return await this.client.apiFetch(`/api/scenarios/${encodeURIComponent(filename)}`, { method: 'DELETE' }); }
     async loadScenarioIntoEngine(filename: string): Promise<{ success: boolean; name?: string; entityCount?: number; matchId?: string }> { return await this.client.apiFetch('/api/scenarios/load', { method: 'POST', body: JSON.stringify({ filename }) }); }
-    async getTelemetry(matchId: string): Promise<Record<string, any[]>> { return await this.client.apiFetch(`/api/matches/${encodeURIComponent(matchId)}/telemetry`); }
+    async getTelemetry(matchId: string): Promise<Record<string, unknown[]>> { return await this.client.apiFetch(`/api/matches/${encodeURIComponent(matchId)}/telemetry`); }
 }
 
 export class TerrainModule {
     constructor(private client: WarGamesClient) { }
-    async fetchManifest(): Promise<{ regions: MapRegion[] }> { return await this.client.apiFetch('/api/terrain/manifest'); }
+    async fetchManifest(): Promise<{ regions: unknown[] }> { return await this.client.apiFetch('/api/terrain/manifest'); }
     async fetchStats(): Promise<{ regions: number; cachedEngineTiles: number; cachedUITiles: number; engineSizeMb: number; uiSizeMb: number; memoryCacheSize: number; pendingJobs: string[]; }> { return await this.client.apiFetch('/api/terrain/stats'); }
     async clearCache(): Promise<{ success: boolean }> { return await this.client.apiFetch('/api/terrain/clear-cache', { method: 'POST' }); }
     async fetchTile(lat: number, lon: number): Promise<ArrayBuffer> { return await this.client.apiFetch(`/api/terrain/tiles/${lat}/${lon}`); }

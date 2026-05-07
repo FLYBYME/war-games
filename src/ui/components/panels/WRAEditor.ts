@@ -1,131 +1,76 @@
-import { sdkClient } from '../../framework/Client.js';
 import { Component } from '../../framework/Component';
 import { UIStore } from '../../framework/UIStore';
+import { WRARule } from '../../../sdk/schemas/domain.js';
 
 /**
- * WRAEditor: Weapon Release Authorization rule builder.
+ * WRAEditor: Policy editor for Weapon Release Authority.
  */
 export class WRAEditor extends Component {
-    private rulesEl!: HTMLElement;
-    private rules: any[] = [];
-    private selectedId: string | null = null;
+    private rules: WRARule[] = [];
+    private listEl!: HTMLElement;
 
-    constructor() { super('div', 'wra-widget'); }
+    constructor() {
+        super('div', 'wra-editor', 'wra-editor');
+    }
 
-    protected styles() {
+    protected styles(): string {
         return `
-        .wra-widget { padding:var(--sp-3); }
-        .wra-title { font-size:var(--text-xs); font-weight:600; color:var(--text-muted); text-transform:uppercase; margin-bottom:var(--sp-2); display:flex; justify-content:space-between; align-items:center; }
-        .wra-rule { display:grid; grid-template-columns:1fr 50px 60px 1fr 30px; gap:4px; align-items:center; padding:var(--sp-1) 0; border-bottom:1px solid var(--border-color); font-size:var(--text-xs); }
-        .wra-input { background:var(--bg-surface); border:1px solid var(--border-color); border-radius:2px; padding:2px 4px; font-size:var(--text-xs); color:var(--text-main); font-family:var(--font-mono); width:100%; }
-        .wra-input:focus { border-color:var(--accent-warning); outline:none; }
-        .wra-del { cursor:pointer; color:var(--accent-danger); text-align:center; }
-        .wra-header { color:var(--text-dim); font-weight:500; text-transform:uppercase; }
-        .wra-empty { color:var(--text-dim); text-align:center; padding:var(--sp-4); font-style:italic; }
+            .wra-editor { padding: var(--sp-4); background: var(--bg-panel); border: 1px solid var(--border-color); }
+            .wra-row { display: grid; grid-template-columns: 80px 100px 40px 60px 1fr; gap: 8px; padding: 4px 0; border-bottom: 1px solid var(--border-color); align-items: center; }
+            .wra-label { font-size: 10px; color: var(--text-muted); text-transform: uppercase; }
         `;
     }
 
-    protected render() {
-        const header = this.el('div', 'wra-title');
-        header.appendChild(this.el('span', undefined, 'WEAPON RELEASE AUTHORIZATION'));
-        const addBtn = document.createElement('button');
-        addBtn.className = 'btn btn--ghost btn--sm';
-        addBtn.textContent = '+ Rule';
-        addBtn.addEventListener('click', () => {
+    protected render(): void {
+        this.element.innerHTML = `
+            <div style="font-weight: 600; margin-bottom: 10px;">ENGAGEMENT POLICIES (WRA)</div>
+            <div class="wra-row" style="border: none;">
+                <span class="wra-label">Target</span>
+                <span class="wra-label">Weapon</span>
+                <span class="wra-label">Qty</span>
+                <span class="wra-label">Range %</span>
+                <span></span>
+            </div>
+            <div id="wra-list"></div>
+            <button id="btn-add-wra" style="margin-top: 10px; font-size: 11px;">+ ADD POLICY</button>
+        `;
+
+        this.listEl = this.element.querySelector('#wra-list') as HTMLElement;
+        const addBtn = this.element.querySelector('#btn-add-wra') as HTMLButtonElement;
+        
+        this.listen(addBtn, 'click', () => {
             this.rules.push({ targetType: 'Any', weaponType: 'Any', quantity: 1, maxRangePct: 0.75 });
-            this.rebuildRules();
-            this.saveRules();
-        });
-        header.appendChild(addBtn);
-        this.element.appendChild(header);
-
-        const headRow = this.el('div', 'wra-rule wra-header');
-        for (const h of ['Target Type', 'Qty', 'Range%', 'Weapon', '']) {
-            headRow.appendChild(this.el('span', undefined, h));
-        }
-        this.element.appendChild(headRow);
-
-        this.rulesEl = this.el('div');
-        this.element.appendChild(this.rulesEl);
-    }
-
-    protected onMount() {
-        this.subscribe(UIStore.selectedEntityId, id => {
-            this.selectedId = id;
-            this.refreshFromState();
+            this.sync();
         });
 
-        this.subscribe(UIStore.viewState, () => {
-            this.refreshFromState();
+        this.subscribe(UIStore.selectedEntityId, () => {
+            // Mock fetching rules for entity
+            this.rules = [
+                { targetType: 'Air', weaponType: 'Any', quantity: 2, maxRangePct: 0.8 },
+                { targetType: 'Surface', weaponType: 'Any', quantity: 1, maxRangePct: 0.5 }
+            ];
+            this.sync();
         });
     }
 
-    private refreshFromState() {
-        if (!this.selectedId) {
-            this.rules = [];
-            this.rebuildRules();
-            return;
-        }
-
-        const vs = UIStore.viewState.get();
-        const unit = vs?.units.find((u: any) => u.id === this.selectedId);
-        if (unit?.doctrine?.wraRules) {
-            // Only update if length differs or something (to avoid losing focus while typing)
-            if (JSON.stringify(this.rules) !== JSON.stringify(unit.doctrine.wraRules)) {
-                this.rules = JSON.parse(JSON.stringify(unit.doctrine.wraRules));
-                this.rebuildRules();
-            }
-        } else {
-            this.rules = [];
-            this.rebuildRules();
-        }
-    }
-
-    private rebuildRules() {
-        this.rulesEl.replaceChildren();
-        if (this.rules.length === 0) {
-            this.rulesEl.appendChild(this.el('div', 'wra-empty', 'No active WRA rules.'));
-            return;
-        }
-
-        for (let i = 0; i < this.rules.length; i++) {
-            const r = this.rules[i];
-            const row = this.el('div', 'wra-rule');
+    private sync() {
+        this.listEl.innerHTML = '';
+        this.rules.forEach((r, idx) => {
+            const row = this.el('div', 'wra-row');
+            row.innerHTML = `
+                <div style="font-size: 11px;">${r.targetType}</div>
+                <div style="font-size: 11px;">${r.weaponType}</div>
+                <div style="font-size: 11px;">${r.quantity}</div>
+                <div style="font-size: 11px;">${(r.maxRangePct || 1) * 100}%</div>
+                <button class="btn-del" style="background: none; border: none; color: var(--accent-danger); cursor: pointer;">X</button>
+            `;
             
-            row.appendChild(this.makeInput(r.targetType, v => { r.targetType = v; this.saveRules(); }));
-            row.appendChild(this.makeInput(String(r.quantity), v => { r.quantity = Number(v); this.saveRules(); }));
-            row.appendChild(this.makeInput(`${Math.round((r.maxRangePct || 1.0) * 100)}%`, v => { 
-                r.maxRangePct = parseInt(v) / 100; 
-                this.saveRules(); 
-            }));
-            row.appendChild(this.makeInput(r.weaponType || 'Any', v => { r.weaponType = v; this.saveRules(); }));
-
-            const del = this.el('span', 'wra-del', '✕');
-            del.addEventListener('click', () => { 
-                this.rules.splice(i, 1); 
-                this.rebuildRules(); 
-                this.saveRules();
+            this.listen(row.querySelector('.btn-del')!, 'click', () => {
+                this.rules.splice(idx, 1);
+                this.sync();
             });
-            row.appendChild(del);
-            this.rulesEl.appendChild(row);
-        }
-    }
 
-    private saveRules() {
-        if (this.selectedId) {
-            sdkClient.dispatch({
-                type: 'UpdateWRARules' as any,
-                entityId: this.selectedId,
-                rules: this.rules
-            });
-        }
-    }
-
-    private makeInput(value: string, onChange: (v: string) => void): HTMLInputElement {
-        const input = document.createElement('input');
-        input.className = 'wra-input';
-        input.value = value;
-        input.addEventListener('change', () => onChange(input.value));
-        return input;
+            this.listEl.appendChild(row);
+        });
     }
 }

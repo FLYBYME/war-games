@@ -1,5 +1,6 @@
 import { Component } from '../../framework/Component';
 import { UIStore } from '../../framework/UIStore';
+import { ViewUnitPayload, EngineCommandPayload } from '../../../sdk/schemas';
 
 /**
  * EMCONMatrix: Per-sensor emission control override checklist.
@@ -30,14 +31,14 @@ export class EMCONMatrix extends Component {
 
         const id = UIStore.selectedEntityId.get();
         const vs = UIStore.viewState.get();
-        const unit = vs?.units.find((u: any) => u.id === id);
+        const unit = vs?.units.find((u: ViewUnitPayload) => u.id === id);
         
         if (!unit || !unit.sensors || unit.sensors.length === 0) {
             this.element.appendChild(this.el('div', 'empty-state', 'No active/passive sensors equipped.'));
             return;
         }
 
-        unit.sensors.forEach((s: any) => {
+        unit.sensors.forEach((s) => {
             const row = this.el('div', 'emcon-row');
             
             const info = this.el('div', 'emcon-info');
@@ -54,7 +55,7 @@ export class EMCONMatrix extends Component {
                         entityId: unit.id,
                         sensor: s.name,
                         active: newState
-                    } as any);
+                    } as EngineCommandPayload);
                 }
             });
             row.appendChild(toggle);

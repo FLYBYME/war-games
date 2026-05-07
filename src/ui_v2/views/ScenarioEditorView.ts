@@ -1,12 +1,13 @@
 import { Component } from '../framework/Component';
 import { UIStore } from '../framework/UIStore';
 import { TacticalMap } from '../components/TacticalMap';
+import { Side, EngineCommandPayload } from '../../sdk/schemas';
 
 /**
  * ScenarioEditorView: Drag-and-drop tool for match creation.
  */
 export class ScenarioEditorView extends Component {
-    private currentSide: string = 'Blue';
+    private currentSide: Side = Side.Blue;
 
     constructor() {
         super('div', 'scenario-editor', 'scenario-editor');
@@ -105,12 +106,12 @@ export class ScenarioEditorView extends Component {
         redSide.style.cssText = 'color: var(--color-hostile); font-weight: bold; width: 30px; height: 30px;';
         
         blueSide.onclick = () => {
-            this.currentSide = 'Blue';
+            this.currentSide = Side.Blue;
             blueSide.classList.add('active');
             redSide.classList.remove('active');
         };
         redSide.onclick = () => {
-            this.currentSide = 'Red';
+            this.currentSide = Side.Red;
             redSide.classList.add('active');
             blueSide.classList.remove('active');
         };
@@ -152,12 +153,12 @@ export class ScenarioEditorView extends Component {
         this.element.appendChild(sidebar);
 
         // Setup drop handling
-        this.listen(main, 'dragover', (e) => {
+        this.listen<DragEvent>(main, 'dragover', (e) => {
             e.preventDefault();
             if (e.dataTransfer) e.dataTransfer.dropEffect = 'copy';
         });
 
-        this.listen(main, 'drop', (e: DragEvent) => {
+        this.listen<DragEvent>(main, 'drop', (e) => {
             e.preventDefault();
             const profileId = e.dataTransfer?.getData('text/plain');
             if (!profileId) return;
@@ -167,7 +168,7 @@ export class ScenarioEditorView extends Component {
             const y = e.clientY - rect.top;
 
             // Access the map's renderer to convert screen to world
-            const mapRenderer = (map as any).renderer;
+            const mapRenderer = map.renderer;
             if (mapRenderer) {
                 const worldPos = mapRenderer.screenToWorld(x, y);
                 this.spawnUnit(profileId, worldPos);
@@ -182,11 +183,11 @@ export class ScenarioEditorView extends Component {
             type: 'SpawnEntity',
             id,
             profileId,
-            side: this.currentSide as any,
+            side: this.currentSide,
             position: { x: pos.x, y: -pos.y, z: 5000 },
             heading: 0,
             speedKts: 350
-        });
+        } as EngineCommandPayload);
 
         console.log(`[Editor] Spawned ${profileId} on side ${this.currentSide} at ${pos.x}, ${pos.y}`);
     }

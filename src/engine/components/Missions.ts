@@ -1,15 +1,6 @@
-import { IComponent, Vector3, AreaV3 } from '../core/Types.js';
+import { IComponent, Vector3, AreaV3, MissionType } from '../core/Types.js';
 
-export enum MissionType {
-    Idle = 'Idle',
-    Patrol = 'Patrol',
-    Strike = 'Strike',
-    ASW = 'ASW',
-    Escort = 'Escort',
-    VBSS = 'VBSS',
-    Minelaying = 'Minelaying',
-    MCM = 'MCM'
-}
+export { MissionType };
 
 export enum MissionStatus {
     Pending = 'Pending',
@@ -21,6 +12,9 @@ export enum MissionStatus {
 export interface IdleParams {}
 export interface ASWParams {}
 export interface EscortParams {}
+export interface InterceptParams {
+    targetId: string;
+}
 
 export type MissionParamsMap = {
     [MissionType.Idle]: IdleParams;
@@ -31,6 +25,7 @@ export type MissionParamsMap = {
     [MissionType.VBSS]: VBSSParams;
     [MissionType.Minelaying]: MinelayingParams;
     [MissionType.MCM]: MCMParams;
+    [MissionType.Intercept]: InterceptParams;
 };
 
 export type MissionParams = MissionParamsMap[MissionType];

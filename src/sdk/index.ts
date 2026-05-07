@@ -6,20 +6,12 @@
  *
  *   const client = new WarGamesClient({ url: 'ws://localhost:3000' });
  *   await client.connect();
- *   client.joinMatch('Blue');
- *
- *   // Subscribe to state
- *   client.events.on('state:viewState', (vs) => console.log(vs.tick));
- *
- *   // Issue commands
- *   await client.nav.setCourse('unit-1', { x: 5000, y: 5000, z: 0 }, 300);
- *   await client.combat.fireWeapon('unit-1', 0, 'TRK-0001');
- *   client.scenario.pause();
+ *   client.joinMatch(Side.Blue);
  */
 
 export { WarGamesClient, ConnectionState } from './WarGamesClient.js';
 export type { ClientConfig } from './WarGamesClient.js';
-export { NavigationModule, CombatModule, SensorsModule, LogisticsModule, DoctrineModule, ScenarioModule } from './WarGamesClient.js';
+export { NavigationModule, CombatModule, SensorModule, ScenarioModule, TerrainModule } from './WarGamesClient.js';
 export { EventEmitter } from './EventEmitter.js';
 export { Formatters } from './Formatters.js';
 export { DeltaEncoder } from './DeltaEncoder.js';
@@ -37,7 +29,6 @@ export {
 export * from './schemas/index.js';
 
 // Services
-export * from './services/types.js';
 export { MatchService } from './services/MatchService.js';
 export { ScenarioService } from './services/ScenarioService.js';
 export { TerrainService } from './services/TerrainService.js';

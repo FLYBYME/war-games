@@ -57,14 +57,15 @@ async function runPipeline() {
                         failedFiles.push(file);
                     } else {
                         validProfiles.push(profile);
-                        console.log(`[SUCCESS] Extracted ${profile.variantName} (${profile.platformClass})`);
+                        console.log(`[SUCCESS] Extracted ${profile.variantName || 'unknown'} (${profile.platformClass || 'unknown'})`);
                     }
                 } else {
                     console.error(`[ERROR] LLM failed to call SaveProfileTool for ${file}`);
                     failedFiles.push(file);
                 }
-            } catch (err: any) {
-                console.error(`[FATAL] Error processing ${file}:`, err.message);
+            } catch (err: unknown) {
+                const error = err as Error;
+                console.error(`[FATAL] Error processing ${file}:`, error.message);
                 failedFiles.push(file);
             }
         }
@@ -78,9 +79,10 @@ async function runPipeline() {
             await fs.writeFile(OUTPUT_FILE, JSON.stringify(db3000, null, 2));
             console.log(`Saved compiled database to ${OUTPUT_FILE}`);
         }
-    } catch (err: any) {
-        console.error("Pipeline failed:", err.message);
+    } catch (err: unknown) {
+        const error = err as Error;
+        console.error("Pipeline failed:", error.message);
     }
 }
 
-runPipeline();
+void runPipeline();

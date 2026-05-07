@@ -20,7 +20,7 @@ test.describe('Map Data Pipeline & Match Loading', () => {
 
         // 2. Verify currentMatchId has changed from 'default'
         await expect.poll(async () => {
-            return await page.evaluate(() => (window as any).UIStore.currentMatchId.get());
+            return await page.evaluate(() => (window as unknown as { [key: string]: unknown }).UIStore.currentMatchId.get());
         }, { timeout: 10000 }).not.toBe('default');
 
         // 3. Verify MapCoords reflect a non-zero location
@@ -46,7 +46,7 @@ test.describe('Map Data Pipeline & Match Loading', () => {
         await page.locator('.join-match-btn').first().click();
 
         // Verify Grid is still ON in UIStore
-        const isGridOn = await page.evaluate(() => (window as any).UIStore.getLayerSignal('grid').get());
+        const isGridOn = await page.evaluate(() => (window as unknown as { [key: string]: unknown }).UIStore.getLayerSignal('grid').get());
         expect(isGridOn).toBe(true);
     });
 });

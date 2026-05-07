@@ -31,6 +31,10 @@ export class GeoProjection {
         return { lat: lla.lat, lon: lla.lon };
     }
 
+    public toGeographic(pos: Vector3): { lat: number, lon: number } {
+        return this.project(pos);
+    }
+
     /**
      * unproject: Convert [lat, lon] to ENU [x, y, z] meters
      */
@@ -38,5 +42,9 @@ export class GeoProjection {
         const targetLla: Lla = { lat, lon, alt: 0 };
         const ecef = Geodesy.llaToEcef(targetLla);
         return Geodesy.ecefToEnu(ecef, this.originLla);
+    }
+
+    public getOrigin(): { lat: number, lon: number } {
+        return { lat: this.originLat, lon: this.originLon };
     }
 }

@@ -1,45 +1,16 @@
 import { Component } from '../framework/Component';
-import { UIStore, InspectorTab, ViewUnit } from '../framework/UIStore';
-import { ListManager } from '../framework/ListManager';
-import { TOTCalculator } from './management/TOTCalculator';
-import { FormationEditor } from './management/FormationEditor';
-import { SpeedAltitudeSlider } from './management/SpeedAltitudeSlider';
-import { EMCONMatrix } from './management/EMCONMatrix';
-import { WeaponAllocationMatrix } from './management/WeaponAllocationMatrix';
-import { FlightPlanEditor } from './management/FlightPlanEditor';
-import { DoctrineWindow } from './management/DoctrineWindow';
-import { WRAWindow } from './management/WRAWindow';
+import { UIStore, ViewUnit } from '../framework/UIStore';
+import { ViewUnitPayload, ViewTrackPayload } from '../../sdk/schemas';
 
 /**
- * UnitInspector: Detailed information panel for the selected unit.
- * Features a tabbed interface for Kinematics, Sensors, Weapons, Routing, and Formation.
+ * UnitInspector: Detailed drill-down for a selected entity or track.
+ * Displays kinematics, sensor state, and combat readiness.
  */
 export class UnitInspector extends Component {
-    private headerArea: HTMLElement | null = null;
-    private tabContainer: HTMLElement | null = null;
-    private contentArea: HTMLElement | null = null;
-    
-    private kinematicsArea: HTMLElement | null = null;
-    private sensorsArea: HTMLElement | null = null;
-    private weaponsArea: HTMLElement | null = null;
-    private routingArea: HTMLElement | null = null;
-    private formationArea: HTMLElement | null = null;
-    private doctrineArea: HTMLElement | null = null;
-    private damageArea: HTMLElement | null = null;
-    private damageBody: HTMLElement | null = null;
-
-    private sensorListManager: ListManager<any> | null = null;
-    private weaponListManager: ListManager<any> | null = null;
-    
-    // Command Widgets
-    private speedAltSlider: SpeedAltitudeSlider | null = null;
-    private emconMatrix: EMCONMatrix | null = null;
-    private weaponMatrix: WeaponAllocationMatrix | null = null;
-    private flightPlanEditor: FlightPlanEditor | null = null;
-    private totCalculator: TOTCalculator | null = null;
-    private formationEditor: FormationEditor | null = null;
-    private doctrineWindow: DoctrineWindow | null = null;
-    private wraWindow: WRAWindow | null = null;
+    private kinArea: HTMLElement | null = null;
+    private combatArea: HTMLElement | null = null;
+    private sensorArea: HTMLElement | null = null;
+    private titleEl: HTMLElement | null = null;
 
     constructor() {
         super('div', 'unit-inspector', 'unit-inspector');
@@ -54,354 +25,190 @@ export class UnitInspector extends Component {
                 height: 100%;
                 background: var(--bg-panel);
                 border-left: 1px solid var(--border-color);
-                font-size: var(--text-sm);
             }
 
             .inspector-header {
                 padding: var(--sp-4);
-                background: var(--bg-header);
                 border-bottom: 1px solid var(--border-color);
+                background: var(--bg-header);
             }
-            .header-title {
+            .inspector-id {
+                font-family: var(--font-mono);
                 font-size: var(--text-lg);
                 font-weight: 700;
-                color: var(--text-bright);
-                margin-bottom: 4px;
+                color: var(--text-main);
             }
-            .header-subtitle {
+            .inspector-class {
                 font-size: var(--text-xs);
                 color: var(--text-muted);
                 text-transform: uppercase;
-                letter-spacing: 0.1em;
-            }
-
-            .inspector-tabs {
-                display: flex;
-                background: var(--bg-base);
-                border-bottom: 1px solid var(--border-color);
-                padding: 0 var(--sp-2);
-                overflow-x: auto;
-                scrollbar-width: none;
-            }
-            .inspector-tabs::-webkit-scrollbar { display: none; }
-
-            .tab-btn {
-                padding: var(--sp-3) var(--sp-3);
-                background: none;
-                border: none;
-                border-bottom: 2px solid transparent;
-                color: var(--text-dim);
-                font-size: var(--text-xs);
-                font-weight: 600;
-                cursor: pointer;
-                text-transform: uppercase;
-                transition: all var(--transition-fast);
-                white-space: nowrap;
-            }
-            .tab-btn:hover { color: var(--text-muted); }
-            .tab-btn.active {
-                color: var(--color-friendly);
-                border-bottom-color: var(--color-friendly);
+                margin-top: 2px;
             }
 
             .inspector-content {
                 flex: 1;
                 overflow-y: auto;
-                padding: var(--sp-3);
+                padding: var(--sp-4);
                 display: flex;
                 flex-direction: column;
-                gap: var(--sp-4);
+                gap: var(--sp-6);
             }
 
             .inspector-section {
-                background: var(--bg-surface);
-                border: 1px solid var(--border-color);
-                border-radius: var(--radius-md);
                 display: flex;
                 flex-direction: column;
-                overflow: hidden;
+                gap: var(--sp-3);
             }
-            .section-header {
-                background: rgba(255,255,255,0.03);
-                padding: var(--sp-2) var(--sp-3);
+            .section-title {
                 font-size: var(--text-xs);
-                font-weight: 700;
-                color: var(--text-muted);
+                font-weight: 600;
+                color: var(--text-dim);
                 text-transform: uppercase;
-                letter-spacing: 0.05em;
+                letter-spacing: 0.1em;
                 border-bottom: 1px solid var(--border-color);
+                padding-bottom: 4px;
             }
-            .section-body {
-                padding: var(--sp-3);
+
+            .kinematics-grid {
+                display: grid;
+                grid-template-columns: repeat(2, 1fr);
+                gap: var(--sp-4);
+            }
+            .stat-box {
                 display: flex;
                 flex-direction: column;
-                gap: var(--sp-2);
             }
-            
-            .data-row {
+            .stat-label { font-size: 10px; color: var(--text-muted); }
+            .stat-value { font-size: 14px; font-weight: 500; font-family: var(--font-mono); }
+
+            .mount-item {
                 display: flex;
                 justify-content: space-between;
-                margin-bottom: 2px;
-                font-size: var(--text-xs);
+                align-items: center;
+                padding: var(--sp-2) 0;
+                font-size: var(--text-sm);
             }
-            .data-label { color: var(--text-dim); }
-            .data-value { color: var(--text-main); font-family: var(--font-mono); }
-            .data-value.active { color: var(--accent-success); }
-
-            .empty-state {
-                padding: var(--sp-4);
-                text-align: center;
-                color: var(--text-dim);
-                font-style: italic;
-                font-size: var(--text-xs);
+            .mount-status {
+                width: 8px;
+                height: 8px;
+                border-radius: 50%;
+                background: var(--accent-success);
             }
-            
-            .widget-separator {
-                height: 1px;
-                background: var(--border-color);
-                margin: var(--sp-2) 0;
-            }
+            .mount-status.busy { background: var(--accent-warning); }
         `;
     }
 
     protected render(): void {
-        this.headerArea = this.el('div', 'inspector-header');
-        this.tabContainer = this.el('div', 'inspector-tabs');
-        this.contentArea = this.el('div', 'inspector-content');
+        const header = this.el('div', 'inspector-header');
+        this.titleEl = this.el('div', 'inspector-id', 'NO SELECTION');
+        const sub = this.el('div', 'inspector-class', 'Select a unit to inspect');
+        header.appendChild(this.titleEl);
+        header.appendChild(sub);
 
-        this.element.appendChild(this.headerArea);
-        this.element.appendChild(this.tabContainer);
-        this.element.appendChild(this.contentArea);
+        const content = this.el('div', 'inspector-content');
+        this.kinArea = this.el('div', 'inspector-section');
+        this.combatArea = this.el('div', 'inspector-section');
+        this.sensorArea = this.el('div', 'inspector-section');
 
-        this.renderTabs();
-        this.initSections();
+        content.appendChild(this.kinArea);
+        content.appendChild(this.combatArea);
+        content.appendChild(this.sensorArea);
 
-        // Subscribe to state
-        this.subscribe(UIStore.selectedEntityId, () => this.refresh());
-        this.subscribe(UIStore.viewState, () => this.refreshContent());
-        this.subscribe(UIStore.inspectorTab, () => {
-            this.renderTabs();
-            this.updateTabVisibility();
-        });
+        this.element.appendChild(header);
+        this.element.appendChild(content);
+
+        // Update on viewState or selection change
+        this.subscribe(UIStore.viewState, () => this.sync());
+        this.subscribe(UIStore.selectedEntityId, () => this.sync());
     }
 
-    private renderTabs() {
-        if (!this.tabContainer) return;
-        this.tabContainer.innerHTML = '';
-        
-        const tabs: InspectorTab[] = ['Kinematics', 'Sensors', 'Weapons', 'Routing', 'Formation'];
-        const currentTab = UIStore.inspectorTab.get();
-
-        tabs.forEach(tab => {
-            const btn = this.el('button', `tab-btn ${currentTab === tab ? 'active' : ''}`, tab);
-            btn.onclick = () => UIStore.inspectorTab.set(tab);
-            this.tabContainer!.appendChild(btn);
-        });
-    }
-
-    private initSections() {
-        if (!this.contentArea) return;
-        
-        // --- Kinematics Tab ---
-        this.kinematicsArea = this.el('div', 'tab-pane kinematics-pane');
-        const kDataSec = this.createSection('Telemetry');
-        this.kinematicsArea.appendChild(kDataSec.el);
-        
-        this.speedAltSlider = new SpeedAltitudeSlider();
-        this.kinematicsArea.appendChild(this.speedAltSlider.element);
-        this.contentArea.appendChild(this.kinematicsArea);
-
-        // --- Sensors Tab ---
-        this.sensorsArea = this.el('div', 'tab-pane sensors-pane');
-        this.emconMatrix = new EMCONMatrix();
-        this.sensorsArea.appendChild(this.emconMatrix.element);
-        
-        const sListSec = this.createSection('Detection History');
-        this.sensorsArea.appendChild(sListSec.el);
-        this.sensorListManager = new ListManager({
-            container: sListSec.body,
-            keySelector: (s) => s.name || s.id,
-            renderItem: (s) => this.row(s.name || s.id, s.active ? 'ACTIVE' : 'OFF'),
-            updateItem: (s, el) => {
-                const val = el.querySelector('.data-value')!;
-                val.textContent = s.active ? 'ACTIVE' : 'OFF';
-                val.className = s.active ? 'data-value active' : 'data-value';
-            }
-        });
-        this.contentArea.appendChild(this.sensorsArea);
-
-        // --- Weapons Tab ---
-        this.weaponsArea = this.el('div', 'tab-pane weapons-pane');
-        this.weaponMatrix = new WeaponAllocationMatrix();
-        this.weaponsArea.appendChild(this.weaponMatrix.element);
-
-        const wListSec = this.createSection('Magazine Status');
-        this.weaponsArea.appendChild(wListSec.el);
-        this.weaponListManager = new ListManager({
-            container: wListSec.body,
-            keySelector: (m) => m.id || m.type,
-            renderItem: (m) => this.row(m.type, `${m.roundsRemaining} rds`),
-            updateItem: (m, el) => {
-                el.querySelector('.data-value')!.textContent = `${m.roundsRemaining} rds`;
-            }
-        });
-        this.contentArea.appendChild(this.weaponsArea);
-
-        // --- Routing Tab ---
-        this.routingArea = this.el('div', 'tab-pane routing-pane');
-        this.flightPlanEditor = new FlightPlanEditor();
-        this.routingArea.appendChild(this.flightPlanEditor.element);
-        
-        this.totCalculator = new TOTCalculator();
-        this.routingArea.appendChild(this.totCalculator.element);
-        this.contentArea.appendChild(this.routingArea);
-
-        // --- Formation Tab ---
-        this.formationArea = this.el('div', 'tab-pane formation-pane');
-        this.formationEditor = new FormationEditor();
-        this.formationArea.appendChild(this.formationEditor.element);
-        this.contentArea.appendChild(this.formationArea);
-
-        this.updateTabVisibility();
-    }
-
-    private updateTabVisibility() {
-        const tab = UIStore.inspectorTab.get();
-        if (this.kinematicsArea) this.kinematicsArea.style.display = tab === 'Kinematics' ? 'flex' : 'none';
-        if (this.sensorsArea) this.sensorsArea.style.display = tab === 'Sensors' ? 'flex' : 'none';
-        if (this.weaponsArea) this.weaponsArea.style.display = tab === 'Weapons' ? 'flex' : 'none';
-        if (this.routingArea) this.routingArea.style.display = tab === 'Routing' ? 'flex' : 'none';
-        if (this.formationArea) this.formationArea.style.display = tab === 'Formation' ? 'flex' : 'none';
-    }
-
-    private createSection(title: string) {
-        const el = this.el('div', 'inspector-section');
-        const header = this.el('div', 'section-header', title);
-        const body = this.el('div', 'section-body');
-        el.appendChild(header);
-        el.appendChild(body);
-        return { el, body };
-    }
-
-    private refresh() {
-        this.refreshHeader();
-        this.refreshContent();
-    }
-
-    private refreshHeader() {
-        if (!this.headerArea) return;
-        const selectedId = UIStore.selectedEntityId.get();
-        if (!selectedId) {
-            this.headerArea.innerHTML = '<div class="header-title">NO SELECTION</div>';
+    private sync() {
+        const entity = UIStore.getSelectedEntity();
+        if (!entity || !this.titleEl || !this.kinArea || !this.combatArea || !this.sensorArea) {
+            if (this.titleEl) this.titleEl.textContent = 'NO SELECTION';
             return;
         }
 
-        const vs = UIStore.viewState.get();
-        const unit = vs?.units.find(u => u.id === selectedId);
-        const track = vs?.tracks.find(t => t.id === selectedId);
+        this.titleEl.textContent = entity.id;
         
-        if (unit) {
-            this.headerArea.innerHTML = `
-                <div class="header-title">${selectedId}</div>
-                <div class="header-subtitle">${unit.profileId || 'UNIT'} • ${unit.side}</div>
-            `;
-        } else if (track) {
-            this.headerArea.innerHTML = `
-                <div class="header-title">${selectedId}</div>
-                <div class="header-subtitle">CONTACT TRACK [${track.classification}]</div>
-            `;
-        }
-    }
-
-    private refreshContent() {
-        if (!this.contentArea) return;
-        const selectedId = UIStore.selectedEntityId.get();
-        if (!selectedId) {
-            this.contentArea.style.display = 'none';
-            return;
-        }
-        this.contentArea.style.display = 'flex';
-
-        const vs = UIStore.viewState.get();
-        const unit = vs?.units.find(u => u.id === selectedId);
+        // Kinematics
+        this.renderKinematics(entity);
         
-        if (!unit) {
-            // Track view only shows kinematics data
-            const track = vs?.tracks.find(t => t.id === selectedId);
-            if (track && this.kinematicsArea) {
-                const body = this.kinematicsArea.querySelector('.section-body')!;
-                body.innerHTML = `
-                    <div class="data-row"><span class="data-label">Type</span><span class="data-value">${track.classification}</span></div>
-                    <div class="data-row"><span class="data-label">Altitude</span><span class="data-value">${Math.round(track.pos.z)} m</span></div>
-                    <div class="data-row"><span class="data-label">Speed</span><span class="data-value">${Math.round(track.speedKts || 0)} kts</span></div>
-                `;
-            }
-            return;
-        }
-
-        this.updateKinematics(unit);
-        this.updateSensors(unit);
-        this.updateWeapons(unit);
-        this.updateDamage(unit);
-    }
-
-    private updateDamage(unit: ViewUnit) {
-        if (!this.damageBody) return;
-        this.damageBody.innerHTML = '';
-        
-        // Overall Hull Integrity
-        const hullRow = this.el('div', 'data-row');
-        hullRow.appendChild(this.el('span', 'data-label', 'Hull Integrity'));
-        const hullVal = this.el('span', `data-value ${unit.hp > 80 ? 'active' : unit.hp > 30 ? 'warn' : 'danger'}`, `${Math.round(unit.hp)}%`);
-        hullRow.appendChild(hullVal);
-        this.damageBody.appendChild(hullRow);
-
-        this.damageBody.appendChild(this.el('div', 'widget-separator'));
-
-        // Sub-systems (From SDK ViewUnitPayload)
-        // Note: SDK currently doesn't have a specific sub-systems health list in ViewUnitPayload, 
-        // but we can infer some from sensors/mounts or use a placeholder if not present.
-        if ((unit as any).systems) {
-            (unit as any).systems.forEach((s: any) => {
-                const row = this.el('div', 'data-row');
-                row.appendChild(this.el('span', 'data-label', s.name));
-                const status = s.health > 0 ? 'OPERATIONAL' : 'DESTROYED';
-                const val = this.el('span', `data-value ${s.health > 0 ? 'active' : 'danger'}`, status);
-                row.appendChild(val);
-                this.damageBody.appendChild(row);
-            });
+        // Combat
+        if ('mounts' in entity) {
+            this.renderCombat(entity as ViewUnit);
         } else {
-            this.damageBody.appendChild(this.el('div', 'empty-state', 'Detailed subsystem telemetry unavailable.'));
+            this.combatArea.innerHTML = '';
+        }
+
+        // Sensors
+        if ('sensors' in entity) {
+            this.renderSensors(entity as ViewUnit);
+        } else {
+            this.sensorArea.innerHTML = '';
         }
     }
 
-    private updateKinematics(unit: ViewUnit) {
-        if (!this.kinematicsArea) return;
-        const body = this.kinematicsArea.querySelector('.section-body')!;
-        body.innerHTML = `
-            <div class="data-row"><span class="data-label">Altitude</span><span class="data-value">${Math.round(unit.pos.z)} m</span></div>
-            <div class="data-row"><span class="data-label">Heading</span><span class="data-value">${Math.round(unit.rot)}°</span></div>
-            <div class="data-row"><span class="data-label">Fuel</span><span class="data-value">${Math.round(unit.fuelPct)}%</span></div>
-            <div class="data-row"><span class="data-label">Status</span><span class="data-value">${unit.logState}</span></div>
+    private renderKinematics(entity: ViewUnitPayload | ViewTrackPayload) {
+        if (!this.kinArea) return;
+        const hdg = 'rot' in entity ? (entity as { rot: number }).rot : ('hdg' in entity ? (entity as unknown as { hdg: number }).hdg : 0);
+        const speed = 'speedKts' in entity ? entity.speedKts : 0;
+
+        this.kinArea.innerHTML = `
+            <div class="section-title">Kinematics</div>
+            <div class="kinematics-grid">
+                <div class="stat-box">
+                    <span class="stat-label">HEADING</span>
+                    <span class="stat-value">${Math.round((hdg as number) || 0)}°</span>
+                </div>
+                <div class="stat-box">
+                    <span class="stat-label">SPEED</span>
+                    <span class="stat-value">${Math.round((speed as number) || 0)} KTS</span>
+                </div>
+                <div class="stat-box">
+                    <span class="stat-label">ALTITUDE</span>
+                    <span class="stat-value">${Math.round(entity.pos.z)} M</span>
+                </div>
+                <div class="stat-box">
+                    <span class="stat-label">POSITION</span>
+                    <span class="stat-value">${Math.round(entity.pos.x)}, ${Math.round(entity.pos.y)}</span>
+                </div>
+            </div>
         `;
     }
 
-    private updateSensors(unit: ViewUnit) {
-        if (this.sensorListManager && unit.sensors) {
-            this.sensorListManager.sync(unit.sensors);
-        }
+    private renderCombat(unit: ViewUnit) {
+        if (!this.combatArea) return;
+        this.combatArea.innerHTML = `<div class="section-title">Combat Systems</div>`;
+        
+        unit.mounts.forEach(m => {
+            const el = this.el('div', 'mount-item');
+            el.innerHTML = `
+                <span>${m.type}</span>
+                <div style="display: flex; align-items: center; gap: 8px;">
+                    <span style="font-size: 10px; color: var(--text-dim);">${m.roundsRemaining} RDS</span>
+                    <div class="mount-status"></div>
+                </div>
+            `;
+            this.combatArea!.appendChild(el);
+        });
     }
 
-    private updateWeapons(unit: ViewUnit) {
-        if (this.weaponListManager && unit.mounts) {
-            this.weaponListManager.sync(unit.mounts);
-        }
-    }
-
-    private row(label: string, value: string): HTMLElement {
-        const r = this.el('div', 'data-row');
-        r.appendChild(this.el('span', 'data-label', label));
-        r.appendChild(this.el('span', 'data-value', value));
-        return r;
+    private renderSensors(unit: ViewUnit) {
+        if (!this.sensorArea) return;
+        this.sensorArea.innerHTML = `<div class="section-title">Sensors</div>`;
+        
+        unit.sensors.forEach(s => {
+            const el = this.el('div', 'mount-item');
+            el.innerHTML = `
+                <span>${s.name}</span>
+                <div style="display: flex; align-items: center; gap: 8px;">
+                    <span style="font-size: 10px; color: ${s.active ? 'var(--color-friendly)' : 'var(--text-dim)'};">
+                        ${s.active ? 'ACTIVE' : 'SILENT'}
+                    </span>
+                </div>
+            `;
+            this.sensorArea!.appendChild(el);
+        });
     }
 }

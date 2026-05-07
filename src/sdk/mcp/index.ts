@@ -34,7 +34,7 @@ class WarGamesMCP {
             tools: this.client.tools.getTools().map(t => ({
                 name: t.name,
                 description: t.description,
-                inputSchema: zodToJsonSchema(t.inputSchema as any) as any
+                inputSchema: zodToJsonSchema(t.inputSchema) as unknown as Record<string, unknown>
             }))
         }));
 
@@ -63,9 +63,10 @@ class WarGamesMCP {
                 return {
                     content: [{ type: "text", text: JSON.stringify(result, null, 2) }]
                 };
-            } catch (err: any) {
+            } catch (err: unknown) {
+                const error = err as Error;
                 return {
-                    content: [{ type: "text", text: `Error: ${err.message}` }],
+                    content: [{ type: "text", text: `Error: ${error.message}` }],
                     isError: true
                 };
             }
@@ -80,4 +81,4 @@ class WarGamesMCP {
 }
 
 const mcp = new WarGamesMCP();
-mcp.run().catch(console.error);
+void mcp.run().catch(console.error);

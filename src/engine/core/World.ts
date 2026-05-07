@@ -1,5 +1,5 @@
 import { Entity } from './Entity.js';
-import { EntityId, Track, Vector3, WorldState, WorldStateSchema, SimulationEvent } from './Types.js';
+import { EntityId, Vector3, WorldState, WorldStateSchema, SimulationEvent, TacticalEvent } from './Types.js';
 import {
     Command, SetPositionCommand, SetHeadingCommand, SetPitchCommand, SetAltitudeCommand, SetSpeedCommand,
     UpdateKinematicsCommand, SetThrustCommand, ApplyForceCommand,
@@ -29,24 +29,12 @@ import * as EnvironmentHandlers from './handlers/EnvironmentCommandHandlers.js';
 import * as SystemHandlers from './handlers/SystemCommandHandlers.js';
 
 import { TransformComponent, KinematicsComponent } from '../components/Physics.js';
-import { SensorComponent } from '../components/Sensors.js';
-import { FuelComponent } from '../components/Propulsion.js';
-import { WeaponStageComponent } from '../components/WeaponStages.js';
-import { CombatComponent } from '../components/Combat.js';
-import { HealthComponent } from '../components/Health.js';
-import { EnvironmentComponent } from '../components/Environment.js';
-import { TrackComponent } from '../components/Track.js';
-import { DoctrineComponent } from '../components/Doctrine.js';
-import { FacilityComponent, LogisticsComponent } from '../components/Logistics.js';
-import { NavigationComponent, FormationComponent } from '../components/Navigation.js';
-import { GroupComponent } from '../components/Group.js';
 import { LoadoutRegistry } from './LoadoutRegistry.js';
 import { ProfileRegistry } from './ProfileRegistry.js';
 import { WeaponProfileRegistry } from './WeaponProfileRegistry.js';
 import { Octree } from './Octree.js';
 import { EventBus } from './EventBus.js';
 import { Tracer } from './Tracer.js';
-import { TacticalEvent } from '../components/Telemetry.js';
 import { Side } from './Types.js';
 import { logger } from './Logger.js';
 import { ComponentRegistry } from './ComponentRegistry.js';
@@ -167,7 +155,6 @@ export class World implements IWorldView {
         this.dispatcher.register(UpdateTrackCommand, new TrackHandlers.UpdateTrackHandler());
         this.dispatcher.register(DropTrackCommand, new TrackHandlers.DropTrackHandler());
         this.dispatcher.register(SyncTracksCommand, new TrackHandlers.SyncTracksHandler());
-        this.dispatcher.register(RemoveDetectionCommand, new TrackHandlers.RemoveDetectionHandler());
 
         // Navigation
         this.dispatcher.register(AddWaypointCommand, new NavigationHandlers.AddWaypointHandler());
@@ -192,11 +179,7 @@ export class World implements IWorldView {
     }
 
     public recordEvent(event: TacticalEvent): void {
-        this.events.emit({
-            type: 'TacticalEvent',
-            tick: this.currentTick,
-            data: event
-        });
+        this.events.emit(event);
     }
 
     private externalCommandQueue: Command[] = [];
@@ -241,7 +224,7 @@ export class World implements IWorldView {
         this.systemsByPhase.set(system.phase, phaseList);
     }
 
-    public getSystem<T extends ISystem>(identifier: (new (...args: any[]) => T) | string): T | undefined {
+    public getSystem<T extends ISystem>(identifier: (new (...args: unknown[]) => T) | string): T | undefined {
         if (typeof identifier === 'string') {
             return this.systems.find(s => s.name === identifier) as T | undefined;
         }
@@ -315,9 +298,10 @@ export class World implements IWorldView {
                     }
                 }
                 phaseTimes['spatialGrid'] = performance.now() - spatialStart;
-            } catch (err: any) {
-                logger.error(`FATAL CRASH in Simulation Loop (Tick ${this.currentTick}): ${err.message}`, { stack: err.stack });
-                throw err;
+            } catch (err: unknown) {
+                const error = err as Error;
+                logger.error(`FATAL CRASH in Simulation Loop (Tick ${this.currentTick}): ${error.message}`, { stack: error.stack });
+                throw error;
             }
         }
 
@@ -377,11 +361,7 @@ export class World implements IWorldView {
     }
 
     private resolveCommands(queue: Command[]): void {
-        if (queue.length > 0) {
-            //console.log(`[World] Resolving ${queue.length} commands for tick ${this.currentTick}`);
-        }
         for (const cmd of queue) {
-            // console.log(`  - Dispatching: ${cmd.constructor.name} for ${cmd.entityId}`);
             this.tracer.record(this.currentTick, cmd);
             this.dispatcher.dispatch(cmd, this);
         }
@@ -418,7 +398,7 @@ export class World implements IWorldView {
     /**
      * fromJSON: Hydrates a world from serialized data.
      */
-    public static fromJSON(data: any): World {
+    public static fromJSON(data: WorldState): World {
         const world = new World();
         world.currentTick = data.currentTick || 0;
 

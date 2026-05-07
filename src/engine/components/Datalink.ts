@@ -1,4 +1,4 @@
-import { IComponent } from '../core/Types.js';
+import { IComponent, Track } from '../core/Types.js';
 
 /**
  * DatalinkComponent: Enables sharing of tactical tracks over a network.
@@ -14,5 +14,5 @@ export class DatalinkComponent implements IComponent {
         public latencyTicks: number = 5  // ~0.5s delay at 10Hz
     ) {}
 
-    public incomingQueue: { arrivalTick: number, tracks: any[] }[] = [];
+    public incomingQueue: { arrivalTick: number, tracks: Track[] }[] = [];
 }

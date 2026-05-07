@@ -1,5 +1,7 @@
 import { FastifyInstance } from 'fastify';
 
+interface TileParams { lat: string; lon: string }
+
 export async function registerTerrainRoutes(app: FastifyInstance) {
     app.get('/manifest', async () => {
         return {
@@ -17,8 +19,8 @@ export async function registerTerrainRoutes(app: FastifyInstance) {
         return { success: true };
     });
 
-    app.get('/tiles/:lat/:lon', async (request, reply) => {
-        const { lat, lon } = request.params as any;
+    app.get<{ Params: TileParams }>('/tiles/:lat/:lon', async (request, reply) => {
+        const { lat, lon } = request.params;
         const tile = await app.terrainService.getTileEncoded(parseFloat(lat), parseFloat(lon));
         
         if (tile) {
@@ -30,8 +32,8 @@ export async function registerTerrainRoutes(app: FastifyInstance) {
         }
     });
 
-    app.get('/ui-tiles/:lat/:lon', async (request, reply) => {
-        const { lat, lon } = request.params as any;
+    app.get<{ Params: TileParams }>('/ui-tiles/:lat/:lon', async (request, reply) => {
+        const { lat, lon } = request.params;
         const tile = await app.terrainService.getTileEncoded(parseFloat(lat), parseFloat(lon));
         
         if (tile) {

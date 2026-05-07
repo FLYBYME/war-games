@@ -2,7 +2,7 @@ import { ISystem, IWorldView, SystemPhase } from '../core/ISystem.js';
 import { Command, AddDetectionCommand, RemoveDetectionCommand, UpdateSensorScanCommand } from '../core/Command.js';
 import { TransformComponent, KinematicsComponent } from '../components/Physics.js';
 import { SensorComponent, DetectionComponent } from '../components/Sensors.js';
-import { SensorType, MountingType, Vector3 } from '../core/Types.js';
+import { SensorType, Vector3 } from '../core/Types.js';
 import { RCSComponent } from '../components/Signatures.js';
 import { JammerComponent, JammerType } from '../components/ElectronicWarfare.js';
 import { AcousticSignatureComponent } from '../components/Subsurface.js';
@@ -16,6 +16,7 @@ import { Entity } from '../core/Entity.js';
 import { HealthComponent, SubsystemType } from '../components/Health.js';
 import { DoctrineComponent, EMCONState } from '../components/Doctrine.js';
 import { logger } from '../core/Logger.js';
+import { ProfileRegistry } from '../core/ProfileRegistry.js';
 
 export class SensorSystem implements ISystem {
     readonly name = 'SensorSystem';
@@ -71,7 +72,8 @@ export class SensorSystem implements ISystem {
 
                     // V3 Optimization: Ignore friendly weapons
                     if (target.side === observer.side) {
-                        const targetProfile = target.profileId ? world.profileRegistry.get(target.profileId) : undefined;
+                        const profileRegistry = world.profileRegistry as ProfileRegistry;
+                        const targetProfile = target.profileId ? profileRegistry.get(target.profileId) : undefined;
                         if (targetProfile?.type === 'Weapon') continue;
                     }
 
@@ -99,7 +101,7 @@ export class SensorSystem implements ISystem {
                         if (sensor.beamWidthDeg < 360 && !this.isAngleInBeam(targetAzBody, currentAz, sensor.beamWidthDeg)) continue;
 
                         const isSonar = isType(SensorType.Sonar);
-                        const hasLOS = isSonar ? true : await this.checkLOS(transform.position as Vector3, targetTransform.position as Vector3, observer.id, target.id);
+                        const hasLOS = isSonar ? true : await this.checkLOS(transform.position, targetTransform.position, observer.id, target.id);
 
                         if (hasLOS) {
                             if (isType(SensorType.Radar)) {
@@ -158,7 +160,7 @@ export class SensorSystem implements ISystem {
                         if (isType(SensorType.Radar)) {
                             if (!this.isWithinRadarHorizon(transform.position.z, targetTransform.position.z, dist)) continue;
                         }
-                        const hasLOS = await this.checkLOS(transform.position as Vector3, targetTransform.position as Vector3, observer.id, target.id);
+                        const hasLOS = await this.checkLOS(transform.position, targetTransform.position, observer.id, target.id);
                         if (hasLOS) {
                             if (isType(SensorType.Radar)) {
                                 const rcsComp = target.getComponent(RCSComponent);
@@ -192,7 +194,7 @@ export class SensorSystem implements ISystem {
 
     private calculateNoiseEnvironment(world: IWorldView): Map<EntityId, number> {
         const noiseMap = new Map<EntityId, number>();
-        const jammers: { pos: any, jammer: JammerComponent, entity: Entity }[] = [];
+        const jammers: { pos: Vector3, jammer: JammerComponent, entity: Entity }[] = [];
         for (const entity of world.getEntities()) {
             const jammer = entity.getComponent(JammerComponent);
             const transform = entity.getComponent(TransformComponent);
@@ -317,7 +319,7 @@ export class SensorSystem implements ISystem {
         return diff <= width / 2;
     }
 
-    private isDopplerNotched(obsPos: any, obsVel: any, tgtPos: any, tgtVel: any): boolean {
+    private isDopplerNotched(obsPos: Vector3, obsVel: Vector3, tgtPos: Vector3, tgtVel: Vector3): boolean {
         const vRel = VectorMath.subtract(tgtVel, obsVel);
         const uLOS = VectorMath.normalize(VectorMath.subtract(tgtPos, obsPos));
         const vRadial = VectorMath.dot(vRel, uLOS);

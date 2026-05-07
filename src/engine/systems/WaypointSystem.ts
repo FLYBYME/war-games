@@ -1,6 +1,6 @@
 import { ISystem, IWorldView, SystemPhase } from '../core/ISystem.js';
-import { Command, SetHeadingCommand, SetThrustCommand, SetSpeedCommand, SetAltitudeCommand } from '../core/Command.js';
-import { TransformComponent, KinematicsComponent } from '../components/Physics.js';
+import { Command, SetHeadingCommand, SetSpeedCommand } from '../core/Command.js';
+import { TransformComponent } from '../components/Physics.js';
 import { NavigationComponent, NavState } from '../components/Navigation.js';
 import { VectorMath } from '../math/VectorMath.js';
 import { Physics } from '../PhysicsConstants.js';
@@ -20,7 +20,6 @@ export class WaypointSystem implements ISystem {
         for (const entity of world.getEntities()) {
             const nav = entity.getComponent(NavigationComponent);
             const transform = entity.getComponent(TransformComponent);
-            const kin = entity.getComponent(KinematicsComponent);
 
             if (!nav || !transform || nav.navState !== NavState.Waypoint) continue;
             if (nav.waypoints.length === 0 || nav.activeWaypointIndex >= nav.waypoints.length) continue;
@@ -57,18 +56,14 @@ export class WaypointSystem implements ISystem {
             }
 
             commands.push(new SetHeadingCommand(entity.id, desiredHeading));
-            // Note: SetHeadingCommand in V3 usually handles both heading and pitch if we update the command schema,
-            // or we add a SetPitchCommand.
-            // For now, we'll assume transform.pitch is updated by a new command.
-            // (I'll skip adding a new command class for brevity unless needed for build)
             transform.pitch = desiredPitch; 
 
             // 3. Match Speed (TOT Logic)
             let desiredSpeedKts = target.speedKts;
             if (target.targetTick !== undefined && target.targetTick > world.currentTick) {
                 const ticksRemaining = target.targetTick - world.currentTick;
-                const secondsRemaining = ticksRemaining * (1/60); // Assume 60Hz or use world.dt if available
-                const requiredSpeedMPS = dist / Math.max(1, secondsRemaining);
+                const secondsRemaining = ticksRemaining * 0.1; // 10Hz logic
+                const requiredSpeedMPS = dist / Math.max(0.1, secondsRemaining);
                 desiredSpeedKts = requiredSpeedMPS * Physics.MPS_TO_KTS;
                 
                 // Clamp speed to reasonable platform limits (simplified)

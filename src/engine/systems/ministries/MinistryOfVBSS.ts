@@ -1,5 +1,5 @@
 import { Entity } from '../../core/Entity.js';
-import { MissionComponent, MissionType, VBSSParams } from '../../components/Missions.js';
+import { MissionComponent, MissionType } from '../../components/Missions.js';
 import { IWorldView } from '../../core/ISystem.js';
 import { IMinistry, DesiredState } from './IMinistry.js';
 import { TransformComponent } from '../../components/Physics.js';
@@ -19,13 +19,20 @@ export class MinistryOfVBSS implements IMinistry<MissionType.VBSS> {
         const params = mission.params;
         
         // 1. Resolve Target Position
-        const targetPos = params.targetId.startsWith('TRK-') 
-            ? this.findTrackPosition(entity, params.targetId)
-            : world.getEntity(params.targetId)?.getComponent(TransformComponent)?.position;
+        let targetPos: Vector3 | undefined;
+        if (params.targetId.startsWith('TRK-')) {
+            targetPos = this.findTrackPosition(entity, params.targetId);
+        } else {
+            const target = world.getEntity(params.targetId);
+            const transform = target?.getComponent(TransformComponent);
+            if (transform) {
+                targetPos = { ...transform.position };
+            }
+        }
 
         return {
             objectiveId: `vbss-${params.targetId}`,
-            targetPosition: targetPos as Vector3,
+            targetPosition: targetPos,
             targetId: params.targetId,
             boardingDurationTicks: params.boardingDurationTicks,
             allowedArea: params.allowedArea
@@ -35,6 +42,9 @@ export class MinistryOfVBSS implements IMinistry<MissionType.VBSS> {
     private findTrackPosition(observer: Entity, trackId: string): Vector3 | undefined {
         const trackComp = observer.getComponent(TrackComponent);
         const track = trackComp?.tracks.get(trackId);
-        return track?.position as Vector3;
+        if (track) {
+            return { ...track.position };
+        }
+        return undefined;
     }
 }

@@ -1,8 +1,7 @@
 import { Entity } from '../../core/Entity.js';
-import { MissionComponent, MinelayingParams, MissionType } from '../../components/Missions.js';
+import { MissionComponent, MissionType } from '../../components/Missions.js';
 import { IWorldView } from '../../core/ISystem.js';
 import { IMinistry, DesiredState } from './IMinistry.js';
-import { Vector3 } from '../../core/Types.js';
 
 /**
  * MinistryOfMinelaying: Orchestrates the deployment of a minefield.
@@ -10,7 +9,7 @@ import { Vector3 } from '../../core/Types.js';
 export class MinistryOfMinelaying implements IMinistry<MissionType.Minelaying> {
     readonly type = 'Minelaying';
 
-    public evaluate(entity: Entity, mission: MissionComponent<MissionType.Minelaying>, world: IWorldView): DesiredState {
+    public evaluate(_entity: Entity, mission: MissionComponent<MissionType.Minelaying>, _world: IWorldView): DesiredState {
         const params = mission.params;
 
         // Minelaying is simplified: navigate to the center of the area and start dropping.
@@ -19,7 +18,7 @@ export class MinistryOfMinelaying implements IMinistry<MissionType.Minelaying> {
 
         return {
             objectiveId: `minelay-${center.x}-${center.y}`,
-            targetPosition: center as Vector3,
+            targetPosition: { ...center },
             doctrineUpdates: { mode: 'Minelaying' }
         };
     }

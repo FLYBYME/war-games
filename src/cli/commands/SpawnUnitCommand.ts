@@ -1,58 +1,68 @@
 import { Command as CommanderCommand } from 'commander';
 import { BaseCommand } from '../core/BaseCommand.js';
-import { WarGamesClient } from '../../sdk/WarGamesClient.js';
+import { WarGamesClient, Side } from '../../sdk/index.js';
 import { C } from '../core/Utils.js';
 
-export class SpawnUnitCommand extends BaseCommand {
-    public readonly name = 'spawn-unit';
-    public readonly description = 'Spawn a new unit into the simulation';
-    public readonly category = 'Tactical';
+interface SpawnOptions {
+    side: string;
+    pos: string;
+    heading: string;
+}
 
-    public register(program: CommanderCommand): void {
-        program
-            .command(this.name)
+/**
+ * SpawnUnitCommand: Inject a new entity into a running match.
+ */
+export class SpawnUnitCommand extends BaseCommand {
+    public name = 'spawn-unit';
+    public description = 'Spawns a new unit into an active match.';
+
+    register(program: CommanderCommand): void {
+        program.command(this.name)
             .description(this.description)
-            .argument('<id>', 'Unique ID for the unit')
-            .argument('<profile>', 'Profile ID (e.g., f-16, carrier)')
-            .argument('<side>', 'Side (Blue, Red, Neutral)')
-            .argument('<lat>', 'Latitude', (val) => parseFloat(val))
-            .argument('<lon>', 'Longitude', (val) => parseFloat(val))
-            .option('-h, --heading <number>', 'Initial heading in degrees', (val) => parseFloat(val), 0)
-            .action((id, profile, side, lat, lon, options, command) => {
-                const globalOpts = command.optsWithGlobals();
-                this.execute(id, profile, side, lat, lon, options.heading, globalOpts.url);
+            .argument('<matchId>', 'The match ID to inject into')
+            .argument('<profileId>', 'Unit profile ID (e.g. f-35a)')
+            .option('-s, --side <side>', 'Side (Blue, Red, Neutral)', 'Neutral')
+            .option('-p, --pos <x,y,z>', 'Position in meters', '0,0,0')
+            .option('-h, --heading <deg>', 'Initial heading', '0')
+            .action((matchId: string, profileId: string, options: SpawnOptions) => {
+                void this.execute({ matchId, profileId, ...options }, program.opts() as { url: string });
             });
     }
 
-    protected async execute(id: string, profile: string, side: string, lat: number, lon: number, heading: number, url: string): Promise<void> {
-        const client = new WarGamesClient({
-            url: url,
-            connectTimeoutMs: 2000
-        });
+    protected async execute(options: SpawnOptions & { matchId: string, profileId: string }, globalOpts: { url: string }): Promise<void> {
+        const { matchId, profileId, side, pos, heading } = options;
+        const client = new WarGamesClient({ url: globalOpts.url });
+
+        console.log(`\n${C.magenta}${C.bold}🚀 UNIT INJECTION${C.reset}`);
 
         try {
-            await client.connect();
-            console.log(`${C.dim}Spawning ${C.cyan}${profile}${C.reset} as ${C.yellow}${id}${C.reset} at ${lat},${lon}...`);
-            
-            client.joinMatch('Neutral', 'default'); // We need to be joined to dispatch commands
+            const coords = pos.split(',').map(Number);
+            const position = { x: coords[0] || 0, y: coords[1] || 0, z: coords[2] || 0 };
 
-            const result = await client.scenario.spawnEntity(
-                id,
-                profile,
-                side,
-                { x: lon, y: lat, z: 0 },
-                heading
+            await client.connect();
+            client.joinMatch(Side.Neutral, matchId); // We need to be joined to dispatch commands
+
+            const res = await client.scenario.spawnEntity(
+                `${profileId}-${Date.now()}`,
+                profileId,
+                side as Side,
+                position,
+                parseFloat(heading)
             );
 
-            if (result.success) {
-                console.log(`${C.green}${C.bold}✔ Unit spawned successfully.${C.reset}`);
+            if (res.success) {
+                console.log(`${C.green}✔ Unit ${C.bold}${profileId}${C.reset} spawned successfully at ${pos}.`);
             } else {
-                console.error(`${C.red}${C.bold}✖ Failed to spawn unit.${C.reset}`);
+                console.error(`${C.red}✖ Injection failed.${C.reset}`);
             }
-        } catch (err: any) {
-            console.error(`\n${C.red}${C.bold}✖ Error:${C.reset} ${err.message}`);
+
+        } catch (err: unknown) {
+            const error = err as Error;
+            console.error(`\n${C.red}${C.bold}Spawn Failed:${C.reset} ${error.message}`);
         } finally {
+            await new Promise(r => setTimeout(() => r(undefined), 100));
             client.disconnect();
+            process.exit(0);
         }
     }
 }

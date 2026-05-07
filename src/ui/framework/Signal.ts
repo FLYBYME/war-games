@@ -1,56 +1,50 @@
 /**
- * Signal<T>: Reactive mutable state container.
- * Notifies subscribers on change. No VDOM — direct DOM updates only.
+ * Signal: A minimal reactive primitive for UI state management.
  */
 export class Signal<T> {
     private value: T;
-    private subscribers: Set<(val: T) => void> = new Set();
+    private listeners: Set<(val: T) => void> = new Set();
 
-    constructor(initial: T) { this.value = initial; }
-
-    get(): T { return this.value; }
-
-    set(newVal: T) {
-        if (this.value !== newVal) {
-            this.value = newVal;
-            this.subscribers.forEach(fn => fn(newVal));
-        }
+    constructor(initial: T) {
+        this.value = initial;
     }
 
-    /** Mutate in-place (for objects/arrays) and force notify */
-    update(fn: (val: T) => T) {
-        this.value = fn(this.value);
-        this.subscribers.forEach(sub => sub(this.value));
+    get(): T {
+        return this.value;
     }
 
-    subscribe(fn: (val: T) => void): () => void {
-        this.subscribers.add(fn);
-        fn(this.value);
-        return () => this.subscribers.delete(fn);
+    set(newValue: T): void {
+        if (this.value === newValue) return;
+        this.value = newValue;
+        this.notify();
+    }
+
+    update(fn: (val: T) => T): void {
+        this.set(fn(this.value));
+    }
+
+    subscribe(listener: (val: T) => void): () => void {
+        this.listeners.add(listener);
+        listener(this.value);
+        return () => this.listeners.delete(listener);
+    }
+
+    private notify(): void {
+        this.listeners.forEach(l => l(this.value));
     }
 }
 
 /**
- * Computed<T>: Derived signal that auto-updates when dependencies change.
+ * ComputedSignal: Derives state from other signals.
  */
-export class Computed<T> {
-    private signal: Signal<T>;
-    private cleanups: Array<() => void> = [];
-
-    constructor(compute: () => T, deps: Signal<any>[]) {
-        this.signal = new Signal(compute());
-        for (const dep of deps) {
-            this.cleanups.push(dep.subscribe(() => {
-                this.signal.set(compute());
-            }));
-        }
-    }
-
-    get(): T { return this.signal.get(); }
-    subscribe(fn: (val: T) => void): () => void { return this.signal.subscribe(fn); }
-
-    destroy() {
-        this.cleanups.forEach(c => c());
-        this.cleanups = [];
+export class ComputedSignal<T> extends Signal<T> {
+    constructor(deps: Signal<unknown>[], fn: () => T) {
+        super(fn());
+        deps.forEach(d => d.subscribe(() => this.set(fn())));
     }
 }
+
+/**
+ * Observable: Legacy alias for Signal to maintain compatibility with V2 components.
+ */
+export class Observable<T> extends Signal<T> {}

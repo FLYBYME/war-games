@@ -20,7 +20,7 @@ export class Logger {
         Logger.globalLevel = level;
     }
 
-    private format(level: LogLevel, message: string, context?: any) {
+    private format(level: LogLevel, message: string, context?: unknown) {
         const timestamp = new Date().toISOString();
         const ctxStr = context ? ` | ${JSON.stringify(context)}` : '';
         const prefixStr = this.prefix ? `[${this.prefix}] ` : '';
@@ -31,25 +31,25 @@ export class Logger {
         return LOG_PRIORITIES[Logger.globalLevel] <= LOG_PRIORITIES[level];
     }
 
-    public info(message: string, context?: any) {
+    public info(message: string, context?: unknown) {
         if (this.shouldLog('info')) {
             console.info(this.format('info', message, context));
         }
     }
 
-    public warn(message: string, context?: any) {
+    public warn(message: string, context?: unknown) {
         if (this.shouldLog('warn')) {
             console.warn(this.format('warn', message, context));
         }
     }
 
-    public error(message: string, context?: any) {
+    public error(message: string, context?: unknown) {
         if (this.shouldLog('error')) {
             console.error(this.format('error', message, context));
         }
     }
 
-    public debug(message: string, context?: any) {
+    public debug(message: string, context?: unknown) {
         if (this.shouldLog('debug')) {
             console.debug(this.format('debug', message, context));
         }

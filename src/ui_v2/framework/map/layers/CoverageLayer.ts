@@ -12,7 +12,7 @@ export class CoverageLayer implements MapLayer {
     private _graphics: Graphics | null = null;
 
     private get graphics(): Graphics {
-        if (!this._graphics || (this._graphics as any).destroyed) {
+        if (!this._graphics || this._graphics.destroyed) {
             this._graphics = new Graphics();
             this.container.addChild(this._graphics);
         }
@@ -28,7 +28,7 @@ export class CoverageLayer implements MapLayer {
 
             // 1. Radar Coverage (Cyan)
             if (unit.coveragePolygons.radar && unit.coveragePolygons.radar.length > 2) {
-                const poly = unit.coveragePolygons.radar.map((p: any) => {
+                const poly = unit.coveragePolygons.radar.map((p) => {
                     const world = latLonToWorld(p.lat, p.lon, origin);
                     return { x: world.x, y: world.y };
                 });
@@ -40,7 +40,7 @@ export class CoverageLayer implements MapLayer {
 
             // 2. Weapon Engagement Zone (Red)
             if (unit.coveragePolygons.wez && unit.coveragePolygons.wez.length > 2) {
-                const poly = unit.coveragePolygons.wez.map((p: any) => {
+                const poly = unit.coveragePolygons.wez.map((p) => {
                     const world = latLonToWorld(p.lat, p.lon, origin);
                     return { x: world.x, y: world.y };
                 });

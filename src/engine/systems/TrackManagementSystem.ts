@@ -1,83 +1,65 @@
 import { ISystem, IWorldView, SystemPhase } from '../core/ISystem.js';
 import { Command } from '../core/Command.js';
 import { DetectionComponent } from '../components/Sensors.js';
-import { TrackComponent } from '../components/Track.js';
+import { TrackComponent } from '../components/TMS.js';
 import { TransformComponent, KinematicsComponent } from '../components/Physics.js';
-import { Side, TrackStatus, IdentificationStatus, Track } from '../core/Types.js';
-import { VectorMath } from '../math/VectorMath.js';
-import { AeroComponent } from '../components/Aero.js';
-import { Entity } from '../core/Entity.js';
-import { AcousticSignatureComponent } from '../components/Subsurface.js';
+import { Track, TrackStatus, IdentificationStatus, Side } from '../core/Types.js';
 
 /**
- * TrackManagementSystem: Fuses raw detections into Tracks.
- * Handles correlation, identification, and track maintenance.
+ * TrackManagementSystem: Processes raw detections into persistent tactical tracks.
+ * Level 1 Sensor Fusion.
  */
 export class TrackManagementSystem implements ISystem {
     readonly name = 'TrackManagementSystem';
     readonly phase = SystemPhase.Perception;
     readonly dependencies = ['SensorSystem'];
 
-    public async process(world: IWorldView, dt: number): Promise<Command[]> {
+    public async process(world: IWorldView, _dt: number): Promise<Command[]> {
         const commands: Command[] = [];
-        const currentTick = world.currentTick;
 
-        for (const entity of world.getEntities()) {
-            const detections = entity.getComponent(DetectionComponent);
-            const trackComp = entity.getComponent(TrackComponent);
+        for (const observer of world.getEntities()) {
+            const trackComp = observer.getComponent(TrackComponent);
+            const detection = observer.getComponent(DetectionComponent);
+            if (!trackComp || !detection) continue;
 
-            if (!detections || !trackComp) continue;
-
-            // 1. Correlate detections to tracks
-            for (const targetId of detections.detectedEntityIds) {
+            // Simple direct correlation for V3 initial release
+            for (const targetId of detection.detectedEntityIds) {
                 const target = world.getEntity(targetId);
                 if (!target) continue;
 
-                const targetTransform = target.getComponent(TransformComponent);
-                const targetKin = target.getComponent(KinematicsComponent);
+                const transform = target.getComponent(TransformComponent);
+                const kinematics = target.getComponent(KinematicsComponent);
+                if (!transform) continue;
 
-                if (!targetTransform) continue;
-
-                // Simple correlation: check if we already have a track for this entityId
-                // In a more complex sim, we'd use position/velocity gating
-                let track: Track | undefined;
-                for (const t of trackComp.tracks.values()) {
-                    if (t.trueEntityId === targetId) {
-                        track = t;
-                        break;
-                    }
-                }
-
+                // Update or Create
+                const track = Array.from(trackComp.tracks.values()).find(t => t.trueEntityId === targetId);
+                
                 if (track) {
-                    // Update existing track
-                    track.position = { ...targetTransform.position };
-                    track.velocity = targetKin ? { ...targetKin.velocity } : { x: 0, y: 0, z: 0 };
-                    track.lastSeenTick = currentTick;
-                    track.confidence = Math.min(1.0, track.confidence + 0.1);
+                    track.position = { ...transform.position };
+                    track.velocity = kinematics ? { ...kinematics.velocity } : { x: 0, y: 0, z: 0 };
+                    track.lastSeenTick = world.currentTick;
                     track.status = TrackStatus.Active;
                 } else {
-                    // Create new track
                     const newTrack: Track = {
-                        id: `TRK-${targetId}-${entity.id.substring(0, 4)}`,
+                        id: `TRK-${Math.random().toString(16).slice(2, 6).toUpperCase()}`,
                         trueEntityId: targetId,
-                        position: { ...targetTransform.position },
-                        velocity: targetKin ? { ...targetKin.velocity } : { x: 0, y: 0, z: 0 },
-                        lastSeenTick: currentTick,
-                        identification: this.performIdentification(entity.side, target.side),
-                        confidence: 0.5,
+                        position: { ...transform.position },
+                        velocity: kinematics ? { ...kinematics.velocity } : { x: 0, y: 0, z: 0 },
+                        lastSeenTick: world.currentTick,
+                        cepM: 0,
                         status: TrackStatus.Active,
-                        classification: this.inferClassification(target),
-                        cepM: 0 // Ground truth for now
+                        classification: 'Unknown',
+                        identification: this.deriveInitialID(observer.side, target.side),
+                        confidence: 0.5
                     };
                     trackComp.tracks.set(newTrack.id, newTrack);
                 }
             }
 
-            // 2. Track Maintenance: Remove stale tracks
-            for (const [trackId, track] of trackComp.tracks.entries()) {
-                if (currentTick - track.lastSeenTick > 300) { // ~30 second timeout at 10Hz
-                    track.status = TrackStatus.Dropped;
-                    trackComp.tracks.delete(trackId);
+            // Cleanup stale tracks
+            for (const [id, track] of trackComp.tracks) {
+                if (world.currentTick - track.lastSeenTick > 100) {
+                    trackComp.tracks.delete(id);
                 }
             }
         }
@@ -85,24 +67,9 @@ export class TrackManagementSystem implements ISystem {
         return commands;
     }
 
-    private inferClassification(target: Entity): string {
-        if (target.hasComponent(AeroComponent)) return 'Air';
-        if (target.hasComponent(AcousticSignatureComponent)) {
-            const transform = target.getComponent(TransformComponent);
-            if (transform && transform.position.z < -5) return 'Subsurface';
-        }
-        const transform = target.getComponent(TransformComponent);
-        if (transform && transform.position.z > 500) return 'Air'; // Fallback for things without Aero but high up
-        
-        return 'Surface'; // Default
-    }
-
-    private performIdentification(mySide: Side, targetSide: Side): IdentificationStatus {
-        if (mySide === targetSide) {
-            return IdentificationStatus.FRIENDLY;
-        }
-
-        // Initially mark non-friendly as Unknown
-        return IdentificationStatus.UNKNOWN;
+    private deriveInitialID(mySide: Side, targetSide: Side): IdentificationStatus {
+        if (mySide === targetSide) return IdentificationStatus.FRIENDLY;
+        if (targetSide === Side.Neutral) return IdentificationStatus.NEUTRAL;
+        return IdentificationStatus.HOSTILE; // Aggressive default for sim
     }
 }

@@ -1,52 +1,38 @@
 import { Component } from '../../framework/Component';
-import { UIStore } from '../../framework/UIStore';
-import { latLonToWorld, worldToLatLon } from '../../framework/map/CoordUtils';
+import { UIStore, ViewState } from '../../framework/UIStore';
+import { Side } from '../../../sdk/schemas';
+import { worldToLatLon } from '../../framework/map/CoordUtils';
 
 /**
- * MiniMap: A high-level situational awareness display.
+ * MiniMap: A simple 2D tactical overview.
  */
 export class MiniMap extends Component {
     private canvas!: HTMLCanvasElement;
     private ctx!: CanvasRenderingContext2D;
-    private worldSize = 1000000; // 1000km default range
+    private worldSize = 1000000; // 1000km
 
     constructor() {
-        super('div', 'mini-map');
+        super('div', 'minimap', 'minimap');
     }
 
     protected styles(): string {
         return `
-            .mini-map {
-                width: 100%;
+            .minimap {
+                width: 300px;
                 height: 200px;
-                background: #05080f;
-                border: 1px solid var(--border-color);
-                border-radius: var(--radius-sm);
+                background: #050505;
+                border: 1px solid #1a1a1a;
                 position: relative;
                 overflow: hidden;
-                cursor: crosshair;
             }
             .mm-canvas {
                 width: 100%;
                 height: 100%;
             }
-            .mm-overlay {
-                position: absolute;
-                top: 4px;
-                left: 6px;
-                font-size: 9px;
-                color: var(--text-dim);
-                pointer-events: none;
-                text-transform: uppercase;
-                font-family: var(--font-mono);
-            }
         `;
     }
 
     protected render(): void {
-        this.element.innerHTML = '';
-        this.element.appendChild(this.el('div', 'mm-overlay', 'STRAT-VIEW'));
-        
         this.canvas = document.createElement('canvas');
         this.canvas.className = 'mm-canvas';
         this.canvas.width = 300;
@@ -58,7 +44,7 @@ export class MiniMap extends Component {
             if (vs) this.draw(vs);
         });
 
-        this.listen(this.canvas, 'click', (e) => {
+        this.listen<MouseEvent>(this.canvas, 'click', (e) => {
             const rect = this.canvas.getBoundingClientRect();
             const x = (e.clientX - rect.left) / rect.width;
             const y = (e.clientY - rect.top) / rect.height;
@@ -75,7 +61,7 @@ export class MiniMap extends Component {
         });
     }
 
-    private draw(vs: any) {
+    private draw(vs: ViewState) {
         const ctx = this.ctx;
         const w = this.canvas.width;
         const h = this.canvas.height;
@@ -99,28 +85,24 @@ export class MiniMap extends Component {
         ctx.stroke();
 
         // Draw Units
-        vs.units.forEach((u: any) => {
+        vs.units.forEach((u) => {
             const ux = cx + u.pos.x * scale;
             const uy = cy - u.pos.y * scale;
             
-            ctx.fillStyle = u.side === 'Blue' ? '#00d4ff' : '#ff3b30';
+            ctx.fillStyle = u.side === Side.Blue ? '#00d4ff' : '#ff3b30';
             ctx.beginPath();
             ctx.arc(ux, uy, 2, 0, Math.PI * 2);
             ctx.fill();
         });
 
         // Draw Tracks
-        vs.tracks.forEach((t: any) => {
+        vs.tracks.forEach((t) => {
             const tx = cx + t.pos.x * scale;
             const ty = cy - t.pos.y * scale;
             
-            ctx.fillStyle = t.classification === 'Hostile' ? '#ff3b30' : t.classification === 'Friendly' ? '#34c759' : '#ffcc00';
+            ctx.fillStyle = t.identification === 'Hostile' ? '#ff3b30' : t.identification === 'Friendly' ? '#34c759' : '#ffcc00';
             ctx.beginPath();
-            ctx.arc(tx, ty, 1.5, 0, Math.PI * 2);
-            ctx.fill();
+            ctx.fillRect(tx - 1, ty - 1, 2, 2);
         });
-
-        // Draw Viewport Bounds (Simplified)
-        // In a real app we'd get the actual viewport bounds from MapRenderer
     }
 }

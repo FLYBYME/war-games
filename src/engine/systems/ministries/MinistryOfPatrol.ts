@@ -1,18 +1,19 @@
 import { IMinistry, DesiredState } from './IMinistry.js';
 import { Entity } from '../../core/Entity.js';
-import { MissionComponent, MissionType, PatrolParams } from '../../components/Missions.js';
+import { MissionComponent, MissionType } from '../../components/Missions.js';
 import { IWorldView } from '../../core/ISystem.js';
 import { Vector3, IdentificationStatus } from '../../core/Types.js';
 import { TrackComponent } from '../../components/Track.js';
 import { VectorMath } from '../../math/VectorMath.js';
+import { TransformComponent } from '../../components/Physics.js';
 
 export class MinistryOfPatrol implements IMinistry<MissionType.Patrol> {
     readonly type = 'Patrol';
 
-    public evaluate(entity: Entity, mission: MissionComponent<MissionType.Patrol>, world: IWorldView): DesiredState {
-        const params = mission.params || ({} as any);
-        const transform = (entity as any).getComponent('TransformComponent');
-        const center = params.center || transform?.position || { x: 0, y: 0, z: 0 };
+    public evaluate(entity: Entity, mission: MissionComponent<MissionType.Patrol>, _world: IWorldView): DesiredState {
+        const params = mission.params;
+        const transform = entity.getComponent(TransformComponent);
+        const center = params.center || transform?.position || { x: 0, y: 0, z: 0, z0: 0 } as unknown as Vector3;
         const radiusM = params.radiusM || 5000;
         
         const tracks = entity.getComponent(TrackComponent);
@@ -25,12 +26,12 @@ export class MinistryOfPatrol implements IMinistry<MissionType.Patrol> {
             let nearestDist = Infinity;
             for (const track of tracks.tracks.values()) {
                 if (track.identification === IdentificationStatus.HOSTILE) {
-                    const distToCenter = VectorMath.distance(track.position as Vector3, center);
+                    const distToCenter = VectorMath.distance(track.position, center);
                     if (distToCenter <= radiusM) {
-                        const distToMe = VectorMath.distance(track.position as Vector3, transform?.position || center);
+                        const distToMe = VectorMath.distance(track.position, transform?.position || center);
                         if (distToMe < nearestDist) {
                             nearestDist = distToMe;
-                            interceptTarget = track.position as Vector3;
+                            interceptTarget = { ...track.position };
                             targetId = track.trueEntityId;
                         }
                     }
@@ -44,12 +45,12 @@ export class MinistryOfPatrol implements IMinistry<MissionType.Patrol> {
 
         if (interceptTarget) {
             targetPos = { ...interceptTarget };
-            objectiveId = `patrol-intercept-${targetId}`;
+            objectiveId = `patrol-intercept-${targetId || 'unknown'}`;
         } else {
             // Calculate a point on an orbit around the center
             // Orbit speed depends on tick
             const orbitRadius = radiusM * 0.7; // Patrol at 70% of radius
-            const angle = (world.currentTick * 0.01) % (Math.PI * 2);
+            const angle = (_world.currentTick * 0.01) % (Math.PI * 2);
             targetPos = {
                 x: center.x + Math.cos(angle) * orbitRadius,
                 y: center.y + Math.sin(angle) * orbitRadius,
@@ -64,7 +65,7 @@ export class MinistryOfPatrol implements IMinistry<MissionType.Patrol> {
             doctrineUpdates: { 
                 emcon: 'Active',
                 roe: 'Free',
-                speedKts: params.speedKts || 350,
+                speedKts: (params as { speedKts?: number }).speedKts || 350,
                 currentTargetId: targetId
             }
         };

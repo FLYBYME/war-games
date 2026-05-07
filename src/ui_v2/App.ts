@@ -9,10 +9,19 @@ import { ScenarioEditorView } from './views/ScenarioEditorView';
 import { ProfileEditorView } from './views/ProfileEditorView';
 
 // Expose for E2E testing
-(window as any).sdkClient = sdkClient;
-(window as any).UIStore = UIStore;
-(window as any).mockGateway = mockGateway;
-(window as any).commandDispatcher = commandDispatcher;
+const win = window as unknown as { 
+    sdkClient: typeof sdkClient; 
+    UIStore: typeof UIStore; 
+    mockGateway: typeof mockGateway; 
+    commandDispatcher: typeof commandDispatcher; 
+    location: Location;
+    addEventListener: typeof window.addEventListener;
+    hashchange: string;
+};
+win.sdkClient = sdkClient;
+win.UIStore = UIStore;
+win.mockGateway = mockGateway;
+win.commandDispatcher = commandDispatcher;
 
 class App {
     private root: HTMLElement;
@@ -38,7 +47,7 @@ class App {
         });
  
         // Sync UIStore changes back to the URL
-        let syncTimeout: any;
+        let syncTimeout: ReturnType<typeof setTimeout> | undefined;
         const syncHash = () => {
             if (syncTimeout) clearTimeout(syncTimeout);
             syncTimeout = setTimeout(() => {
@@ -110,4 +119,4 @@ class PlaceholderView extends Component {
 }
 
 const app = new App();
-app.init();
+void app.init();

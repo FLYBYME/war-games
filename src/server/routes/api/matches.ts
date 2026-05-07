@@ -1,51 +1,62 @@
 import { FastifyInstance } from 'fastify';
 import { logger } from '../../core/Logger.js';
-import { EngineCommandPayloadSchema } from '../../../sdk/schemas/protocol.js';
+import { EngineCommandPayloadSchema, EngineCommandPayload } from '../../../sdk/schemas/protocol.js';
 import { CommandFactory } from '../../../engine/core/CommandFactory.js';
 import { Side } from '../../../sdk/schemas/domain.js';
+import { ZodError } from 'zod';
+
+interface MatchParams { matchId: string }
+interface ProfileParams { id: string }
+interface ScenarioParams { filename: string }
+
+interface MatchQuery { side?: Side; count?: string }
+interface StepBody { durationMinutes: number }
+interface CommandBody { command: unknown; side: Side }
+interface ScenarioLoadBody { filename: string; matchId?: string }
+interface ScenarioSaveBody { filename: string; manifest: unknown }
 
 export async function registerMatchRoutes(app: FastifyInstance) {
     app.get('/', async () => {
         return app.matchService.listMatches();
     });
 
-    app.get('/:matchId/viewstate', async (request, reply) => {
-        const { matchId } = request.params as any;
-        const { side } = request.query as any;
-        const snapshot = await app.matchService.getInitialState(matchId, side || 'Neutral');
+    app.get<{ Params: MatchParams, Querystring: MatchQuery }>('/:matchId/viewstate', async (request, reply) => {
+        const { matchId } = request.params;
+        const { side } = request.query;
+        const snapshot = await app.matchService.getInitialState(matchId, side || Side.Neutral);
         if (snapshot) return snapshot;
         reply.status(404).send({ error: 'Match not found' });
         return;
     });
 
-    app.get('/:matchId/winstate', async (request, reply) => {
-        const { matchId } = request.params as any;
+    app.get<{ Params: MatchParams }>('/:matchId/winstate', async (request) => {
+        const { matchId } = request.params;
         return app.matchService.getWinState(matchId);
     });
 
-    app.get('/:matchId/events', async (request, reply) => {
-        const { matchId } = request.params as any;
-        const { count } = request.query as any;
+    app.get<{ Params: MatchParams, Querystring: MatchQuery }>('/:matchId/events', async (request) => {
+        const { matchId } = request.params;
+        const { count } = request.query;
         return app.matchService.getRecentEvents(matchId, count ? parseInt(count) : 50);
     });
  
-    app.get('/profiles/:id', async (request, reply) => {
-        const { id } = request.params as any;
+    app.get<{ Params: ProfileParams }>('/profiles/:id', async (request, reply) => {
+        const { id } = request.params;
         const profile = app.matchService.getProfile(id);
         if (profile) return profile;
         reply.status(404).send({ error: 'Profile not found' });
         return;
     });
 
-    app.get('/:matchId/telemetry', async (request, reply) => {
-        const { matchId } = request.params as any;
+    app.get<{ Params: MatchParams }>('/:matchId/telemetry', async (request, reply) => {
+        const { matchId } = request.params;
         const world = app.matchService.getMatch(matchId);
         if (!world) {
             reply.status(404).send({ error: 'Match not found' });
             return;
         }
 
-        const debug: Record<string, any> = {};
+        const debug: Record<string, unknown[]> = {};
         for (const entity of world.getEntities()) {
             const comps = entity.getAllComponents();
             debug[entity.id] = comps.map(c => ({ type: c.type, ...c }));
@@ -53,8 +64,8 @@ export async function registerMatchRoutes(app: FastifyInstance) {
         return { debug };
     });
 
-    app.delete('/:matchId', async (request, reply) => {
-        const { matchId } = request.params as any;
+    app.delete<{ Params: MatchParams }>('/:matchId', async (request, reply) => {
+        const { matchId } = request.params;
         if (matchId === 'default') {
             reply.status(403).send({ error: 'Cannot delete default match' });
             return;
@@ -78,9 +89,9 @@ export async function registerMatchRoutes(app: FastifyInstance) {
         }
     });
 
-    app.post('/:matchId/commands', async (request, reply) => {
-        const { matchId } = request.params as any;
-        const { command, side } = request.body as any;
+    app.post<{ Params: MatchParams, Body: CommandBody }>('/:matchId/commands', async (request, reply) => {
+        const { matchId } = request.params;
+        const { command, side } = request.body;
 
         const world = app.matchService.getMatch(matchId);
         if (!world) {
@@ -89,8 +100,8 @@ export async function registerMatchRoutes(app: FastifyInstance) {
         }
 
         try {
-            const parsedCommand = EngineCommandPayloadSchema.parse(command);
-            const cmd = CommandFactory.create(parsedCommand, side as Side || Side.Blue);
+            const parsedCommand = EngineCommandPayloadSchema.parse(command) as EngineCommandPayload;
+            const cmd = CommandFactory.create(parsedCommand, side || Side.Blue);
             
             if (!cmd) {
                 reply.status(400).send({ error: 'Invalid or unauthorized command' });
@@ -98,7 +109,7 @@ export async function registerMatchRoutes(app: FastifyInstance) {
             }
 
             // Side Isolation Check
-            const entityId = (parsedCommand as any).entityId;
+            const entityId = (parsedCommand as { entityId?: string }).entityId;
             const entity = entityId ? world.getEntity(entityId) : undefined;
             if (entity && entity.side !== side) {
                 reply.status(403).send({ error: 'Side Isolation Violation' });
@@ -111,15 +122,20 @@ export async function registerMatchRoutes(app: FastifyInstance) {
             }
 
             return { success: true, commandType: parsedCommand.type };
-        } catch (err: any) {
-            reply.status(400).send({ error: 'Schema validation failed', details: err.errors || err.message });
+        } catch (err: unknown) {
+            const error = err as Error;
+            if (error instanceof ZodError) {
+                reply.status(400).send({ error: 'Schema validation failed', details: error.errors });
+            } else {
+                reply.status(400).send({ error: 'Command execution failed', details: error.message });
+            }
             return;
         }
     });
 
-    app.post('/:matchId/step', async (request, reply) => {
-        const { matchId } = request.params as any;
-        const { durationMinutes } = request.body as any;
+    app.post<{ Params: MatchParams, Body: StepBody }>('/:matchId/step', async (request, reply) => {
+        const { matchId } = request.params;
+        const { durationMinutes } = request.body;
 
         const world = app.matchService.getMatch(matchId);
         if (!world) {
@@ -137,12 +153,10 @@ export async function registerMatchRoutes(app: FastifyInstance) {
         let interrupted = false;
         
         // Ensure events array gets populated during ticks
-        const events: any[] = [];
-        const eventHandler = (event: any) => events.push(event);
+        const events: unknown[] = [];
+        const eventHandler = (event: unknown) => events.push(event);
         
-        // Assuming the engine emits 'TacticalEvent' or we can listen to specific ones.
-        // The spec mentioned world.events.on('TacticalEvent', ...)
-        world.events.on('TacticalEvent', eventHandler);
+        world.events.onAny(eventHandler);
 
         for(let i=0; i<targetTicks; i++) {
             await world.tick(0.1, true);
@@ -156,7 +170,7 @@ export async function registerMatchRoutes(app: FastifyInstance) {
             }
         }
         
-        world.events.off('TacticalEvent', eventHandler);
+        world.events.offAny(eventHandler);
 
         return { 
             success: true, 
@@ -173,32 +187,32 @@ export async function registerMatchRoutes(app: FastifyInstance) {
         return await app.scenarioService.list();
     });
 
-    app.get('/scenarios/:filename', async (request, reply) => {
-        const { filename } = request.params as any;
+    app.get<{ Params: ScenarioParams }>('/scenarios/:filename', async (request, reply) => {
+        const { filename } = request.params;
         const manifest = await app.scenarioService.load(filename);
         if (manifest) return manifest;
         reply.status(404).send({ error: 'Scenario not found' });
         return;
     });
 
-    app.post('/scenarios', async (request, reply) => {
-        const { filename, manifest } = request.body as any;
+    app.post<{ Body: ScenarioSaveBody }>('/scenarios', async (request, reply) => {
+        const { filename, manifest } = request.body;
         const ok = await app.scenarioService.save(filename, manifest);
         if (ok) return { success: true };
         reply.status(500).send({ error: 'Failed to save scenario' });
         return;
     });
 
-    app.delete('/scenarios/:filename', async (request, reply) => {
-        const { filename } = request.params as any;
+    app.delete<{ Params: ScenarioParams }>('/scenarios/:filename', async (request, reply) => {
+        const { filename } = request.params;
         const ok = await app.scenarioService.delete(filename);
         if (ok) return { success: true };
         reply.status(404).send({ error: 'Failed to delete scenario' });
         return;
     });
 
-    app.post('/scenarios/load', async (request, reply) => {
-        const { filename, matchId } = request.body as any;
+    app.post<{ Body: ScenarioLoadBody }>('/scenarios/load', async (request, reply) => {
+        const { filename, matchId } = request.body;
         const manifest = await app.scenarioService.load(filename);
         if (!manifest) {
             reply.status(404).send({ error: 'Scenario not found' });
@@ -210,7 +224,7 @@ export async function registerMatchRoutes(app: FastifyInstance) {
         
         return { 
             success: true, 
-            matchId: targetMatchId,
+            matchId: targetMatchId, 
             tick: world.currentTick
         };
     });

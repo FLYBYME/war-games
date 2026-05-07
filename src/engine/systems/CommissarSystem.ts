@@ -4,7 +4,7 @@ import { GroupComponent, GroupFormation } from '../components/Group.js';
 import { TaskGraphComponent } from '../components/TaskGraph.js';
 import { TaskType, TaskStatus } from '../core/TaskGraph.js';
 import { MissionComponent, MissionType, MissionStatus } from '../components/Missions.js';
-import { Side } from '../core/Types.js';
+import { Vector3 } from '../core/Types.js';
 
 /**
  * CommissarSystem: Tactical Group AI.
@@ -90,7 +90,7 @@ export class CommissarSystem implements ISystem {
         }
     }
 
-    private calculateFormationOffset(type: GroupFormation, index: number, spacing: number) {
+    private calculateFormationOffset(type: GroupFormation, index: number, spacing: number): Vector3 {
         switch (type) {
             case GroupFormation.LineAbreast:
                 return { x: index % 2 === 0 ? (index / 2) * spacing : -(Math.ceil(index / 2)) * spacing, y: 0, z: 0 };

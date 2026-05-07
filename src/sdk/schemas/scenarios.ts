@@ -4,11 +4,13 @@ import { EngineCommandPayloadSchema, ScenarioIntentSchema } from './protocol.js'
 
 export const ScenarioTriggerSchema = z.discriminatedUnion('type', [
     z.object({ type: z.literal('tick'), tick: z.number() }),
-    z.object({ type: z.literal('tactical_event'), eventType: z.string(), filters: z.record(z.any()).optional() }),
+    z.object({ type: z.literal('tactical_event'), eventType: z.string(), filters: z.record(z.unknown()).optional() }),
     z.object({ type: z.literal('proximity'), entityId: z.string(), targetId: z.string(), radiusM: z.number() }),
     z.object({ type: z.literal('area'), entityId: z.string(), zone: z.object({ x: z.number(), y: z.number(), radius: z.number() }) }),
     z.object({ type: z.literal('condition'), entityId: z.string(), property: z.string(), operator: z.enum(['<', '>', '==']), value: z.number() })
 ]);
+
+export type ScenarioTrigger = z.infer<typeof ScenarioTriggerSchema>;
 
 export const ScenarioEventSchema = z.object({
     tick: z.number().optional(), // Backward compatibility
@@ -21,7 +23,7 @@ export const ScenarioAssertionSchema = z.discriminatedUnion('type', [
     z.object({ type: z.literal('dead'), tick: z.number().optional(), trigger: ScenarioTriggerSchema.optional(), params: z.object({ entityId: z.string() }) }),
     z.object({ type: z.literal('speed_at_least'), tick: z.number().optional(), trigger: ScenarioTriggerSchema.optional(), params: z.object({ entityId: z.string(), speedKts: z.number() }) }),
     z.object({ type: z.literal('pos_within'), tick: z.number().optional(), trigger: ScenarioTriggerSchema.optional(), params: z.object({ entityId: z.string(), position: Vector3Schema, radiusM: z.number() }) }),
-    z.object({ type: z.literal('event_occurred'), event: z.string(), byTick: z.number().optional(), params: z.record(z.any()).optional() })
+    z.object({ type: z.literal('event_occurred'), event: z.string(), byTick: z.number().optional(), params: z.record(z.unknown()).optional() })
 ]);
 
 import { EntityProfileSchema } from './profiles.js';
@@ -59,7 +61,7 @@ export const ScenarioManifestSchema = z.object({
 export type ScenarioManifest = z.infer<typeof ScenarioManifestSchema>;
 export type ScenarioEvent = z.infer<typeof ScenarioEventSchema>;
 export type ScenarioAssertion = z.infer<typeof ScenarioAssertionSchema>;
-export type ScenarioIntent = z.infer<typeof ScenarioIntentSchema>;
+// ScenarioIntent is already exported from protocol.js
 
 export const WorldStateSchema = z.object({
     currentTick: z.number(),
@@ -69,7 +71,7 @@ export const WorldStateSchema = z.object({
         parentId: z.string().optional(),
         components: z.array(z.object({
             type: z.string(),
-            data: z.any()
+            data: z.unknown()
         }))
     }))
 });

@@ -1,5 +1,6 @@
 import { Component } from '../../framework/Component';
-import { UIStore } from '../../framework/UIStore';
+import { UIStore, ViewState } from '../../framework/UIStore';
+import { ViewUnit } from '../../framework/UIStore';
 
 /**
  * NetworkWindow: Visual node graph showing datalink connectivity.
@@ -45,7 +46,7 @@ export class NetworkWindow extends Component {
         });
     }
 
-    private drawTopology(vs: any) {
+    private drawTopology(vs: ViewState) {
         const ctx = this.ctx;
         ctx.clearRect(0, 0, 400, 250);
 
@@ -55,7 +56,7 @@ export class NetworkWindow extends Component {
         const cx = 200, cy = 125;
         const nodes: Map<string, { x: number; y: number; id: string; status: 'Connected' | 'Disconnected' | 'Relay' }> = new Map();
 
-        const units = vs.units.filter((u: any) => u.side === 'Blue' || u.side === 'Neutral');
+        const units = vs.units.filter((u: ViewUnit) => u.side === 'Blue' || u.side === 'Neutral');
         if (units.length === 0) return;
 
         // Position nodes in a circle

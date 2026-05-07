@@ -14,5 +14,5 @@ export abstract class BaseCommand {
     /**
      * The main execution logic of the command.
      */
-    protected abstract execute(...args: any[]): Promise<void>;
+    protected abstract execute(...args: unknown[]): Promise<void>;
 }

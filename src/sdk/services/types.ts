@@ -10,10 +10,10 @@ export interface IStorageProvider {
 }
 
 export interface ILogger {
-    info(message: string, context?: any): void;
-    warn(message: string, context?: any): void;
-    error(message: string, context?: any): void;
-    debug(message: string, context?: any): void;
+    info(message: string, context?: unknown): void;
+    warn(message: string, context?: unknown): void;
+    error(message: string, context?: unknown): void;
+    debug(message: string, context?: unknown): void;
 }
 
 export interface IImage {

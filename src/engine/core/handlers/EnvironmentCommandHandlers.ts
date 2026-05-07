@@ -26,10 +26,11 @@ export class UpdateEnvironmentHandler implements CommandHandler<UpdateEnvironmen
 
 export class SetEnvironmentHandler implements CommandHandler<SetEnvironmentCommand> {
     execute(cmd: SetEnvironmentCommand, world: World): void {
-        const envSystem = (world as any).systems.find((s: any) => s.name === 'EnvironmentSystem') as EnvironmentSystem;
+        const envSystem = world.getSystem(EnvironmentSystem);
         if (envSystem) {
             if (cmd.key in envSystem.globalWeather) {
-                (envSystem.globalWeather as any)[cmd.key] = cmd.value;
+                const key = cmd.key as keyof typeof envSystem.globalWeather;
+                envSystem.globalWeather[key] = cmd.value;
             }
         }
     }

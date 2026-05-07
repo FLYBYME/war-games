@@ -1,15 +1,14 @@
 import { Entity } from './Entity.js';
 import { Command } from './Command.js';
-import { Vector3 } from './Types.js';
-import { TacticalEvent } from '../components/Telemetry.js';
+import { Vector3, TacticalEvent } from './Types.js';
 import { EventBus } from './EventBus.js';
 
 export interface IWorldView {
     readonly currentTick: number;
     readonly timestamp: number;
     readonly isPaused: boolean;
-    readonly profileRegistry: any;
-    readonly weaponProfiles: any;
+    readonly profileRegistry: unknown;
+    readonly weaponProfiles: unknown;
     readonly events: EventBus;
     getEntity(id: string): Entity | undefined;
     getEntities(): IterableIterator<Entity>;

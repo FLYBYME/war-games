@@ -7,9 +7,15 @@ import { ProfileEditor } from './views/ProfileEditor/ProfileEditor';
 import { MissionEditor } from './views/MissionEditor/MissionEditor';
 import { ScenarioEditor } from './views/ScenarioEditor/ScenarioEditor';
 
+interface E2EWindow extends Window {
+    sdkClient: unknown;
+    UIStore: unknown;
+}
+
 // Expose for E2E testing
-(window as any).sdkClient = sdkClient;
-(window as any).UIStore = UIStore;
+const e2eWindow = window as unknown as E2EWindow;
+e2eWindow.sdkClient = sdkClient;
+e2eWindow.UIStore = UIStore;
 
 class App {
     private root: HTMLElement;
@@ -57,4 +63,4 @@ class App {
 }
 
 const app = new App();
-app.init();
+void app.init();

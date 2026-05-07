@@ -1,19 +1,24 @@
 import { Component } from '../../framework/Component';
 import { UIStore } from '../../framework/UIStore';
-import { ListManager } from '../../framework/ListManager';
+import { ViewTrackPayload } from '../../../sdk/schemas';
+
+
+interface SortState {
+    column: keyof ViewTrackPayload | 'id';
+    direction: 'asc' | 'desc';
+}
 
 /**
- * ContactsWindowContent: A tabular, virtualized view of all active sensor tracks.
+ * ContactsWindow: Sortable and filterable table of all tactical tracks.
+ * Uses virtualization pattern for high-count scenarios.
  */
-export class ContactsWindowContent extends Component {
-    private listManager: ListManager<any> | null = null;
-    private listContainer: HTMLElement | null = null;
-    private tracks: any[] = [];
-    private itemHeight = 32; // px
-    private buffer = 10;
+export class ContactsWindow extends Component {
+    private tableBody!: HTMLElement;
+    private sortState: SortState = { column: 'id', direction: 'asc' };
+    private tracks: ViewTrackPayload[] = [];
 
     constructor() {
-        super('div', 'contacts-window');
+        super('div', 'contacts-window', 'contacts-window');
     }
 
     protected styles(): string {
@@ -22,199 +27,137 @@ export class ContactsWindowContent extends Component {
                 display: flex;
                 flex-direction: column;
                 height: 100%;
-                background: var(--bg-panel);
-                color: var(--text-main);
-                font-family: var(--font-ui);
+                background: #111;
+                font-size: 11px;
             }
-
             .contacts-header {
                 display: grid;
-                grid-template-columns: 60px 1fr 70px 70px;
-                padding: var(--sp-2) var(--sp-3);
-                background: var(--bg-header);
-                font-size: var(--text-xs);
-                font-weight: 600;
-                color: var(--text-muted);
-                border-bottom: 1px solid var(--border-color);
-                text-transform: uppercase;
-                letter-spacing: 0.05em;
+                grid-template-columns: 80px 100px 100px 80px 80px 100px 1fr;
+                background: #222;
+                border-bottom: 1px solid #333;
+                font-weight: bold;
+                color: #888;
             }
+            .header-cell {
+                padding: 8px;
+                cursor: pointer;
+                user-select: none;
+                border-right: 1px solid #333;
+            }
+            .header-cell:hover { background: #333; color: #fff; }
+            .header-cell.active { color: #00d1ff; }
 
-            .contacts-list {
+            .contacts-body {
                 flex: 1;
                 overflow-y: auto;
-                position: relative;
             }
-
-            .contacts-scroll-spacer {
-                width: 100%;
-                position: absolute;
-                top: 0;
-                left: 0;
-                pointer-events: none;
-            }
-
-            .contact-row {
-                position: absolute;
-                width: 100%;
-                height: 32px;
+            .track-row {
                 display: grid;
-                grid-template-columns: 60px 1fr 70px 70px;
-                padding: 0 var(--sp-3);
-                border-bottom: 1px solid rgba(255,255,255,0.03);
-                font-size: var(--text-sm);
+                grid-template-columns: 80px 100px 100px 80px 80px 100px 1fr;
+                border-bottom: 1px solid #222;
                 cursor: pointer;
-                transition: background var(--transition-fast);
-                align-items: center;
-                box-sizing: border-box;
             }
+            .track-row:hover { background: #1a1a1a; }
+            .track-row.selected { background: #004466; }
 
-            .contact-row:hover { background: var(--bg-hover); }
-            .contact-row.selected { background: var(--bg-active); border-left: 2px solid var(--color-friendly); }
-
-            .cls-tag {
-                font-size: 9px;
-                padding: 1px 4px;
-                border-radius: 2px;
-                font-weight: 700;
-                text-align: center;
-                margin-right: 8px;
-                text-transform: uppercase;
-            }
-
-            .cls-hostile { background: rgba(255, 45, 85, 0.2); color: var(--color-hostile); border: 1px solid rgba(255, 45, 85, 0.3); }
-            .cls-friendly { background: rgba(0, 212, 255, 0.2); color: var(--color-friendly); border: 1px solid rgba(0, 212, 255, 0.3); }
-            .cls-neutral { background: rgba(48, 209, 88, 0.2); color: var(--color-neutral); border: 1px solid rgba(48, 209, 88, 0.3); }
-            .cls-unknown { background: rgba(255, 214, 10, 0.2); color: var(--color-unknown); border: 1px solid rgba(255, 214, 10, 0.3); }
-
-            .val-mono { font-family: var(--font-mono); color: var(--text-dim); font-size: 11px; }
-
-            .trk-id {
+            .cell {
+                padding: 6px 8px;
+                border-right: 1px solid #222;
                 white-space: nowrap;
                 overflow: hidden;
                 text-overflow: ellipsis;
-                color: var(--text-main);
             }
+            
+            .id-hostile { color: #ff4444; }
+            .id-friendly { color: #44ff44; }
+            .id-neutral { color: #ffffff; }
+            .id-unknown { color: #ffff44; }
         `;
     }
 
     protected render(): void {
         const header = this.el('div', 'contacts-header');
-        header.innerHTML = `
-            <span>Class</span>
-            <span>ID</span>
-            <span>Range</span>
-            <span>Speed</span>
-        `;
+        const cols: { label: string, key: keyof ViewTrackPayload | 'id' }[] = [
+            { label: 'ID', key: 'id' },
+            { label: 'CLASS', key: 'classification' },
+            { label: 'ID STATUS', key: 'identification' },
+            { label: 'LAT', key: 'lla' },
+            { label: 'LON', key: 'lla' },
+            { label: 'LAST SEEN', key: 'lastSeen' },
+            { label: 'CONF', key: 'cep' } // Use cep instead of confidence as it's in the schema
+        ];
+
+        cols.forEach(c => {
+            const cell = this.el('div', 'header-cell', c.label);
+            this.listen(cell, 'click', () => this.handleSort(c.key));
+            header.appendChild(cell);
+        });
+
+        this.tableBody = this.el('div', 'contacts-body');
         
-        const list = this.el('div', 'contacts-list', '', 'contacts-list');
-        const spacer = this.el('div', 'contacts-scroll-spacer', '', 'contacts-spacer');
-        list.appendChild(spacer);
-
         this.element.appendChild(header);
-        this.element.appendChild(list);
-        this.listContainer = list;
+        this.element.appendChild(this.tableBody);
 
-        this.listManager = new ListManager<any>({
-            container: list,
-            keySelector: (t) => t.id,
-            renderItem: (t) => this.createRow(t),
-            updateItem: (t, el) => this.updateRow(t, el)
+        this.subscribe(UIStore.viewState, (vs) => {
+            this.tracks = vs?.tracks || [];
+            this.refresh();
         });
 
-        this.listen(list, 'scroll', () => this.syncVirtualList());
-
-        this.subscribe(UIStore.viewState, () => {
-            this.refreshData();
-            this.syncVirtualList();
-        });
-        this.subscribe(UIStore.selectedEntityId, () => this.syncVirtualList());
+        this.subscribe(UIStore.selectedEntityId, () => this.refresh());
     }
 
-    private refreshData() {
-        const vs = UIStore.viewState.get();
-        if (!vs) return;
+    private handleSort(col: keyof ViewTrackPayload | 'id') {
+        if (this.sortState.column === col) {
+            this.sortState.direction = this.sortState.direction === 'asc' ? 'desc' : 'asc';
+        } else {
+            this.sortState.column = col;
+            this.sortState.direction = 'asc';
+        }
+        this.refresh();
+    }
 
-        this.tracks = vs.tracks.filter(t => {
-            if (t.classification === 'Weapon') {
-                const vx = t.vel?.x || 0;
-                const vy = t.vel?.y || 0;
-                const vz = t.vel?.z || 0;
-                const speedMs = Math.sqrt(vx * vx + vy * vy + vz * vz);
-                return speedMs < 800; // Filter out gun shells
+    private refresh() {
+        if (!this.tableBody) return;
+        
+        const sorted = [...this.tracks].sort((a, b) => {
+            const col = this.sortState.column;
+            let valA = (a as Record<string, unknown>)[col];
+            let valB = (b as Record<string, unknown>)[col];
+
+            if (col === 'lla') {
+                valA = a.lla?.lat || 0;
+                valB = b.lla?.lat || 0;
             }
-            return true;
-        }).sort((a, b) => {
-            const priority = { 'Hostile': 0, 'Unknown': 1, 'Neutral': 2, 'Friendly': 3 };
-            const pa = (priority as any)[a.classification] ?? 99;
-            const pb = (priority as any)[b.classification] ?? 99;
-            if (pa !== pb) return pa - pb;
-            return a.id.localeCompare(b.id);
+
+            if (valA === valB) return 0;
+            const multiplier = this.sortState.direction === 'asc' ? 1 : -1;
+            return (valA as number) < (valB as number) ? -1 * multiplier : 1 * multiplier;
         });
-    }
 
-    private syncVirtualList() {
-        if (!this.listManager || !this.listContainer) return;
+        this.tableBody.innerHTML = '';
+        sorted.forEach(t => {
+            const row = this.el('div', 'track-row');
+            if (UIStore.selectedEntityId.get() === t.id) row.classList.add('selected');
 
-        const container = this.listContainer;
-        const scrollTop = container.scrollTop;
-        const containerHeight = container.clientHeight;
+            row.appendChild(this.el('div', 'cell', t.id));
+            row.appendChild(this.el('div', 'cell', t.classification || 'Unknown'));
+            
+            const idStatus = t.identification || 'Unknown';
+            const idCell = this.el('div', `cell id-${idStatus.toLowerCase()}`, idStatus);
+            row.appendChild(idCell);
 
-        const totalItems = this.tracks.length;
-        const spacer = container.querySelector('#contacts-spacer') as HTMLElement;
-        if (spacer) spacer.style.height = `${totalItems * this.itemHeight}px`;
+            row.appendChild(this.el('div', 'cell', t.lla?.lat.toFixed(4) || '---'));
+            row.appendChild(this.el('div', 'cell', t.lla?.lon.toFixed(4) || '---'));
+            row.appendChild(this.el('div', 'cell', `${t.lastSeen} t`));
+            row.appendChild(this.el('div', 'cell', `${Math.round(t.cep)}m`));
 
-        const startIndex = Math.max(0, Math.floor(scrollTop / this.itemHeight) - this.buffer);
-        const endIndex = Math.min(totalItems, Math.ceil((scrollTop + containerHeight) / this.itemHeight) + this.buffer);
+            this.listen(row, 'click', () => {
+                UIStore.selectedEntityId.set(t.id);
+            });
 
-        const visibleItems = this.tracks.slice(startIndex, endIndex);
-        this.listManager.sync(visibleItems);
-
-        // Update positions of visible items
-        visibleItems.forEach((track, idx) => {
-            const el = container.querySelector(`[data-testid="contact-row-${track.id}"]`) as HTMLElement;
-            if (el) {
-                el.style.top = `${(startIndex + idx) * this.itemHeight}px`;
-            }
+            this.tableBody.appendChild(row);
         });
-    }
-
-    private createRow(track: any): HTMLElement {
-        const row = this.el('div', 'contact-row', '', `contact-row-${track.id}`);
-        row.innerHTML = `
-            <span class="cls-tag" data-testid="trk-cls"></span>
-            <span class="trk-id" data-testid="trk-id"></span>
-            <span class="trk-range val-mono" data-testid="trk-range"></span>
-            <span class="trk-speed val-mono" data-testid="trk-speed"></span>
-        `;
-        row.onclick = () => UIStore.selectedEntityId.set(track.id);
-        this.updateRow(track, row);
-        return row;
-    }
-
-    private updateRow(track: any, row: HTMLElement) {
-        const vs = UIStore.viewState.get();
-        const selectedId = UIStore.selectedEntityId.get();
-
-        // Update Class Tag
-        const clsTag = row.querySelector('[data-testid="trk-cls"]')!;
-        clsTag.className = `cls-tag cls-${track.classification.toLowerCase()}`;
-        clsTag.textContent = track.classification.substring(0, 3);
-
-        // Update ID
-        row.querySelector('[data-testid="trk-id"]')!.textContent = track.id.substring(0, 12);
-
-        // Calculate Range
-        const selectedUnit = vs?.units.find(u => u.id === selectedId);
-        const referencePos = selectedUnit ? selectedUnit.pos : { x: 0, y: 0, z: 0 };
-        const distM = Math.sqrt(Math.pow(track.pos.x - referencePos.x, 2) + Math.pow(track.pos.y - referencePos.y, 2) + Math.pow(track.pos.z - referencePos.z, 2));
-        row.querySelector('[data-testid="trk-range"]')!.textContent = `${(distM / 1852).toFixed(1)}nm`;
-
-        // Calculate Speed
-        const speedMs = Math.sqrt(Math.pow(track.vel?.x || 0, 2) + Math.pow(track.vel?.y || 0, 2) + Math.pow(track.vel?.z || 0, 2));
-        row.querySelector('[data-testid="trk-speed"]')!.textContent = `${(speedMs * 1.94384).toFixed(0)}kt`;
-
-        // Selection State
-        row.classList.toggle('selected', selectedId === track.id);
     }
 }
+
+export const ContactsWindowContent = ContactsWindow;

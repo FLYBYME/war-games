@@ -1,18 +1,25 @@
-import { EntityProfile } from '../../sdk/schemas/index.js';
+import { 
+    EntityProfile, 
+    KinematicsProfile, 
+    AeroProfile, 
+    SignatureProfile, 
+    PropulsionProfile, 
+    SensorProfile 
+} from '../../sdk/schemas/index.js';
 
 export interface BasePlatform {
     platformClass: string;
     type: string;
-    kinematics: any;
-    aero?: any;
-    signatures: any;
+    kinematics?: KinematicsProfile;
+    aero?: AeroProfile;
+    signatures?: SignatureProfile;
     variants: Record<string, VariantDiff>;
 }
 
 export interface VariantDiff {
     variantName: string;
-    propulsion?: any; // Engines change between blocks
-    sensors?: any[];  // Radars change between blocks
+    propulsion?: PropulsionProfile; 
+    sensors?: SensorProfile[];
 }
 
 /**

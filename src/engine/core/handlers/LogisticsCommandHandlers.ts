@@ -14,7 +14,6 @@ import { CombatComponent } from '../../components/Combat.js';
 import { TransformComponent, KinematicsComponent } from '../../components/Physics.js';
 import { VectorMath } from '../../math/VectorMath.js';
 import { logger } from '../Logger.js';
-import { EventSeverity } from '../../components/Telemetry.js';
 
 export class LandAtFacilityHandler implements CommandHandler<LandAtFacilityCommand> {
     execute(cmd: LandAtFacilityCommand, world: World): void {
@@ -96,7 +95,7 @@ export class LaunchAircraftHandler implements CommandHandler<LaunchAircraftComma
                 transform.position = VectorMath.add(transform.position, VectorMath.add(forwardOffset, { x: 0, y: 0, z: 5 }));
 
                 if (propulsion) {
-                    propulsion.state = EngineState.Dry;
+                    propulsion.state = EngineState.Off; // V3: Standard start from cold
                     propulsion.throttle = 1.0;
                 }
             }
@@ -104,11 +103,8 @@ export class LaunchAircraftHandler implements CommandHandler<LaunchAircraftComma
             world.recordEvent({
                 tick: world.currentTick,
                 type: 'AircraftLaunched',
-                severity: EventSeverity.Info,
-                category: 'LOGISTICS',
-                message: `Aircraft launched: ${cmd.entityId} from ${carrier.id}`,
                 entityId: cmd.entityId,
-                payload: { carrierId: carrier.id }
+                data: { carrierId: carrier.id }
             });
             logger.info(`Aircraft launched: ${cmd.entityId} from ${carrier.id}`);
         }

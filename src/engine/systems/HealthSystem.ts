@@ -1,5 +1,5 @@
 import { ISystem, IWorldView, SystemPhase } from '../core/ISystem.js';
-import { Command, ApplyDamageCommand, DestroyEntityCommand } from '../core/Command.js';
+import { Command, DestroyEntityCommand } from '../core/Command.js';
 import { HealthComponent } from '../components/Health.js';
 
 /**

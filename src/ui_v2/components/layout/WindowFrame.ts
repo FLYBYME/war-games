@@ -127,14 +127,14 @@ export class WindowFrame extends Component {
         });
 
         // Event Listeners
-        this.listen(header, 'mousedown', (e) => this.onDragStart(e));
-        this.listen(resizer, 'mousedown', (e) => this.onResizeStart(e));
+        this.listen(header, 'mousedown', (e) => this.onDragStart(e as MouseEvent));
+        this.listen(resizer, 'mousedown', (e) => this.onResizeStart(e as MouseEvent));
         this.listen(this.element, 'mousedown', () => windowManager.focus(this.options.id));
         this.listen(detachBtn, 'click', () => windowManager.detach(this.options.id));
         this.listen(closeBtn, 'click', () => windowManager.close(this.options.id));
 
-        this.listen(window as any, 'mousemove', (e) => this.onMouseMove(e as MouseEvent));
-        this.listen(window as any, 'mouseup', () => this.onMouseUp());
+        this.listen(window, 'mousemove', (e) => this.onMouseMove(e as MouseEvent));
+        this.listen(window, 'mouseup', () => this.onMouseUp());
     }
 
     private onDragStart(e: MouseEvent) {

@@ -1,72 +1,77 @@
 import { Command as CommanderCommand } from 'commander';
 import { BaseCommand } from '../core/BaseCommand.js';
-import { WarGamesClient } from '../../sdk/WarGamesClient.js';
+import { WarGamesClient, Side } from '../../sdk/index.js';
 import { C } from '../core/Utils.js';
 
+interface ControlOptions {
+    pause: boolean;
+    resume: boolean;
+    rate: string;
+    delete: boolean;
+}
+
+/**
+ * SimControlCommand: Direct manipulation of match parameters.
+ */
 export class SimControlCommand extends BaseCommand {
-    public readonly name = 'sim';
-    public readonly description = 'Control the simulation clock (pause, resume, speed)';
-    public readonly category = 'Infrastructure';
+    public name = 'control';
+    public description = 'Send immediate control commands (pause, resume, rate) to a match.';
 
-    public register(program: CommanderCommand): void {
-        const sim = program
-            .command(this.name)
-            .description(this.description);
-
-        sim.command('pause')
-            .description('Pause the simulation')
-            .action((options, command) => {
-                const globalOpts = command.optsWithGlobals();
-                this.execute('pause', undefined, globalOpts.url);
-            });
-
-        sim.command('resume')
-            .description('Resume the simulation')
-            .option('-r, --rate <number>', 'Time compression rate', (val) => parseFloat(val), 1)
-            .action((options, command) => {
-                const globalOpts = command.optsWithGlobals();
-                this.execute('resume', options.rate, globalOpts.url);
-            });
-
-        sim.command('speed')
-            .description('Set time compression rate')
-            .argument('<rate>', 'Rate (e.g., 1 for real-time, 10 for 10x)', (val) => parseFloat(val))
-            .action((rate, options, command) => {
-                const globalOpts = command.optsWithGlobals();
-                this.execute('speed', rate, globalOpts.url);
+    register(program: CommanderCommand): void {
+        program.command(this.name)
+            .description(this.description)
+            .argument('<matchId>', 'The match ID to control')
+            .option('--pause', 'Pause simulation')
+            .option('--resume', 'Resume simulation')
+            .option('--rate <n>', 'Set time compression (0-30)')
+            .option('--delete', 'Terminates and deletes the match')
+            .action((matchId: string, options: ControlOptions) => {
+                void this.execute({ matchId, ...options }, program.opts() as { url: string });
             });
     }
 
-    protected async execute(action: string, rate?: number, url: string = 'ws://localhost:3000'): Promise<void> {
-        const client = new WarGamesClient({
-            url: url,
-            connectTimeoutMs: 2000
-        });
+    protected async execute(options: ControlOptions & { matchId: string }, globalOpts: { url: string }): Promise<void> {
+        const { matchId } = options;
+        const client = new WarGamesClient({ url: globalOpts.url });
+
+        console.log(`\n${C.magenta}${C.bold}🕹  SIMULATION CONTROL${C.reset}`);
 
         try {
             await client.connect();
-            client.joinMatch('Neutral', 'default');
+            client.joinMatch(Side.Neutral, matchId);
 
-            switch (action) {
-                case 'pause':
-                    console.log(`${C.yellow}Pausing simulation...${C.reset}`);
-                    client.pause();
-                    break;
-                case 'resume':
-                    console.log(`${C.green}Resuming simulation at ${rate}x speed...${C.reset}`);
-                    client.resume(rate);
-                    break;
-                case 'speed':
-                    console.log(`${C.blue}Setting simulation speed to ${rate}x...${C.reset}`);
-                    client.setTimeCompression(rate!);
-                    break;
+            if (options.delete) {
+                console.log(`${C.red}Deleting match ${matchId}...${C.reset}`);
+                const res = await client.deleteMatch(matchId);
+                if (res.success) console.log(`${C.green}✔ Match deleted.${C.reset}`);
+                else console.error(`${C.red}✖ Failed to delete match.${C.reset}`);
+                return;
             }
 
-            console.log(`${C.green}${C.bold}✔ Command sent.${C.reset}`);
-        } catch (err: any) {
-            console.error(`\n${C.red}${C.bold}✖ Error:${C.reset} ${err.message}`);
+            if (options.pause) {
+                console.log(`${C.yellow}Pausing simulation...${C.reset}`);
+                client.pause();
+            } else if (options.resume) {
+                console.log(`${C.green}Resuming simulation...${C.reset}`);
+                client.resume(1);
+            }
+
+            if (options.rate !== undefined) {
+                const rate = parseInt(options.rate);
+                console.log(`${C.cyan}Setting time compression to ${rate}x...${C.reset}`);
+                client.setTimeCompression(rate);
+            }
+
+            console.log(`${C.green}✔ Control commands dispatched.${C.reset}`);
+
+        } catch (err: unknown) {
+            const error = err as Error;
+            console.error(`\n${C.red}${C.bold}Control Failed:${C.reset} ${error.message}`);
         } finally {
+            // Give a tiny bit of time for messages to send before closing
+            await new Promise(r => setTimeout(() => r(undefined), 100));
             client.disconnect();
+            process.exit(0);
         }
     }
 }

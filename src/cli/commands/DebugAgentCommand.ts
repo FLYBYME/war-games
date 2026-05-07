@@ -5,6 +5,12 @@ import { DebugTools } from '../../sdk/tools/DebugTools.js';
 import { Ollama } from 'ollama';
 import { C } from '../core/Utils.js';
 import * as readline from 'readline/promises';
+import { Side } from '../../sdk/schemas/index.js';
+
+interface DebugAgentOptions {
+    host: string;
+    model: string;
+}
 
 /**
  * DebugAgentCommand: Standalone CLI command for chatting with the debug agent.
@@ -20,10 +26,10 @@ export class DebugAgentCommand extends BaseCommand {
             .description(this.description)
             .option('--host <url>', 'Ollama API host', 'http://192.168.1.4:11434')
             .option('--model <name>', 'Ollama model name', 'qwen3:14b')
-            .action((opts) => this.execute(opts, program.opts()));
+            .action((opts: DebugAgentOptions) => this.execute(opts, program.opts()));
     }
 
-    protected async execute(opts: any, globalOpts: any): Promise<void> {
+    protected async execute(opts: DebugAgentOptions, _globalOpts: unknown): Promise<void> {
         console.log(`\n${C.yellow}${C.bold}🔍 WAR-GAMES DEBUG AGENT${C.reset}`);
         console.log(`${C.dim}Model: ${opts.model}${C.reset}\n`);
 
@@ -44,8 +50,9 @@ Your tone is professional, technical, and analytical.`
 
             await this.runChatMode(adapter);
 
-        } catch (err: any) {
-            console.error(`\n${C.red}${C.bold}✖ Debug Agent Failed:${C.reset} ${err.message}`);
+        } catch (err: unknown) {
+            const error = err as Error;
+            console.error(`\n${C.red}${C.bold}✖ Debug Agent Failed:${C.reset} ${error.message}`);
         } finally {
             process.exit(0);
         }
@@ -58,16 +65,18 @@ Your tone is professional, technical, and analytical.`
             output: process.stdout
         });
 
-        while (true) {
+        let active = true;
+        while (active) {
             const input = await rl.question(`\n${C.cyan}User > ${C.reset}`);
             if (input.trim().toLowerCase() === 'exit' || input.trim().toLowerCase() === 'quit') {
+                active = false;
                 break;
             }
             if (input.trim() === '') continue;
 
             await adapter.chat(
-                undefined,
-                undefined,
+                'debug',
+                Side.Neutral,
                 input
             );
         }
@@ -93,7 +102,7 @@ Your tone is professional, technical, and analytical.`
             }
         };
 
-        adapter.on("chat:content", (chunk) => {
+        adapter.on("chat:content", (chunk: string) => {
             if (currentlyThinking) {
                 currentlyThinking = false;
                 process.stdout.write("\n");
@@ -102,7 +111,7 @@ Your tone is professional, technical, and analytical.`
             print(chunk, C.green);
         });
 
-        adapter.on("chat:thinking", (chunk) => {
+        adapter.on("chat:thinking", (chunk: string) => {
             if (!currentlyThinking) {
                 currentlyThinking = true;
                 print("Thinking: ", C.yellow);
@@ -118,7 +127,7 @@ Your tone is professional, technical, and analytical.`
             }
         });
 
-        adapter.on("tool:executing", (chunk: { name: string, args: any }) => {
+        adapter.on("tool:executing", (chunk: { name: string, args: unknown }) => {
             if (currentlyThinking) {
                 currentlyThinking = false;
                 process.stdout.write("\n");
@@ -127,11 +136,11 @@ Your tone is professional, technical, and analytical.`
             print(`Tool executing: ${chunk.name} ${JSON.stringify(chunk.args, null, 2)}\n`, C.magenta);
         });
 
-        adapter.on("tool:result", (chunk) => {
+        adapter.on("tool:result", (chunk: unknown) => {
             print(`Tool result: ${JSON.stringify(chunk, null, 2)}\n`, C.dim);
         });
 
-        adapter.on("tool:error", (chunk) => {
+        adapter.on("tool:error", (chunk: { name: string, error: string }) => {
             print(`Tool error: ${JSON.stringify(chunk, null, 2)}\n`, C.red);
         });
     }

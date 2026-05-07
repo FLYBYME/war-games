@@ -1,9 +1,9 @@
 import { ISystem, IWorldView, SystemPhase } from '../core/ISystem.js';
 import { Command } from '../core/Command.js';
 import { TransformComponent, KinematicsComponent } from '../components/Physics.js';
-import { TelemetryComponent, TacticalEvent, EventSeverity } from '../components/Telemetry.js';
-import { HealthComponent } from '../components/Health.js';
+import { TelemetryComponent } from '../components/Telemetry.js';
 import { VectorMath } from '../math/VectorMath.js';
+import { SimulationEvent, Side } from '../core/Types.js';
 
 /**
  * TelemetrySystem: Captures sim milestones and historical kinematic data.
@@ -13,25 +13,26 @@ export class TelemetrySystem implements ISystem {
     readonly phase = SystemPhase.Bridge;
     readonly dependencies = ['PhysicsSystem'];
 
-    private events: TacticalEvent[] = [];
-    private sideLosses: Map<string, number> = new Map([
-        ['Blue', 0],
-        ['Red', 0],
-        ['Neutral', 0]
+    private events: SimulationEvent[] = [];
+    private sideLosses: Map<Side, number> = new Map([
+        [Side.Blue, 0],
+        [Side.Red, 0],
+        [Side.Neutral, 0]
     ]);
     private munitionsExpended: number = 0;
+    private subscribed = false;
 
     public async process(world: IWorldView, _dt: number): Promise<Command[]> {
         // Telemetry is reactive; process is mostly a no-op unless we do periodic aggregation.
         // During the first run, we subscribe to the world event bus.
-        if (!(world as any)._telemetrySubscribed) {
-            (world as any).events.on('TacticalEvent', (event: TacticalEvent) => {
+        if (!this.subscribed) {
+            world.events.onAny((event: SimulationEvent) => {
                 this.recordEvent(event);
             });
-            (world as any).events.on('WeaponFired', () => {
+            world.events.on('WeaponFired', () => {
                 this.munitionsExpended++;
             });
-            (world as any)._telemetrySubscribed = true;
+            this.subscribed = true;
         }
 
         // 1. Capture Kinematics for units with TelemetryComponent
@@ -48,7 +49,6 @@ export class TelemetrySystem implements ISystem {
                     speedKts: speed,
                     altM: transform.position.z
                 });
-                if (entity.id === 'ship-1' && world.currentTick % 100 === 0) console.log(`Telemetry recorded for ship-1: ${tel.history.length} samples`);
             }
         }
 
@@ -58,11 +58,14 @@ export class TelemetrySystem implements ISystem {
     /**
      * recordEvent: Manual entry for tactical events (can be called by other systems).
      */
-    public recordEvent(event: TacticalEvent): void {
+    public recordEvent(event: SimulationEvent): void {
         this.events.push(event);
-        if (event.category === 'LOSS' && event.payload) {
-            const side = event.payload.side || 'Unknown';
-            const value = event.payload.pointValue || 100;
+        
+        // Handle side losses (e.g. from EntityDestroyed)
+        if (event.type === 'EntityDestroyed' && event.data) {
+            const data = event.data as { side?: Side, pointValue?: number };
+            const side = data.side || Side.Neutral;
+            const value = data.pointValue || 100;
             const current = this.sideLosses.get(side) || 0;
             this.sideLosses.set(side, current + value);
         }
@@ -74,14 +77,13 @@ export class TelemetrySystem implements ISystem {
 
     public getLosses() {
         return {
-            blue: this.sideLosses.get('Blue') || 0,
-            red: this.sideLosses.get('Red') || 0,
+            blue: this.sideLosses.get(Side.Blue) || 0,
+            red: this.sideLosses.get(Side.Red) || 0,
             munitionsExpended: this.munitionsExpended
         };
     }
 
-    public getRecentEvents(count: number = 50): TacticalEvent[] {
+    public getRecentEvents(count: number = 50): SimulationEvent[] {
         return this.events.slice(-count);
     }
 }
-

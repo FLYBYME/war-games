@@ -4,7 +4,6 @@ import websocket from '@fastify/websocket';
 import fastifyStatic from '@fastify/static';
 import path from 'path';
 import { logger } from './core/Logger.js';
-import { config } from './core/Config.js';
 
 export async function createApp() {
     const app = fastify({

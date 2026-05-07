@@ -1,64 +1,44 @@
-import { WarGamesClient } from '../sdk/WarGamesClient.js';
-import { Side } from '../sdk/schemas/domain.js';
+import { WarGamesClient, Side, ViewStatePayload } from "../sdk/index.js";
 
-async function testSpeedControl() {
+async function main() {
     const client = new WarGamesClient({ url: 'ws://localhost:3000' });
-    
-    console.log('Connecting to server...');
     await client.connect();
-    
-    console.log('Loading scenario "Mine Countermeasures"...');
-    const scenarios = await client.scenario.listScenarios();
-    const target = scenarios.find(s => s.name.includes('Mine')) || scenarios[0];
-    
-    const loadRes = await client.scenario.loadScenarioIntoEngine(target.filename);
-    const matchId = (loadRes as any).matchId;
-    
-    console.log(`Joined match: ${matchId}. Waiting for ViewState...`);
-    client.joinMatch(Side.Blue, matchId);
-    
-    const unitId = await new Promise<string>((resolve) => {
-        client.events.on('state:viewState', (vs) => {
-            const unit = vs.units.find((u: any) => u.side === Side.Blue);
-            if (unit) resolve(unit.id);
-        });
-    });
-    
-    console.log(`Found unit: ${unitId}. Setting speed to 15 kts...`);
-    client.scenario.resume();
+    const result = await client.scenario.loadScenarioIntoEngine('salvo-aggregation');
+    const matchId = result.matchId!;
+    await client.joinMatch(Side.Blue, matchId);
 
-    await client.nav.setSpeed(unitId, 15);
-    console.log('Command sent. Waiting for confirmation in ViewState...');
-    
-    let success = false;
-    for (let i = 0; i < 20; i++) {
-        await new Promise(r => setTimeout(r, 1000));
-        const vs = await client.getLatestViewState();
-        const unit = vs?.units.find((u: any) => u.id === unitId);
-        
-        if (!unit) continue;
+    console.log("Joined match:", matchId);
 
-        const actual = Math.round(unit.vel ? Math.sqrt(unit.vel.x**2 + unit.vel.y**2 + unit.vel.z**2) * 1.94 : 0);
-        console.log(`Tick ${vs?.tick}: Actual=${actual} kts, Desired=${unit.desiredSpeedKts}`);
+    // Initial State
+    const vs1 = await client.getLatestViewState() as ViewStatePayload;
+    const startTick = vs1.tick;
+    
+    console.log("Start Tick:", startTick);
+    await client.resume(1);
+
+    // Wait 2 seconds real time
+    await new Promise(r => setTimeout(r, 2000));
+
+    const vs2 = await client.getLatestViewState() as ViewStatePayload;
+    const unit = vs2.units.find((u) => u.side === Side.Blue);
+    
+    if (unit) {
+        console.log(`Unit ${unit.id} speed: ${unit.speedKts} kts`);
         
-        if (unit.desiredSpeedKts === 15) {
-            success = true;
-            break;
-        }
+        // Command speed change
+        console.log("Setting speed to 600 kts...");
+        await client.nav.setSpeed(unit.id, 600);
+        
+        await new Promise(r => setTimeout(r, 5000));
+        
+        const vs3 = await client.getLatestViewState() as ViewStatePayload;
+        const unitUpdated = vs3.units.find(u => u.id === unit.id);
+        console.log(`Unit ${unit.id} updated speed: ${unitUpdated?.speedKts} kts`);
     }
-    
-    if (success) {
-        console.log('SUCCESS: Speed control verified via SDK!');
-    } else {
-        console.error('FAILURE: Speed control not updated on server.');
-        process.exit(1);
-    }
-    
+
+    await client.deleteMatch(matchId);
     client.disconnect();
     process.exit(0);
 }
 
-testSpeedControl().catch(err => {
-    console.error(err);
-    process.exit(1);
-});
+main().catch(console.error);

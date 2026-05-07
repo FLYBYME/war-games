@@ -3,8 +3,10 @@ import { Command, CreateTrackCommand, UpdateTrackCommand, DropTrackCommand } fro
 import { DetectionComponent } from '../components/Sensors.js';
 import { TrackComponent } from '../components/Track.js';
 import { TransformComponent, KinematicsComponent } from '../components/Physics.js';
-import { Track, TrackStatus, Vector3, IdentificationStatus, Side } from '../core/Types.js';
+import { Track, TrackStatus, IdentificationStatus, Side } from '../core/Types.js';
 import { VectorMath } from '../math/VectorMath.js';
+import { Entity } from '../core/Entity.js';
+import { ProfileRegistry } from '../core/ProfileRegistry.js';
 
 /**
  * TMSSystem: Track Management System.
@@ -44,7 +46,7 @@ export class TMSSystem implements ISystem {
                 }
 
                 // Propagate position
-                track.position = VectorMath.add(track.position as Vector3, VectorMath.multiplyScalar(track.velocity as Vector3, dt));
+                track.position = VectorMath.add(track.position, VectorMath.multiplyScalar(track.velocity, dt));
                 
                 // Expand uncertainty
                 track.cepM += this.CEP_EXPANSION_RATE * dt;
@@ -70,7 +72,8 @@ export class TMSSystem implements ISystem {
                     // V3 Fix: Ignore friendly weapons during track creation/update
                     // This prevents 'Ghost Surface Tracks' for outbound missiles
                     if (target.side === observer.side) {
-                        const targetProfile = target.profileId ? world.profileRegistry.get(target.profileId) : undefined;
+                        const profileRegistry = world.profileRegistry as ProfileRegistry;
+                        const targetProfile = target.profileId ? profileRegistry.get(target.profileId) : undefined;
                         if (targetProfile?.type === 'Weapon') continue;
                     }
 
@@ -124,21 +127,22 @@ export class TMSSystem implements ISystem {
         return commands;
     }
 
-    private identifyAndClassify(observerSide: string, target: any, world: IWorldView): { identification: IdentificationStatus, classification: string } {
+    private identifyAndClassify(observerSide: Side, target: Entity, world: IWorldView): { identification: IdentificationStatus, classification: string } {
         let identification = IdentificationStatus.UNKNOWN;
         const targetSide = target.side;
 
         if (targetSide === observerSide) {
             identification = IdentificationStatus.FRIENDLY;
         } else if (
-            (observerSide === 'Blue' && targetSide === 'Red') ||
-            (observerSide === 'Red' && targetSide === 'Blue')
+            (observerSide === Side.Blue && targetSide === Side.Red) ||
+            (observerSide === Side.Red && targetSide === Side.Blue)
         ) {
             identification = IdentificationStatus.HOSTILE;
         }
 
         let classification = 'Unknown';
-        const profile = target.profileId ? world.profileRegistry.get(target.profileId) : undefined;
+        const profileRegistry = world.profileRegistry as ProfileRegistry;
+        const profile = target.profileId ? profileRegistry.get(target.profileId) : undefined;
         
         if (profile) {
             switch (profile.type) {

@@ -1,34 +1,30 @@
 import { CommandHandler } from '../CommandDispatcher.js';
-import { World } from '../World.js';
 import { 
-    UpdateMountSlewCommand, 
-    UpdateSensorScanCommand, 
-    SetSensorStateCommand, 
-    SetEMCONCommand,
-    AddDetectionCommand,
-    RemoveDetectionCommand,
-    SyncESMBearingsCommand
+    AddDetectionCommand, RemoveDetectionCommand, SetSensorStateCommand, 
+    SetEMCONCommand, UpdateSensorScanCommand, UpdateMountSlewCommand, SyncESMBearingsCommand
 } from '../Command.js';
+import { World } from '../World.js';
+import { SensorComponent, DetectionComponent, ESMBearing } from '../../components/Sensors.js';
 import { CombatComponent } from '../../components/Combat.js';
-import { SensorComponent, DetectionComponent } from '../../components/Sensors.js';
-import { EventSeverity } from '../../components/Telemetry.js';
+import { DoctrineComponent, EMCONState } from '../../components/Doctrine.js';
 
 export class AddDetectionHandler implements CommandHandler<AddDetectionCommand> {
     execute(cmd: AddDetectionCommand, world: World): void {
-        const entity = world.getEntity(cmd.entityId);
-        const detection = entity?.getComponent(DetectionComponent);
+        const observer = world.getEntity(cmd.entityId);
+        const detection = observer?.getComponent(DetectionComponent);
         if (detection) {
             if (!detection.detectedEntityIds.has(cmd.targetId)) {
-                // logger.debug(`[AddDetectionHandler] Adding ${cmd.targetId} to ${cmd.entityId}`);
                 detection.detectedEntityIds.add(cmd.targetId);
                 
                 world.recordEvent({
                     tick: world.currentTick,
-                    severity: EventSeverity.Info,
-                    category: 'SENSORS',
-                    message: `New detection: ${cmd.targetId} by ${cmd.entityId}`,
+                    type: 'TargetDetected',
                     entityId: cmd.entityId,
-                    payload: { targetId: cmd.targetId }
+                    targetId: cmd.targetId,
+                    data: {
+                        observerId: cmd.entityId,
+                        targetId: cmd.targetId
+                    }
                 });
             }
         }
@@ -36,11 +32,62 @@ export class AddDetectionHandler implements CommandHandler<AddDetectionCommand> 
 }
 
 export class RemoveDetectionHandler implements CommandHandler<RemoveDetectionCommand> {
-    execute(cmd: RemoveDetectionCommand, world: World): void {
-        const entity = world.getEntity(cmd.entityId);
-        const detection = entity?.getComponent(DetectionComponent);
+    execute(cmd: RemoveDetectionCommand, _world: World): void {
+        const observer = _world.getEntity(cmd.entityId);
+        const detection = observer?.getComponent(DetectionComponent);
         if (detection) {
             detection.detectedEntityIds.delete(cmd.targetId);
+        }
+    }
+}
+
+export class SetSensorStateHandler implements CommandHandler<SetSensorStateCommand> {
+    execute(cmd: SetSensorStateCommand, _world: World): void {
+        const entity = _world.getEntity(cmd.entityId);
+        const sensors = entity?.getComponents(SensorComponent);
+        if (sensors) {
+            const target = sensors.find(s => s.name === cmd.sensorName);
+            if (target) target.isActive = cmd.active;
+        }
+    }
+}
+
+export class SetEMCONHandler implements CommandHandler<SetEMCONCommand> {
+    execute(cmd: SetEMCONCommand, _world: World): void {
+        if (cmd.entityId === 'GLOBAL') {
+             // For simplicity, just update the doctrine on all entities
+             for (const entity of _world.getEntities()) {
+                 const doctrine = entity.getComponent(DoctrineComponent);
+                 if (doctrine) doctrine.emcon = cmd.state as EMCONState;
+             }
+        } else {
+            const entity = _world.getEntity(cmd.entityId);
+            const doctrine = entity?.getComponent(DoctrineComponent);
+            if (doctrine) doctrine.emcon = cmd.state as EMCONState;
+        }
+    }
+}
+
+export class UpdateSensorScanHandler implements CommandHandler<UpdateSensorScanCommand> {
+    execute(cmd: UpdateSensorScanCommand, _world: World): void {
+        const entity = _world.getEntity(cmd.entityId);
+        const sensors = entity?.getComponents(SensorComponent);
+        if (sensors) {
+            sensors.forEach(s => {
+                if (s.scanPeriodS > 0) s.currentAzimuth = cmd.azimuth;
+            });
+        }
+    }
+}
+
+export class UpdateMountSlewHandler implements CommandHandler<UpdateMountSlewCommand> {
+    execute(cmd: UpdateMountSlewCommand, _world: World): void {
+        const entity = _world.getEntity(cmd.entityId);
+        const combat = entity?.getComponent(CombatComponent);
+        if (combat && combat.mounts[cmd.mountIndex]) {
+            const mount = combat.mounts[cmd.mountIndex];
+            mount.currentAzimuth = cmd.azimuth;
+            mount.currentElevation = cmd.elevation;
         }
     }
 }
@@ -50,52 +97,7 @@ export class SyncESMBearingsHandler implements CommandHandler<SyncESMBearingsCom
         const entity = world.getEntity(cmd.entityId);
         const detection = entity?.getComponent(DetectionComponent);
         if (detection) {
-            detection.esmBearings = cmd.bearings;
-        }
-    }
-}
-
-export class UpdateMountSlewHandler implements CommandHandler<UpdateMountSlewCommand> {
-    execute(cmd: UpdateMountSlewCommand, world: World): void {
-        const entity = world.getEntity(cmd.entityId);
-        const combat = entity?.getComponent(CombatComponent);
-        if (combat && combat.mounts[cmd.mountIndex]) {
-            combat.mounts[cmd.mountIndex].currentAzimuth = cmd.azimuth;
-            combat.mounts[cmd.mountIndex].currentElevation = cmd.elevation;
-        }
-    }
-}
-
-export class UpdateSensorScanHandler implements CommandHandler<UpdateSensorScanCommand> {
-    execute(cmd: UpdateSensorScanCommand, world: World): void {
-        const entity = world.getEntity(cmd.entityId);
-        const sensor = entity?.getComponent(SensorComponent);
-        if (sensor) {
-            sensor.currentAzimuth = cmd.azimuth;
-        }
-    }
-}
-
-export class SetSensorStateHandler implements CommandHandler<SetSensorStateCommand> {
-    execute(cmd: SetSensorStateCommand, world: World): void {
-        const entity = world.getEntity(cmd.entityId);
-        const sensors = entity?.getComponents(SensorComponent) || [];
-        const sensor = sensors.find(s => s.name === cmd.sensorName);
-        if (sensor) sensor.isActive = cmd.active;
-    }
-}
-
-export class SetEMCONHandler implements CommandHandler<SetEMCONCommand> {
-    execute(cmd: SetEMCONCommand, world: World): void {
-        const entity = world.getEntity(cmd.entityId);
-        const sensors = entity?.getComponents(SensorComponent) || [];
-        for (const sensor of sensors) {
-            sensor.emconState = cmd.state;
-            if (cmd.state === 'Silent') {
-                sensor.isActive = false;
-            } else if (cmd.state === 'Active') {
-                sensor.isActive = true;
-            }
+            detection.esmBearings = cmd.bearings as ESMBearing[];
         }
     }
 }

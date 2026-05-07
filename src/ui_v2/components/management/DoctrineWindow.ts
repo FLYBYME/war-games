@@ -1,88 +1,70 @@
 import { Component } from '../../framework/Component';
 import { UIStore } from '../../framework/UIStore';
-
-type ROEState = 'Free' | 'Tight' | 'Hold';
+import { sdkClient } from '../../framework/Client';
+import { ROE, EMCONState } from '../../../sdk/schemas';
 
 /**
- * DoctrineWindow: Global, mission, and unit-level ROE control.
- * Ported to V2 WindowManager architecture.
+ * DoctrineWindow: Controls ROE and EMCON for the selected unit.
  */
 export class DoctrineWindow extends Component {
-    constructor() { super('div', 'doctrine-widget'); }
+    constructor() {
+        super('div', 'doctrine-window', 'doctrine-window');
+    }
 
-    protected styles() {
+    protected styles(): string {
         return `
-        .doctrine-widget { padding: var(--sp-3); display: flex; flex-direction: column; gap: var(--sp-3); }
-        .doc-level { padding: var(--sp-2); background: var(--bg-base); border: 1px solid var(--border-color); border-radius: var(--radius-md); }
-        .doc-level__header { font-size: var(--text-xs); color: var(--text-muted); font-weight: 700; text-transform: uppercase; margin-bottom: var(--sp-2); letter-spacing: 0.05em; }
-        .doc-roe-btns { display: flex; gap: var(--sp-1); }
-        .doc-roe-btn { flex: 1; padding: var(--sp-1) var(--sp-2); font-size: var(--text-xs); font-weight: 600; text-align: center; border-radius: var(--radius-sm); border: 1px solid var(--border-color); cursor: pointer; transition: all var(--transition-fast); color: var(--text-dim); background: var(--bg-panel); }
-        .doc-roe-btn:hover { border-color: var(--border-light); color: var(--text-main); }
-        .doc-roe-btn.is-free { background: rgba(48, 209, 88, 0.15); border-color: var(--color-neutral); color: var(--color-neutral); }
-        .doc-roe-btn.is-tight { background: rgba(255, 214, 10, 0.15); border-color: var(--color-unknown); color: var(--color-unknown); }
-        .doc-roe-btn.is-hold { background: rgba(255, 45, 85, 0.15); border-color: var(--color-hostile); color: var(--color-hostile); }
+            .doctrine-window {
+                padding: 15px;
+                background: #111;
+                display: flex;
+                flex-direction: column;
+                gap: 15px;
+            }
+            .doctrine-row {
+                display: flex;
+                justify-content: space-between;
+                align-items: center;
+                gap: 10px;
+            }
+            .label { font-size: 11px; color: #888; text-transform: uppercase; }
+            select { background: #222; border: 1px solid #333; color: #fff; padding: 4px; font-size: 12px; }
         `;
     }
 
-    protected render() {
-        this.element.innerHTML = '';
+    protected render(): void {
+        this.element.innerHTML = `
+            <div class="doctrine-row">
+                <span class="label">Rules of Engagement</span>
+                <select id="select-roe">
+                    <option value="${ROE.FREE}">FREE (Fire at will)</option>
+                    <option value="${ROE.TIGHT}">TIGHT (ID required)</option>
+                    <option value="${ROE.HOLD}">HOLD (Self-defense only)</option>
+                </select>
+            </div>
+            <div class="doctrine-row">
+                <span class="label">EMCON State</span>
+                <select id="select-emcon">
+                    <option value="${EMCONState.Alpha}">ALPHA (Active)</option>
+                    <option value="${EMCONState.Silent}">SILENT (Passive Only)</option>
+                </select>
+            </div>
+        `;
 
-        // Global ROE
-        this.element.appendChild(this.makeROELevel('Global ROE', 'Tight', (roe) => {
-            if (UIStore.client) UIStore.client.dispatch({ type: 'SetGlobalROE', roe } as any);
-        }));
+        const roeSelect = this.element.querySelector('#select-roe') as HTMLSelectElement;
+        const emconSelect = this.element.querySelector('#select-emcon') as HTMLSelectElement;
 
-        // Mission ROE
-        this.element.appendChild(this.makeROELevel('Mission ROE', 'Tight', (roe) => {
-            const id = UIStore.selectedEntityId.get();
-            if (id && UIStore.client) UIStore.client.dispatch({ type: 'SetMissionROE', roe } as any);
-        }));
+        this.listen(roeSelect, 'change', () => {
+            const unit = UIStore.selectedEntityId.get();
+            if (unit) {
+                void sdkClient.combat.setUnitROE(unit, roeSelect.value);
+            }
+        });
 
-        // Unit ROE
-        this.element.appendChild(this.makeROELevel('Selected Unit ROE', 'Tight', (roe) => {
-            const id = UIStore.selectedEntityId.get();
-            if (id && UIStore.client) UIStore.client.dispatch({ type: 'SetUnitROE', entityId: id, roe } as any);
-        }));
-
-        // EMCON presets
-        const emconBlock = this.el('div', 'doc-level');
-        emconBlock.appendChild(this.el('div', 'doc-level__header', 'Global EMCON Profile'));
-        const emconBtns = this.el('div', 'doc-roe-btns');
-        const emconStates: [string, string][] = [['Alpha (Silent)', 'Silent'], ['Bravo (ESM Only)', 'Passive'], ['Charlie (Active)', 'Active']];
-        
-        for (const [label, state] of emconStates) {
-            const btn = document.createElement('button');
-            btn.className = `doc-roe-btn${state === 'Active' ? ' is-free' : ''}`;
-            btn.textContent = label;
-            btn.addEventListener('click', () => {
-                emconBtns.querySelectorAll('.doc-roe-btn').forEach(b => b.className = 'doc-roe-btn');
-                btn.className = `doc-roe-btn ${state === 'Active' ? 'is-free' : state === 'Passive' ? 'is-tight' : 'is-hold'}`;
-                if (UIStore.client) UIStore.client.dispatch({ type: 'SetEMCON', state } as any);
-            });
-            emconBtns.appendChild(btn);
-        }
-        emconBlock.appendChild(emconBtns);
-        this.element.appendChild(emconBlock);
-    }
-
-    private makeROELevel(label: string, initial: ROEState, onChange: (roe: ROEState) => void): HTMLElement {
-        const block = this.el('div', 'doc-level');
-        block.appendChild(this.el('div', 'doc-level__header', label));
-
-        const btns = this.el('div', 'doc-roe-btns');
-        const states: ROEState[] = ['Free', 'Tight', 'Hold'];
-        for (const roe of states) {
-            const btn = document.createElement('button');
-            btn.className = `doc-roe-btn${roe === initial ? ` is-${roe.toLowerCase()}` : ''}`;
-            btn.textContent = `Weapons ${roe}`;
-            btn.addEventListener('click', () => {
-                btns.querySelectorAll('.doc-roe-btn').forEach(b => b.className = 'doc-roe-btn');
-                btn.className = `doc-roe-btn is-${roe.toLowerCase()}`;
-                onChange(roe);
-            });
-            btns.appendChild(btn);
-        }
-        block.appendChild(btns);
-        return block;
+        this.listen(emconSelect, 'change', () => {
+            const unit = UIStore.selectedEntityId.get();
+            if (unit) {
+                void sdkClient.sensors.setEMCON(emconSelect.value, unit);
+            }
+        });
     }
 }

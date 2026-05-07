@@ -1,9 +1,16 @@
 import * as z from "zod";
-import * as fs from "fs";
 import { defineTool } from "./Tool.js";
 import { WarGamesClient } from "../WarGamesClient.js";
-import { Side, Vector3Schema } from "../schemas/domain.js";
-import { SimulationEvent } from "../schemas/events.js";
+import { 
+    SideSchema, 
+    Vector3Schema, 
+    ViewUnitPayloadSchema, 
+    ViewTrackPayloadSchema, 
+    EntityProfileSchema,
+    MatchInfoSchema,
+    MissionTypeSchema,
+    MissionParamsSchema
+} from "../schemas/index.js";
 
 /**
  * createTacticalTools: Factory for the core tactical command and query set.
@@ -14,71 +21,45 @@ export function createTacticalTools(client: WarGamesClient) {
      */
     const get_tactical_status = defineTool({
         name: "get_tactical_status",
-        description: "Returns the current tactical situation and high-level command assessment.",
+        description: "Returns the current tactical situation, including all visible units and tracks.",
         inputSchema: z.object({}),
         outputSchema: z.object({
-            tick: z.number(),
-            units: z.array(z.any()),
-            tracks: z.array(z.any()),
+            tick: z.number().describe("Current simulation tick"),
+            units: z.array(ViewUnitPayloadSchema).describe("List of all visible friendly and neutral units"),
+            tracks: z.array(ViewTrackPayloadSchema).describe("List of all tactical tracks (sensor detections)"),
             assessment: z.object({
-                totalFuelKg: z.number(),
-                threatLevel: z.enum(['Low', 'Medium', 'High']),
-                commandSummary: z.string(),
-                criticalAlerts: z.array(z.string()),
-                suggestedActions: z.array(z.string())
+                threatLevel: z.enum(['Low', 'Medium', 'High']).describe("Automated threat assessment"),
+                commandSummary: z.string().describe("High-level tactical summary"),
+                criticalAlerts: z.array(z.string()).describe("Immediate issues requiring attention"),
+                suggestedActions: z.array(z.string()).describe("AI-generated tactical recommendations")
             })
         }),
-        async call(matchId, side, _args) {
+        async call(_matchId, _side, _args) {
             const vs = await client.getLatestViewState();
             if (!vs) throw new Error("ViewState unavailable");
 
-            let totalFuel = 0;
             const alerts: string[] = [];
             const suggestions: string[] = [];
 
             vs.units.forEach(u => {
-                totalFuel += (u as any).fuel?.current || 0;
                 if (u.hp < 40) alerts.push(`URGENT: ${u.profileId || u.id} heavily damaged (${u.hp}%). Consider RTB.`);
-                if ((u as any).fuelPct < 0.2) suggestions.push(`Refuel required for ${u.id}. Current fuel: ${Math.round((u as any).fuelPct * 100)}%`);
+                if (u.fuelPct < 0.2) suggestions.push(`Refuel required for ${u.id}. Current fuel: ${Math.round(u.fuelPct * 100)}%`);
             });
 
-            const hostileCount = vs.tracks.filter(t => t.classification === 'Hostile').length;
+            const hostileCount = vs.tracks.filter(t => t.identification === 'Hostile').length;
             const threatLevel: 'Low' | 'Medium' | 'High' = hostileCount > 8 ? 'High' : hostileCount > 2 ? 'Medium' : 'Low';
 
             if (hostileCount > 0) {
                 suggestions.push(`Assign CAP missions to intercept ${hostileCount} hostile tracks.`);
             }
 
-            // Analyze Threat Map
-            const threatZones = (vs as any).threatMap || [];
-            if (threatZones.length > 0) {
-                suggestions.push(`Navigate strike packages around ${threatZones.length} identified SAM/Radar threat zones.`);
-            }
-
             return {
                 tick: vs.tick,
-                units: vs.units.map(u => ({
-                    id: u.id,
-                    profileId: u.profileId,
-                    side: u.side,
-                    pos: u.pos,
-                    heading: u.rot,
-                    speedKts: u.speedKts,
-                    hp: u.hp,
-                    fuelPct: Math.round((u.fuelPct || 1.0) * 100),
-                    mission: u.mission ? `${u.mission.type} (${u.mission.status})` : 'Idle',
-                    activeTasks: (u as any).taskGraph?.activeTasks.map((t: any) => t.type).join(', ') || 'None'
-                })),
-                tracks: vs.tracks.map(t => ({
-                    id: t.id,
-                    classification: t.classification,
-                    pos: t.pos,
-                    speedKts: t.speedKts
-                })),
+                units: vs.units,
+                tracks: vs.tracks,
                 assessment: {
-                    totalFuelKg: totalFuel,
                     threatLevel,
-                    commandSummary: `Theater status: ${vs.units.length} units active. ${hostileCount} hostiles tracked. ${threatZones.length} threat zones identified.`,
+                    commandSummary: `Theater status: ${vs.units.length} units active. ${hostileCount} hostiles tracked.`,
                     criticalAlerts: alerts,
                     suggestedActions: suggestions
                 }
@@ -94,7 +75,7 @@ export function createTacticalTools(client: WarGamesClient) {
         description: "Pauses or resumes the simulation.",
         inputSchema: z.object({ paused: z.boolean() }),
         outputSchema: z.object({ success: z.boolean() }),
-        async call(matchId, side, args) {
+        async call(_matchId, _side, args) {
             if (args.paused) client.pause();
             else client.resume(1);
             return { success: true };
@@ -106,10 +87,10 @@ export function createTacticalTools(client: WarGamesClient) {
      */
     const set_time_compression = defineTool({
         name: "set_time_compression",
-        description: "Sets the simulation time compression rate (0-30).",
+        description: "Sets the simulation time compression rate (0-30). 0 is paused.",
         inputSchema: z.object({ rate: z.number().min(0).max(30) }),
         outputSchema: z.object({ success: z.boolean() }),
-        async call(matchId, side, args) {
+        async call(_matchId, _side, args) {
             client.setTimeCompression(args.rate);
             return { success: true };
         }
@@ -120,10 +101,10 @@ export function createTacticalTools(client: WarGamesClient) {
      */
     const get_unit_details = defineTool({
         name: "get_unit_details",
-        description: "Returns technical details for a specific unit, including sensor status and task graph.",
+        description: "Returns full technical details for a specific unit.",
         inputSchema: z.object({ unitId: z.string() }),
-        outputSchema: z.any(),
-        async call(matchId, side, args) {
+        outputSchema: ViewUnitPayloadSchema,
+        async call(_matchId, _side, args) {
             const vs = await client.getLatestViewState();
             const unit = vs?.units.find(u => u.id === args.unitId);
             if (!unit) throw new Error(`Unit ${args.unitId} not found or not visible.`);
@@ -139,18 +120,15 @@ export function createTacticalTools(client: WarGamesClient) {
         description: "Orders a unit to move to a specific coordinate at a specified speed.",
         inputSchema: z.object({
             unitId: z.string(),
-            destination: z.object({
-                x: z.number().describe("Longitude / X coordinate"),
-                y: z.number().describe("Latitude / Y coordinate")
-            }),
+            destination: Vector3Schema,
             speedKts: z.number()
         }),
         outputSchema: z.object({ success: z.boolean(), message: z.string() }),
-        async call(matchId, side, args) {
+        async call(_matchId, _side, args) {
             await client.dispatchRest({
                 type: 'SetCourse',
                 entityId: args.unitId,
-                position: { ...args.destination, z: 0 },
+                position: args.destination,
                 speedKts: args.speedKts
             });
             return { success: true, message: `Course set for ${args.unitId}` };
@@ -162,18 +140,14 @@ export function createTacticalTools(client: WarGamesClient) {
      */
     const assign_mission = defineTool({
         name: "assign_mission",
-        description: "Assigns a mission (Patrol, Strike, ASW, Escort) to a unit or group.",
+        description: "Assigns a mission to a unit or group.",
         inputSchema: z.object({
             unitId: z.string(),
-            missionType: z.enum(['Patrol', 'Strike', 'ASW', 'Escort']),
-            params: z.object({
-                center: z.object({ x: z.number(), y: z.number() }).optional().describe("Center of patrol zone"),
-                radiusM: z.number().optional().describe("Radius of patrol zone in meters"),
-                targetId: z.string().optional().describe("Primary target for Strike/Escort missions")
-            }).optional()
+            missionType: MissionTypeSchema,
+            params: MissionParamsSchema.optional()
         }),
         outputSchema: z.object({ success: z.boolean(), message: z.string() }),
-        async call(matchId, side, args) {
+        async call(_matchId, _side, args) {
             await client.dispatchRest({
                 type: 'SetMission',
                 entityId: args.unitId,
@@ -189,13 +163,13 @@ export function createTacticalTools(client: WarGamesClient) {
      */
     const set_emcon = defineTool({
         name: "set_emcon",
-        description: "Sets EMCON (Emission Control) state. 'Active' allows radar, 'Silent' disables active emissions.",
+        description: "Sets EMCON (Emission Control) state.",
         inputSchema: z.object({
-            state: z.enum(['Active', 'Silent']),
+            state: z.string().describe("e.g. 'Active', 'Silent', 'Alpha', 'Bravo'"),
             unitId: z.string().optional().describe("If omitted, applies to the entire side.")
         }),
         outputSchema: z.object({ success: z.boolean(), message: z.string() }),
-        async call(matchId, side, args) {
+        async call(_matchId, _side, args) {
             await client.dispatchRest({
                 type: 'SetEMCON',
                 entityId: args.unitId,
@@ -217,7 +191,7 @@ export function createTacticalTools(client: WarGamesClient) {
             mountIndex: z.number().optional().default(0)
         }),
         outputSchema: z.object({ success: z.boolean(), message: z.string() }),
-        async call(matchId, side, args) {
+        async call(_matchId, _side, args) {
             await client.dispatchRest({
                 type: 'FireWeapon',
                 entityId: args.unitId,
@@ -236,18 +210,18 @@ export function createTacticalTools(client: WarGamesClient) {
         description: "Spawns a new unit from the database into the live match.",
         inputSchema: z.object({
             profileId: z.string().describe("e.g. 'f-35a', 'ddg-51'"),
-            side: z.enum(['Blue', 'Red', 'Neutral']),
-            pos: z.object({ x: z.number(), y: z.number(), z: z.number() }),
+            side: SideSchema,
+            pos: Vector3Schema,
             heading: z.number().optional().default(0)
         }),
         outputSchema: z.object({ success: z.boolean(), unitId: z.string() }),
-        async call(matchId, side, args) {
+        async call(_matchId, _side, args) {
             const id = `${args.profileId}-${Math.floor(Math.random() * 1000)}`;
             await client.dispatchRest({
                 type: 'SpawnEntity',
                 id,
                 profileId: args.profileId,
-                side: args.side as any,
+                side: args.side,
                 position: args.pos,
                 heading: args.heading,
                 speedKts: 0
@@ -266,11 +240,10 @@ export function createTacticalTools(client: WarGamesClient) {
         outputSchema: z.object({
             success: z.boolean(),
             elapsedSeconds: z.number(),
-            interruptedByEvent: z.boolean().optional(),
-            currentTick: z.number().optional(),
-            elapsedTicks: z.number().optional()
+            interruptedByEvent: z.boolean(),
+            events: z.array(z.unknown()).optional()
         }),
-        async call(matchId, side, args) {
+        async call(_matchId, _side, args) {
             return await client.stepRest(args.durationMinutes);
         }
     });
@@ -282,12 +255,11 @@ export function createTacticalTools(client: WarGamesClient) {
         name: "list_matches",
         description: "Returns a list of all active tactical matches and their status.",
         inputSchema: z.object({}),
-        outputSchema: z.array(z.any()),
+        outputSchema: z.array(MatchInfoSchema),
         async call(_matchId, _side, _args) {
             return await client.listMatches();
         }
     });
-
 
     /**
      * query_profile_data: Returns specifications for a platform type
@@ -298,16 +270,16 @@ export function createTacticalTools(client: WarGamesClient) {
         inputSchema: z.object({
             profileId: z.string()
         }),
-        outputSchema: z.any(),
-        async call(matchId, side, args) {
+        outputSchema: EntityProfileSchema,
+        async call(_matchId, _side, args) {
             return await client.scenario.getProfile(args.profileId);
         }
     });
 
     return [
         get_tactical_status,
-        // set_paused,
-        // set_time_compression,
+        set_paused,
+        set_time_compression,
         get_unit_details,
         set_unit_course,
         assign_mission,

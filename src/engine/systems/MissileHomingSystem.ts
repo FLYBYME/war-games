@@ -36,7 +36,6 @@ export class MissileHomingSystem implements ISystem {
             if (!target) continue;
 
             const targetTransform = target.getComponent(TransformComponent);
-            const targetKin = target.getComponent(KinematicsComponent);
             const myKin = entity.getComponent(KinematicsComponent);
             if (!targetTransform) continue;
 

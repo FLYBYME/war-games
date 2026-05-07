@@ -54,7 +54,8 @@ export const SimulationEventSchema = z.union([
     // Fallback for generic events
     BaseEventPayloadSchema.extend({
         type: z.string(),
-        data: z.any()
+        data: z.record(z.unknown()).optional()
     })
 ]);
 export type SimulationEvent = z.infer<typeof SimulationEventSchema>;
+export type TacticalEvent = SimulationEvent;

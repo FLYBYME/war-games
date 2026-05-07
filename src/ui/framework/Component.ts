@@ -12,9 +12,10 @@ export abstract class Component {
     private styleElement: HTMLStyleElement | null = null;
     private static injectedStyles = new Set<string>();
 
-    constructor(tagName: string, className?: string) {
+    constructor(tagName: string, className?: string, testId?: string) {
         this.element = document.createElement(tagName);
         if (className) this.element.className = className;
+        if (testId) this.element.dataset.testid = testId;
     }
 
     /** Build the DOM structure programmatically */

@@ -13,7 +13,7 @@ interface SessionInfo {
  */
 export class SessionManager extends Component {
     private listEl!: HTMLElement;
-    private timer: any;
+    private timer: ReturnType<typeof setInterval> | undefined;
 
     constructor() {
         super('div', 'session-manager', 'session-manager');

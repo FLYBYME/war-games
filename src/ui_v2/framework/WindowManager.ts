@@ -1,5 +1,5 @@
 import { Signal } from './Signal';
-import { settingsStore, WindowState } from './SettingsStore';
+import { settingsStore } from './SettingsStore';
 
 export interface WindowOptions {
     id: string;
@@ -86,7 +86,7 @@ export class WindowManager {
         }
     }
 
-    private setupDetachedWindow(id: string, win: Window, opts: any) {
+    private setupDetachedWindow(_id: string, win: Window, opts: WindowOptions) {
         const doc = win.document;
         doc.title = `${opts.title} - War-Games PRO`;
         
@@ -99,57 +99,43 @@ export class WindowManager {
         root.id = 'detached-root';
         root.style.width = '100vw';
         root.style.height = '100vh';
-        root.style.background = 'var(--bg-panel)';
         doc.body.appendChild(root);
-        doc.body.style.margin = '0';
-        doc.body.style.overflow = 'hidden';
-
-        // Signal back on close
-        win.addEventListener('unload', () => {
-            this.detachedWindows.delete(id);
-            // If main window still exists, update settings
-            if (!window.closed) {
-                settingsStore.setWindowState(id, { isOpen: false, isDetached: false });
-            }
-        });
-    }
-
-    public isDetached(id: string): boolean {
-        return this.detachedWindows.has(id);
-    }
-
-    public getDetachedWindow(id: string): Window | undefined {
-        return this.detachedWindows.get(id);
     }
 
     public close(id: string) {
         const current = new Map(this.windows.get());
         current.delete(id);
         this.windows.set(current);
-        if (this.activeWindowId.get() === id) {
-            this.activeWindowId.set(null);
+
+        const detached = this.detachedWindows.get(id);
+        if (detached) {
+            detached.close();
+            this.detachedWindows.delete(id);
         }
+
         settingsStore.setWindowState(id, { isOpen: false });
     }
 
     public focus(id: string) {
         this.activeWindowId.set(id);
+        this.nextZIndex++;
+        
+        const detached = this.detachedWindows.get(id);
+        if (detached) detached.focus();
     }
 
     public updateWindowBounds(id: string, bounds: { x: number, y: number, width: number, height: number }) {
-        settingsStore.setWindowState(id, bounds);
-        
-        // Update local options to keep them in sync
         const current = new Map(this.windows.get());
         const opts = current.get(id);
         if (opts) {
             current.set(id, { ...opts, ...bounds });
             this.windows.set(current);
         }
+        settingsStore.setWindowState(id, { ...bounds, isOpen: true });
     }
 
-    public getNextZIndex(): number {
-        return this.nextZIndex++;
+    public getNextZIndex() {
+        return this.nextZIndex;
     }
 }
 

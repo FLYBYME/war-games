@@ -13,9 +13,9 @@ export class LoadScenarioCommand extends BaseCommand {
             .command(this.name)
             .description(this.description)
             .argument('[filename]', 'Filename of the scenario to load')
-            .action((filename, options, command) => {
+            .action((filename: string | undefined, _options: unknown, command: CommanderCommand) => {
                 const globalOpts = command.optsWithGlobals();
-                this.execute(filename, globalOpts.url);
+                this.execute(filename, globalOpts.url as string);
             });
     }
 
@@ -54,9 +54,10 @@ export class LoadScenarioCommand extends BaseCommand {
                 }
             }
 
-        } catch (err: any) {
-            console.error(`\n${C.red}${C.bold}✖ Error:${C.reset} ${err.message}`);
-            if (err.message.includes('ECONNREFUSED')) {
+        } catch (err: unknown) {
+            const error = err as Error;
+            console.error(`\n${C.red}${C.bold}✖ Error:${C.reset} ${error.message}`);
+            if (error.message.includes('ECONNREFUSED')) {
                 console.error(`${C.yellow}Make sure the server is running (npm run cli start-server)${C.reset}`);
             }
         } finally {

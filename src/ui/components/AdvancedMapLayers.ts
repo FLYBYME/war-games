@@ -1,6 +1,7 @@
-import { Container, Graphics } from 'pixi.js';
+import { Container, Graphics, Sprite, Assets } from 'pixi.js';
 import { MapLayer } from './MapLayer';
-import { ViewState } from '../framework/UIStore';
+import { ViewState, ViewUnit } from '../framework/UIStore';
+import { GeoJSON, Vector3, Area } from '../../sdk/schemas/index.js';
 
 const SCALE = 0.01;
 
@@ -9,7 +10,7 @@ export class LOSShadingLayer implements MapLayer {
     readonly id = 'losShading';
     readonly container = new Container();
 
-    update(state: ViewState, viewScale: number) {
+    update(state: ViewState, _viewScale: number) {
         this.container.removeChildren();
         const g = new Graphics();
         for (const u of state.units) {
@@ -155,12 +156,12 @@ export class DepthContoursLayer implements MapLayer {
     update(state: ViewState, viewScale: number) {
         this.container.removeChildren();
         const g = new Graphics();
-        const bathy = state.mapData?.bathymetry;
+        const bathy = state.mapData?.bathymetry as GeoJSON | undefined;
         if (!bathy || !bathy.features) return;
 
         for (const feature of bathy.features) {
             if (feature.geometry.type === 'LineString') {
-                const coords = feature.geometry.coordinates;
+                const coords = feature.geometry.coordinates as [number, number][];
                 // Simple projection: [lon, lat] -> [x, y]
                 // Match the engine's GeoProjection roughly for demo
                 const lon0 = 121, lat0 = 20; // Example center
@@ -203,7 +204,7 @@ export class WeaponTracksLayer implements MapLayer {
     readonly id = 'weaponTracks';
     readonly container = new Container();
 
-    update(state: ViewState, viewScale: number) {
+    update(state: ViewState, _viewScale: number) {
         this.container.removeChildren();
         if (!state.weaponBindings || state.weaponBindings.length === 0) return;
         const g = new Graphics();
@@ -216,7 +217,7 @@ export class WeaponTracksLayer implements MapLayer {
                 g.lineTo(target.pos.x * SCALE, -target.pos.y * SCALE);
             }
         }
-        g.stroke({ width: 1.5 / viewScale, color: 0xff2d55, alpha: 0.6 });
+        g.stroke({ width: 1.5 / _viewScale, color: 0xff2d55, alpha: 0.6 });
         this.container.addChild(g);
     }
 }
@@ -268,7 +269,7 @@ export class SonarCZLayer implements MapLayer {
     readonly id = 'sonarCZ';
     readonly container = new Container();
 
-    update(state: ViewState, viewScale: number) {
+    update(state: ViewState, _viewScale: number) {
         this.container.removeChildren();
         const g = new Graphics();
         for (const u of state.units) {
@@ -279,7 +280,7 @@ export class SonarCZLayer implements MapLayer {
                 g.circle(ox, oy, r);
             }
         }
-        g.stroke({ width: 0.6 / viewScale, color: 0x7c3aed, alpha: 0.2 });
+        g.stroke({ width: 0.6 / _viewScale, color: 0x7c3aed, alpha: 0.2 });
         this.container.addChild(g);
     }
 }
@@ -310,12 +311,12 @@ export class ESMBearingsLayer implements MapLayer {
     readonly id = 'esmBearings';
     readonly container = new Container();
 
-    update(state: ViewState, viewScale: number) {
+    update(state: ViewState, _viewScale: number) {
         this.container.removeChildren();
         if (!state.esmBearings || state.esmBearings.length === 0) return;
         const g = new Graphics();
         for (const b of state.esmBearings) {
-            const obs = state.units.find((u: any) => u.id === b.observerId);
+            const obs = state.units.find((u: ViewUnit) => u.id === b.observerId);
             if (obs) {
                 const ox = obs.pos.x * SCALE;
                 const oy = -obs.pos.y * SCALE;
@@ -325,7 +326,7 @@ export class ESMBearingsLayer implements MapLayer {
                 g.lineTo(ox + Math.cos(rad) * len, oy - Math.sin(rad) * len);
             }
         }
-        g.stroke({ width: 0.5 / viewScale, color: 0xf59e0b, alpha: 0.4 });
+        g.stroke({ width: 0.5 / _viewScale, color: 0xf59e0b, alpha: 0.4 });
         this.container.addChild(g);
     }
 }
@@ -338,12 +339,12 @@ export class BordersLayer implements MapLayer {
     update(state: ViewState, viewScale: number) {
         this.container.removeChildren();
         const g = new Graphics();
-        const borders = state.mapData?.borders;
+        const borders = state.mapData?.borders as GeoJSON | undefined;
         if (!borders || !borders.features) return;
 
         for (const feature of borders.features) {
             if (feature.geometry.type === 'LineString') {
-                const coords = feature.geometry.coordinates;
+                const coords = feature.geometry.coordinates as [number, number][];
                 const lon0 = 121, lat0 = 20;
                 const mPerDeg = 111319.9;
 
@@ -410,11 +411,12 @@ export class MissionAreaLayer implements MapLayer {
         for (const u of state.units) {
             // Check for VBSS allowedArea
             if (u.mission?.params?.allowedArea) {
-                const area = u.mission.params.allowedArea;
+                const area = u.mission.params.allowedArea as Area;
                 if (area.points && area.points.length >= 3) {
-                    g.moveTo(area.points[0].x * SCALE, -area.points[0].y * SCALE);
-                    for (let i = 1; i < area.points.length; i++) {
-                        g.lineTo(area.points[i].x * SCALE, -area.points[i].y * SCALE);
+                    const points = area.points as Vector3[];
+                    g.moveTo(points[0].x * SCALE, -points[0].y * SCALE);
+                    for (let i = 1; i < points.length; i++) {
+                        g.lineTo(points[i].x * SCALE, -points[i].y * SCALE);
                     }
                     g.closePath();
                     g.fill({ color: 0x32d74b, alpha: 0.05 });
@@ -424,11 +426,12 @@ export class MissionAreaLayer implements MapLayer {
             
             // Check for Minelaying/MCM area
             if (u.mission?.params?.area) {
-                const area = u.mission.params.area;
+                const area = u.mission.params.area as Area;
                 if (area.points && area.points.length >= 3) {
-                    g.moveTo(area.points[0].x * SCALE, -area.points[0].y * SCALE);
-                    for (let i = 1; i < area.points.length; i++) {
-                        g.lineTo(area.points[i].x * SCALE, -area.points[i].y * SCALE);
+                    const points = area.points as Vector3[];
+                    g.moveTo(points[0].x * SCALE, -points[0].y * SCALE);
+                    for (let i = 1; i < points.length; i++) {
+                        g.lineTo(points[i].x * SCALE, -points[i].y * SCALE);
                     }
                     g.closePath();
                     g.fill({ color: 0xffd60a, alpha: 0.05 });
@@ -444,10 +447,10 @@ export class MissionAreaLayer implements MapLayer {
 export class TerrainLayer implements MapLayer {
     readonly id = 'terrain';
     readonly container = new Container();
-    private sprite?: any;
+    private sprite?: Sprite;
     private lastOrigin = { lat: 0, lon: 0 };
 
-    async update(state: ViewState, viewScale: number) {
+    async update(state: ViewState, _viewScale: number) {
         if (!state.origin) return;
 
         // Load terrain image if origin changed or not yet loaded
@@ -467,11 +470,10 @@ export class TerrainLayer implements MapLayer {
         const path = '/terrain-lowres.png';
         console.log(`Attempting to load terrain from: ${path}`);
         try {
-            const PIXI = (window as any).PIXI || await import('pixi.js');
-            const texture = await PIXI.Assets.load(path);
+            const texture = await Assets.load(path);
             if (!texture) throw new Error('Texture loaded as null');
             
-            this.sprite = new PIXI.Sprite(texture);
+            this.sprite = new Sprite(texture);
             this.sprite.anchor.set(0.5);
             this.sprite.alpha = 0.8;
             

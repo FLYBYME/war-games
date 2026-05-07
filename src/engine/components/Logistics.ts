@@ -36,6 +36,7 @@ export enum TurnaroundState {
     Taxiing = 'Taxiing',
     Rearming = 'Rearming',
     Refueling = 'Refueling',
+    Boarding = 'Boarding',
     PreFlight = 'PreFlight',
     Ready = 'Ready',
     InFlight = 'InFlight'

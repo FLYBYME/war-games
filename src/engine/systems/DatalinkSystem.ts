@@ -36,7 +36,7 @@ export class DatalinkSystem implements ISystem {
         }
 
         // 2. For each network, build the Common Tactical Picture (CTP)
-        for (const [netId, members] of networks.entries()) {
+        for (const [, members] of networks.entries()) {
             // trueEntityId -> Best available track for that entity in this network
             const ctp = new Map<string, Track>(); 
 

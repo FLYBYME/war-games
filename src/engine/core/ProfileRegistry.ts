@@ -14,4 +14,12 @@ export class ProfileRegistry {
     public get(id: string): EntityProfile | undefined {
         return this.profiles.get(id);
     }
+
+    public list(): EntityProfile[] {
+        return Array.from(this.profiles.values());
+    }
+
+    public getInternalMap(): Map<string, EntityProfile> {
+        return this.profiles;
+    }
 }

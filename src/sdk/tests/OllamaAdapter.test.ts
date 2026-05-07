@@ -1,14 +1,18 @@
-import { vitest, describe, it, expect, beforeEach } from 'vitest';
+import { vitest, describe, it, expect, beforeEach, Mock } from 'vitest';
 import { OllamaAdapter } from '../llm/OllamaAdapter.js';
 import { WarGamesTool } from '../tools/Tool.js';
 import { Side } from '../index.js';
 import * as Z from 'zod';
-import { Message, Ollama } from 'ollama';
+import { Ollama } from 'ollama';
+
+interface MockOllama {
+    chat: Mock;
+}
 
 describe('OllamaAdapter', () => {
-    let mockOllama: any;
+    let mockOllama: MockOllama;
     let adapter: OllamaAdapter;
-    let mockTool: WarGamesTool<any, any>;
+    let mockTool: WarGamesTool<Z.ZodObject<{ arg1: Z.ZodString }>, Z.ZodString>;
 
     beforeEach(() => {
         mockOllama = {
@@ -24,9 +28,9 @@ describe('OllamaAdapter', () => {
         };
 
         adapter = new OllamaAdapter({
-            ollama: mockOllama as any,
+            ollama: mockOllama as unknown as Ollama,
             model: 'test-model',
-            tools: [mockTool]
+            tools: [mockTool as unknown as WarGamesTool]
         });
     });
 
@@ -110,7 +114,7 @@ describe('OllamaAdapter', () => {
 
     it('should include system prompt if provided', async () => {
         const sysAdapter = new OllamaAdapter({
-            ollama: mockOllama as any,
+            ollama: mockOllama as unknown as Ollama,
             model: 'test-model',
             system: 'You are a helpful assistant'
         });

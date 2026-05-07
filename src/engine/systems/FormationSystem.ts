@@ -21,7 +21,6 @@ export class FormationSystem implements ISystem {
             const form = entity.getComponent(FormationComponent);
             const nav = entity.getComponent(NavigationComponent);
             const transform = entity.getComponent(TransformComponent);
-            const kin = entity.getComponent(KinematicsComponent);
 
             // Logging-like check (if I could)
             if (!form) continue;

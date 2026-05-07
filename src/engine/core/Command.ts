@@ -71,7 +71,7 @@ export class RemoveDetectionCommand extends Command {
     }
 }
 export class SyncESMBearingsCommand extends Command {
-    constructor(observerId: EntityId, public readonly bearings: any[]) {
+    constructor(observerId: EntityId, public readonly bearings: unknown[]) {
         super(observerId, 15);
     }
 }
@@ -207,7 +207,7 @@ export class SetMissionROECommand extends Command {
 }
 
 export class SetMissionCommand extends Command {
-    constructor(entityId: EntityId, public readonly missionType: string, public readonly params: any) {
+    constructor(entityId: EntityId, public readonly missionType: string, public readonly params: unknown) {
         super(entityId, 25);
     }
 }
@@ -225,7 +225,7 @@ export class AssignWeaponCommand extends Command {
 }
 
 export class UpdateWRARulesCommand extends Command {
-    constructor(entityId: EntityId, public readonly rules: any[]) {
+    constructor(entityId: EntityId, public readonly rules: unknown[]) {
         super(entityId, 15);
     }
 }

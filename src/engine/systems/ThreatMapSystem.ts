@@ -29,7 +29,7 @@ export class ThreatMapSystem implements ISystem {
         if (world.currentTick % 10 !== 0) return [];
 
         const sides = [Side.Blue, Side.Red];
-        sides.forEach(side => {
+        for (const side of sides) {
             const zones: ThreatZone[] = [];
             const enemySide = side === Side.Blue ? Side.Red : Side.Blue;
 
@@ -58,7 +58,7 @@ export class ThreatMapSystem implements ISystem {
                 }
             }
             this.threatZones.set(side, zones);
-        });
+        }
 
         return [];
     }

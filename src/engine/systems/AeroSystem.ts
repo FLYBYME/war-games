@@ -1,11 +1,12 @@
 import { ISystem, IWorldView, SystemPhase } from '../core/ISystem.js';
-import { Vector3 } from '../core/Types.js';
+import { Vector3, EntityProfile } from '../core/Types.js';
 import { Command, ApplyForceCommand } from '../core/Command.js';
 import { TransformComponent, KinematicsComponent } from '../components/Physics.js';
 import { EnvironmentComponent } from '../components/Environment.js';
 import { AeroComponent } from '../components/Aero.js';
 import { VectorMath } from '../math/VectorMath.js';
 import { Physics } from '../PhysicsConstants.js';
+import { ProfileRegistry } from '../core/ProfileRegistry.js';
 
 /**
  * AeroSystem: Generates Lift and Drag forces based on fluid dynamics.
@@ -27,7 +28,8 @@ export class AeroSystem implements ISystem {
 
             if (transform && kinematics && env && aero) {
                 // 0. Check Type
-                const profile = world.profileRegistry.get(entity.profileId);
+                const profileRegistry = world.profileRegistry as ProfileRegistry;
+                const profile = profileRegistry.get(entity.profileId) as EntityProfile | undefined;
                 const isHelo = profile?.type === 'Helicopter';
 
                 // 1. Calculate Airspeed (Ground Velocity - Wind Velocity)
@@ -53,7 +55,6 @@ export class AeroSystem implements ISystem {
 
                 // 4. Calculate Aerodynamic Angles
                 const aoa = Math.atan2(-vBody.z, vBody.x);
-                const beta = Math.asin(Math.max(-1, Math.min(1, vBody.y / airspeedMag)));
 
                 // 5. Calculate Coefficients
                 let q = 0.5 * env.airDensity * airspeedMag * airspeedMag;
@@ -65,9 +66,8 @@ export class AeroSystem implements ISystem {
                 }
                 
                 // Lift: Simplified AoA-dependent lift curve
-                const aoaRad = aoa; // aoa is already in radians from Math.atan2
                 const clSlope = 2 * Math.PI;
-                let cl = clSlope * aoaRad;
+                let cl = clSlope * aoa;
 
                 if (isHelo && airspeedMag < 10.0) {
                     // Helicopter Hover Lift: Provide enough lift to counter gravity
@@ -76,9 +76,10 @@ export class AeroSystem implements ISystem {
                     cl = Math.max(cl, hoverLiftMag);
                 }
                 
-                // AoA Stall Clamp: Lift drops after ~15 deg
-                if (Math.abs(aoa) > 15) {
-                    cl = cl * (1.0 / (Math.abs(aoa) - 14));
+                // AoA Stall Clamp: Lift drops after ~15 deg (0.26 rad)
+                const stallAngleRad = 15 * Physics.DEG_TO_RAD;
+                if (Math.abs(aoa) > stallAngleRad) {
+                    cl = cl * (1.0 / (Math.abs(aoa) * Physics.RAD_TO_DEG - 14));
                 }
 
                 // Drag: Cd = Cd_base + K * Cl^2 + WaveDrag

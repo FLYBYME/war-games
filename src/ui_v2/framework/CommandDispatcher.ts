@@ -1,74 +1,76 @@
-import { UIStore } from './UIStore';
-import { logger } from './Logger';
+import { sdkClient } from './Client';
+import { ViewUnitPayload, ViewTrackPayload, Vector3 } from '../../sdk/schemas';
+
+export type CommandType = 
+    | 'SetCourse' 
+    | 'AddWaypoint' 
+    | 'ClearWaypoints' 
+    | 'FireWeapon' 
+    | 'SetROE' 
+    | 'SetEMCON' 
+    | 'SetSpeed' 
+    | 'SetAltitude' 
+    | 'SetHeading';
+
+export interface CommandIntent {
+    type: CommandType;
+    entityId: string;
+    payload: unknown;
+}
 
 /**
- * CommandDispatcher: Centralized UI intent handler.
- * Implements Debouncing and Optimistic UI updates.
- * Prevents UI controls from flooding the 10Hz game server.
+ * CommandDispatcher: High-level UI command orchestrator.
+ * Handles selection-aware command routing and multi-unit coordination.
  */
-export class CommandDispatcher {
-    private debounceTimers = new Map<string, number>();
+class CommandDispatcher {
+    async execute(intent: CommandIntent): Promise<void> {
+        try {
+            switch (intent.type) {
+                case 'SetCourse': {
+                    const p = intent.payload as { position: Vector3, speedKts: number };
+                    await sdkClient.nav.setCourse(intent.entityId, p.position, p.speedKts);
+                    break;
+                }
+                case 'FireWeapon': {
+                    const p = intent.payload as { mountIndex: number, targetId: string };
+                    await sdkClient.combat.fireWeapon(intent.entityId, p.mountIndex, p.targetId);
+                    break;
+                }
+                case 'SetSpeed': {
+                    const p = intent.payload as { speedKts: number };
+                    await sdkClient.nav.setSpeed(intent.entityId, p.speedKts);
+                    break;
+                }
+                case 'SetAltitude': {
+                    const p = intent.payload as { altitudeM: number };
+                    await sdkClient.nav.setAltitude(intent.entityId, p.altitudeM);
+                    break;
+                }
+                case 'SetHeading': {
+                    const p = intent.payload as { heading: number };
+                    await sdkClient.nav.setHeading(intent.entityId, p.heading);
+                    break;
+                }
+            }
+        } catch (e) {
+            console.error(`Command execution failed: ${intent.type}`, e);
+            throw e;
+        }
+    }
 
-    /** 
-     * Debounce helper for rapid UI inputs (e.g., dragging sliders).
+    /**
+     * getValidCommands: Returns list of available commands for a specific selection.
      */
-    private debounce(key: string, delayMs: number, action: () => void) {
-        if (this.debounceTimers.has(key)) {
-            clearTimeout(this.debounceTimers.get(key));
-        }
-        this.debounceTimers.set(key, window.setTimeout(() => {
-            action();
-            this.debounceTimers.delete(key);
-        }, delayMs));
-    }
-
-    public setSpeed(entityId: string, speedKts: number) {
-        logger.debug(`[Dispatcher] Intent: setSpeed -> ${speedKts}kts for ${entityId}`);
-        // TODO: Optimistic UI state update locally on UIStore could happen here
+    getValidCommands(selection: ViewUnitPayload | ViewTrackPayload | null): CommandType[] {
+        if (!selection) return [];
         
-        this.debounce(`setSpeed-${entityId}`, 100, () => {
-            if (UIStore.client) {
-                UIStore.client.nav.setSpeed(entityId, speedKts);
-            }
-        });
-    }
-
-    public setAltitude(entityId: string, altitudeM: number) {
-        logger.debug(`[Dispatcher] Intent: setAltitude -> ${altitudeM}m for ${entityId}`);
-        
-        this.debounce(`setAltitude-${entityId}`, 100, () => {
-            if (UIStore.client) {
-                UIStore.client.nav.setAltitude(entityId, altitudeM);
-            }
-        });
-    }
-
-    public setHeading(entityId: string, headingDeg: number) {
-        logger.debug(`[Dispatcher] Intent: setHeading -> ${headingDeg}° for ${entityId}`);
-        
-        this.debounce(`setHeading-${entityId}`, 100, () => {
-            if (UIStore.client) {
-                UIStore.client.nav.setHeading(entityId, headingDeg);
-            }
-        });
-    }
-
-    public fireWeapon(shooterId: string, targetId: string, weaponProfileId: string) {
-        logger.info(`[Dispatcher] Intent: fireWeapon -> ${shooterId} firing ${weaponProfileId} at ${targetId}`);
-        if (UIStore.client) {
-            UIStore.client.dispatch({
-                type: 'FireWeapon',
-                entityId: shooterId,
-                targetId: targetId,
-                weaponProfileId: weaponProfileId
-            } as any);
+        // Tracks only support engagement
+        if ('trueId' in selection) {
+            return ['FireWeapon'];
         }
-    }
 
-    public dispatch(command: any) {
-        if (UIStore.client) {
-            UIStore.client.dispatch(command);
-        }
+        // Units support everything
+        return ['SetCourse', 'AddWaypoint', 'ClearWaypoints', 'FireWeapon', 'SetROE', 'SetEMCON', 'SetSpeed', 'SetAltitude', 'SetHeading'];
     }
 }
 

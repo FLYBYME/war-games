@@ -1,9 +1,9 @@
-import { FastifyInstance } from 'fastify';
-import { Side } from '../../engine/core/Types.js';
+import { FastifyInstance, FastifyRequest } from 'fastify';
+import { Side, ClientMessageSchema, ClientMessage, ScenarioManifest, ViewStateSnapshot, WorldState } from '../../engine/core/Types.js';
 import { CommandFactory } from '../../engine/core/CommandFactory.js';
 import { logger } from '../core/Logger.js';
 import { config } from '../core/Config.js';
-import { DeltaEncoder, ScenarioManifest } from '../../sdk/index.js';
+import { DeltaEncoder } from '../../sdk/index.js';
 import { World } from '../../engine/core/World.js';
 import { ScenarioLoader } from '../../engine/core/ScenarioLoader.js';
 import { EntityManager } from '../../engine/core/EntityManager.js';
@@ -14,7 +14,7 @@ import { ViewStateSystem } from '../../engine/systems/ViewStateSystem.js';
 export async function registerWebSocketPlugin(app: FastifyInstance) {
     const deltaEncoder = new DeltaEncoder();
 
-    const onConnection = (ws: any, req: any) => {
+    const onConnection = (ws: unknown, req: FastifyRequest) => {
         try {
             const managedWs = ws as ManagedWebSocket;
             const session = app.sessionManager.createSession(managedWs);
@@ -27,30 +27,33 @@ export async function registerWebSocketPlugin(app: FastifyInstance) {
                 path: req.url
             });
 
-            ws.on('error', (err: Error) => {
+            managedWs.on('error', (err: Error) => {
                 logger.error('WebSocket error', { sessionId: session.id, error: err.message });
-                app.sessionManager.removeSession(ws);
-                ws.terminate();
+                app.sessionManager.removeSession(managedWs);
+                managedWs.terminate();
             });
 
-            ws.on('message', async (data: Buffer | string) => {
+            managedWs.on('message', async (data: Buffer | string) => {
                 try {
-                    const msg = JSON.parse(data.toString());
+                    const rawMsg = JSON.parse(data.toString()) as unknown;
+                    const msg = ClientMessageSchema.parse(rawMsg);
                     await handleMessage(app, session, msg, deltaEncoder);
-                } catch (err) {
-                    logger.error('Failed to parse message', { error: err });
-                    session.send({ type: 'ERROR', payload: { message: 'Invalid JSON payload' } });
+                } catch (err: unknown) {
+                    const error = err as Error;
+                    logger.error('Failed to parse message', { error: error.message });
+                    session.send({ type: 'ERROR', payload: { message: `Invalid message: ${error.message}` } });
                 }
             });
 
-            ws.on('close', () => {
+            managedWs.on('close', () => {
                 logger.info(`Connection closed`, { sessionId: session.id });
                 deltaEncoder.clearSession(session.id);
-                app.sessionManager.removeSession(ws);
+                app.sessionManager.removeSession(managedWs);
             });
-        } catch (err: any) {
-            logger.error('Error in WebSocket initialization', { error: err.message });
-            ws.terminate();
+        } catch (err: unknown) {
+            const error = err as Error;
+            logger.error('Error in WebSocket initialization', { error: error.message });
+            (ws as ManagedWebSocket).terminate();
         }
     };
 
@@ -61,10 +64,11 @@ export async function registerWebSocketPlugin(app: FastifyInstance) {
     // Heartbeat interval
     const interval = setInterval(() => {
         if (app.websocketServer) {
-            app.websocketServer.clients.forEach((ws: ManagedWebSocket) => {
-                if (ws.isAlive === false) return ws.terminate();
-                ws.isAlive = false;
-                ws.ping();
+            app.websocketServer.clients.forEach((ws: unknown) => {
+                const managedWs = ws as ManagedWebSocket;
+                if (managedWs.isAlive === false) return managedWs.terminate();
+                managedWs.isAlive = false;
+                managedWs.ping();
             });
         }
     }, config.heartbeatIntervalMs);
@@ -73,7 +77,7 @@ export async function registerWebSocketPlugin(app: FastifyInstance) {
         clearInterval(interval);
     });
 
-    app.decorate('broadcastSnapshot', (matchId: string, snapshot: any) => {
+    app.decorate('broadcastSnapshot', (matchId: string, snapshot: ViewStateSnapshot) => {
         const sessions = app.sessionManager.getSessionsByMatch(matchId);
         const now = Date.now();
 
@@ -105,11 +109,11 @@ export async function registerWebSocketPlugin(app: FastifyInstance) {
     });
 }
 
-async function handleMessage(app: FastifyInstance, session: ClientSession, msg: any, deltaEncoder: DeltaEncoder): Promise<void> {
+async function handleMessage(app: FastifyInstance, session: ClientSession, msg: ClientMessage, deltaEncoder: DeltaEncoder): Promise<void> {
     const matchId = session.matchId || 'default';
 
     switch (msg.type) {
-        case 'JOIN_MATCH':
+        case 'JOIN_MATCH': {
             session.matchId = msg.matchId || 'default';
             session.side = (msg.side as Side) || Side.Blue;
             session.syncRateHz = msg.syncRateHz;
@@ -125,9 +129,10 @@ async function handleMessage(app: FastifyInstance, session: ClientSession, msg: 
                 session.lastFullSyncTime = Date.now();
             }
             break;
+        }
 
-        case 'ISSUE_COMMAND':
-            const cmd = CommandFactory.create(msg.command, session.side);
+        case 'ISSUE_COMMAND': {
+            const cmd = CommandFactory.create(msg.command, session.side || Side.Blue);
             if (!cmd) {
                 session.send({ type: 'COMMAND_ACK', payload: { commandType: msg.command.type, success: false, error: 'Invalid or unauthorized command' } });
                 return;
@@ -141,7 +146,7 @@ async function handleMessage(app: FastifyInstance, session: ClientSession, msg: 
             }
 
             // Side Isolation Check
-            const entityId = (msg.command as any).entityId;
+            const entityId = (msg.command as { entityId?: string }).entityId;
             const entity = entityId ? world.getEntity(entityId) : undefined;
             if (entity && entity.side !== session.side) {
                 session.send({ type: 'COMMAND_ACK', payload: { commandType: msg.command.type, success: false, error: 'Side Isolation Violation' } });
@@ -155,40 +160,46 @@ async function handleMessage(app: FastifyInstance, session: ClientSession, msg: 
 
             session.send({ type: 'COMMAND_ACK', payload: { commandType: msg.command.type, success: true } });
             break;
+        }
 
-        case 'SET_TIME_COMPRESSION':
+        case 'SET_TIME_COMPRESSION': {
             app.matchService.setMatchTime(matchId, msg.rate, msg.rate === 0);
             break;
+        }
 
-        case 'SAVE_MATCH':
+        case 'SAVE_MATCH': {
             if (msg.matchId && msg.filename) {
                 try {
                     const world = app.matchService.getMatch(msg.matchId);
                     if (world) {
                         const worldData = world.toJSON();
-                        await (app.scenarioService as any).save(msg.filename, worldData);
+                        await (app.scenarioService as { save: (f: string, d: unknown) => Promise<boolean> }).save(msg.filename, worldData);
                         session.send({ type: 'COMMAND_ACK', payload: { commandType: 'SAVE_MATCH', success: true } });
                         logger.info(`Match ${msg.matchId} saved to ${msg.filename}`);
                     }
-                } catch (err: any) {
-                    logger.error('Failed to save match', { error: err.message });
-                    session.send({ type: 'ERROR', payload: { message: `Save failed: ${err.message}` } });
+                } catch (err: unknown) {
+                    const error = err as Error;
+                    logger.error('Failed to save match', { error: error.message });
+                    session.send({ type: 'ERROR', payload: { message: `Save failed: ${error.message}` } });
                 }
             }
             break;
+        }
 
-        case 'EXPORT_SCENARIO':
+        case 'EXPORT_SCENARIO': {
             const worldData = app.matchService.globalWorld.toJSON();
             session.send({ type: 'SCENARIO_EXPORTED', payload: worldData });
             break;
+        }
 
-        case 'IMPORT_SCENARIO':
+        case 'IMPORT_SCENARIO': {
             if (msg.payload) {
                 try {
                     const targetMatchId = msg.matchId || 'default';
                     const targetWorld = app.matchService.getMatch(targetMatchId) || app.matchService.globalWorld;
 
-                    const isManifest = msg.payload.entities && msg.payload.entities.length > 0;
+                    const payloadTyped = msg.payload as { entities?: unknown[] };
+                    const isManifest = payloadTyped.entities && payloadTyped.entities.length > 0;
 
                     if (isManifest) {
                         const newWorld = new World(
@@ -200,7 +211,7 @@ async function handleMessage(app: FastifyInstance, session: ClientSession, msg: 
                         app.matchService.initializeWorldSystems(newWorld);
                         const loader = new ScenarioLoader(new EntityManager(newWorld, newWorld.profileRegistry));
 
-                        const manifest = msg.payload as ScenarioManifest;
+                        const manifest = msg.payload as unknown as ScenarioManifest;
                         if (manifest.origin) {
                             const env = newWorld.getSystem(EnvironmentSystem);
                             const vs = newWorld.getSystem(ViewStateSystem);
@@ -215,39 +226,37 @@ async function handleMessage(app: FastifyInstance, session: ClientSession, msg: 
                         if (targetMatchId === 'default') {
                             app.matchService.updateGlobalWorld(newWorld);
                         } else {
-                            // Using a safe cast here as we're managing the internal map
-                            (app.matchService as any).matches.set(targetMatchId, newWorld);
-                            app.matchService.setupEventBus(targetMatchId, newWorld);
-                            // Ensure TickManager starts pulsing this new match
-                            const onMatchCreated = (app.matchService as any).onMatchCreated;
-                            if (onMatchCreated) onMatchCreated(targetMatchId);
+                            app.matchService.registerMatch(targetMatchId, newWorld);
                         }
                     } else {
-                        const newWorld = World.fromJSON(msg.payload);
+                        const newWorld = World.fromJSON(msg.payload as WorldState);
                         if (targetMatchId === 'default') {
                             app.matchService.updateGlobalWorld(newWorld);
                         } else {
-                            (app.matchService as any).matches.set(targetMatchId, newWorld);
-                            app.matchService.setupEventBus(targetMatchId, newWorld);
-                            const onMatchCreated = (app.matchService as any).onMatchCreated;
-                            if (onMatchCreated) onMatchCreated(targetMatchId);
+                            app.matchService.registerMatch(targetMatchId, newWorld);
                         }
                     }
 
-                    deltaEncoder.reset();
+                    deltaEncoder.clearSession(session.id);
                     session.send({ type: 'SCENARIO_IMPORTED', payload: { success: true, matchId: targetMatchId } });
-                } catch (err: any) {
-                    logger.error('Failed to import scenario', { error: err.message });
-                    session.send({ type: 'ERROR', payload: { message: `Import failed: ${err.message}` } });
+                } catch (err: unknown) {
+                    const error = err as Error;
+                    logger.error('Failed to import scenario', { error: error.message });
+                    session.send({ type: 'ERROR', payload: { message: `Import failed: ${error.message}` } });
                 }
             }
             break;
+        }
 
-        case 'REQUEST_SNAPSHOT':
-            const latestSnapshot = await app.matchService.getInitialState(matchId, session.side);
-            if (latestSnapshot) {
-                session.send({ type: 'VIEW_STATE', payload: latestSnapshot });
-            }
-            break;
+        case 'GET_TELEMETRY': {
+             const telemetry = await app.matchService.getTelemetry(matchId);
+             session.send({ type: 'SCENARIO_EXPORTED', payload: telemetry }); 
+             break;
+        }
+
+        case 'GET_PROFILES': {
+             // Handled if needed
+             break;
+        }
     }
 }

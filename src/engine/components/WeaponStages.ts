@@ -1,4 +1,4 @@
-import { IComponent, EntityId } from '../core/Types.js';
+import { IComponent } from '../core/Types.js';
 
 export interface WeaponStage {
     name: string;

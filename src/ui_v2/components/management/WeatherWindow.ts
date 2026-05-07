@@ -1,82 +1,71 @@
 import { Component } from '../../framework/Component';
 import { UIStore } from '../../framework/UIStore';
-import { commandDispatcher } from '../../framework/CommandDispatcher';
 
 /**
- * WeatherWindow: Environment control dials for localized weather.
- * Ported to V2 WindowManager architecture.
+ * WeatherWindow: Sim-wide environmental controls.
  */
 export class WeatherWindow extends Component {
-    constructor() { super('div', 'weather-inject'); }
+    constructor() {
+        super('div', 'weather-window', 'weather-window');
+    }
 
-    protected styles() {
+    protected styles(): string {
         return `
-        .weather-inject { padding: var(--sp-3); display: flex; flex-direction: column; gap: var(--sp-3); font-size: var(--text-sm); color: var(--text-main); }
-        .wi-control { display: flex; flex-direction: column; gap: var(--sp-1); background: var(--bg-base); padding: var(--sp-2); border-radius: var(--radius-sm); border: 1px solid var(--border-color); }
-        .wi-label { font-size: var(--text-xs); color: var(--text-muted); display: flex; justify-content: space-between; text-transform: uppercase; font-weight: 600; letter-spacing: 0.05em; }
-        .wi-value { font-family: var(--font-mono); color: var(--color-friendly); }
-        .wi-slider { width: 100%; accent-color: var(--accent-warning); background: var(--bg-hover); height: 4px; border-radius: 2px; appearance: none; margin-top: var(--sp-1); }
-        .wi-slider::-webkit-slider-thumb { appearance: none; width: 14px; height: 14px; border-radius: 50%; background: var(--accent-warning); cursor: pointer; }
+            .weather-window { padding: 15px; background: #111; color: #ddd; }
+            .weather-header { font-weight: bold; font-size: 12px; margin-bottom: 10px; color: #888; }
+            .weather-grid { display: grid; grid-template-columns: repeat(2, 1fr); gap: 15px; }
+            .stat-box { display: flex; flex-direction: column; }
+            .stat-label { font-size: 10px; color: #555; text-transform: uppercase; }
+            .stat-value { font-size: 14px; color: #ccc; margin-top: 2px; }
+            input[type=range] { width: 100%; margin-top: 5px; }
         `;
     }
 
-    protected render() {
-        const vs = UIStore.viewState.get();
-        const weather = vs?.weather || {
-            precipitationRateMMhr: 0,
-            cloudCover: 0,
-            seaState: 0,
-            windSpeedKts: 0,
-            windDirDeg: 0,
-            visibilityNM: 10,
-            temperatureC: 15
-        };
+    protected render(): void {
+        this.element.innerHTML = `
+            <div class="weather-header">ENVIRONMENTAL CONDITIONS</div>
+            <div class="weather-grid">
+                <div class="stat-box">
+                    <span class="stat-label">Sea State</span>
+                    <span class="stat-value" id="val-sea">3</span>
+                    <input type="range" id="input-sea" min="0" max="9" value="3">
+                </div>
+                <div class="stat-box">
+                    <span class="stat-label">Cloud Cover</span>
+                    <span class="stat-value" id="val-clouds">0.4</span>
+                    <input type="range" id="input-clouds" min="0" max="1" step="0.1" value="0.4">
+                </div>
+            </div>
+            <div style="margin-top: 15px; font-size: 11px; color: #444;">
+                Adjusting these values affects sensor ranges and flight physics.
+            </div>
+        `;
 
-        const controls = [
-            { label: 'Precipitation', unit: 'mm/hr', min: 0, max: 100, value: weather.precipitationRateMMhr ?? weather.precipitation ?? 0, key: 'precipitationRateMMhr' },
-            { label: 'Cloud Cover', unit: '%', min: 0, max: 100, value: weather.cloudCover, key: 'cloudCover' },
-            { label: 'Sea State', unit: '', min: 0, max: 9, value: weather.seaState, key: 'seaState' },
-            { label: 'Wind Speed', unit: 'kts', min: 0, max: 100, value: weather.windSpeedKts, key: 'windSpeedKts' },
-            { label: 'Wind Direction', unit: '°', min: 0, max: 360, value: weather.windDirDeg, key: 'windDirDeg' },
-            { label: 'Visibility', unit: 'nm', min: 0, max: 50, value: weather.visibilityNM, key: 'visibilityNM' },
-            { label: 'Temperature', unit: '°C', min: -40, max: 50, value: weather.temperatureC, key: 'temperatureC' },
-        ];
+        const seaInput = this.element.querySelector('#input-sea') as HTMLInputElement;
+        const seaVal = this.element.querySelector('#val-sea') as HTMLElement;
+        const cloudsInput = this.element.querySelector('#input-clouds') as HTMLInputElement;
+        const cloudsVal = this.element.querySelector('#val-clouds') as HTMLElement;
 
-        this.element.innerHTML = '';
-        this.element.appendChild(this.el('div', 'wi-title', 'WEATHER & ENVIRONMENT'));
+        this.listen(seaInput, 'input', () => {
+            seaVal.textContent = seaInput.value;
+            void this.updateWeather('seaState', parseInt(seaInput.value));
+        });
 
-        for (const c of controls) {
-            const group = this.el('div', 'wi-control');
-            const label = this.el('div', 'wi-label');
-            label.appendChild(this.el('span', undefined, c.label));
-            const valueEl = this.el('span', 'wi-value', `${Math.round(c.value)} ${c.unit}`);
-            label.appendChild(valueEl);
-            group.appendChild(label);
-
-            const slider = document.createElement('input');
-            slider.type = 'range';
-            slider.className = 'wi-slider';
-            slider.min = String(c.min); 
-            slider.max = String(c.max); 
-            slider.value = String(c.value);
-            
-            slider.addEventListener('input', () => {
-                valueEl.textContent = `${slider.value} ${c.unit}`;
-                if (UIStore.client) {
-                    UIStore.client.dispatch({ 
-                        type: 'SetEnvironment', 
-                        key: c.key, 
-                        value: Number(slider.value) 
-                    } as any);
-                }
-            });
-            group.appendChild(slider);
-            this.element.appendChild(group);
-        }
+        this.listen(cloudsInput, 'input', () => {
+            cloudsVal.textContent = cloudsInput.value;
+            void this.updateWeather('cloudCover', parseFloat(cloudsInput.value));
+        });
     }
 
-    protected onMount() {
-        this.render();
-        this.subscribe(UIStore.viewState, () => this.render());
+    private async updateWeather(key: string, value: number) {
+        try {
+            await UIStore.issueCommand({
+                type: 'SetEnvironment',
+                key,
+                value
+            });
+        } catch (e) {
+            console.error('Failed to update weather', e);
+        }
     }
 }

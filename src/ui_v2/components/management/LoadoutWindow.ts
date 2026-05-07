@@ -56,7 +56,7 @@ export class LoadoutWindow extends Component {
                 card.classList.add('is-selected');
                 selectedIdx = i;
                 if (UIStore.client) {
-                    UIStore.client.dispatch({ type: 'SetLoadout', loadout: p.name } as any);
+                    UIStore.client.dispatch({ type: 'SetLoadout', loadout: p.name } as unknown as Record<string, unknown>);
                 }
             });
             presetContainer.appendChild(card);

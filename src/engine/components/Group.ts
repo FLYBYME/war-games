@@ -1,4 +1,4 @@
-import { IComponent, EntityId, Vector3 } from '../core/Types.js';
+import { IComponent, EntityId } from '../core/Types.js';
 
 export enum GroupFormation {
     None = 'None',

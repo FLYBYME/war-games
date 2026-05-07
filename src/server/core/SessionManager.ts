@@ -13,7 +13,7 @@ export class SessionManager {
             id: randomUUID(),
             ws,
             lastPing: Date.now(),
-            send: (data: any) => {
+            send: (data: unknown) => {
                 if (ws.readyState === ws.OPEN) {
                     ws.send(JSON.stringify(data));
                 }
@@ -44,7 +44,7 @@ export class SessionManager {
         return Array.from(this.sessions.values());
     }
 
-    public broadcastToMatch(matchId: string, data: any): void {
+    public broadcastToMatch(matchId: string, data: unknown): void {
         const matchSessions = this.getSessionsByMatch(matchId);
         const payload = JSON.stringify(data);
         for (const session of matchSessions) {

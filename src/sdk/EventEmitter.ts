@@ -3,14 +3,14 @@
  * Type-safe, domain-scoped event system with wildcard support.
  */
 
-export type EventHandler<T = any> = (payload: T) => void;
+export type EventHandler<T = unknown> = (payload: T) => void;
 
 export class EventEmitter {
-    private handlers = new Map<string, Set<EventHandler>>();
-    private anyHandlers = new Set<EventHandler<{ type: string; payload: any }>>();
+    private handlers = new Map<string, Set<EventHandler<unknown>>>();
+    private anyHandlers = new Set<EventHandler<{ type: string; payload: unknown }>>();
 
     /** Subscribe to a specific event type, supports wildcards like 'state:*' or '*' */
-    on<T = any>(event: string, handler: EventHandler<T>): () => void {
+    on<T = unknown>(event: string, handler: EventHandler<T>): () => void {
         if (event === '*') {
             return this.onAny((evt) => handler(evt.payload as T));
         }
@@ -18,12 +18,15 @@ export class EventEmitter {
         if (!this.handlers.has(event)) {
             this.handlers.set(event, new Set());
         }
-        this.handlers.get(event)!.add(handler);
-        return () => this.off(event, handler);
+        
+        // Safety: We use unknown internally to store diverse handlers
+        const internalHandler = handler as unknown as EventHandler<unknown>;
+        this.handlers.get(event)?.add(internalHandler);
+        return () => this.off(event, internalHandler);
     }
 
     /** Subscribe once — auto-unsubscribes after first fire */
-    once<T = any>(event: string, handler: EventHandler<T>): () => void {
+    once<T = unknown>(event: string, handler: EventHandler<T>): () => void {
         const wrapper: EventHandler<T> = (payload) => {
             unsub();
             handler(payload);
@@ -33,23 +36,23 @@ export class EventEmitter {
     }
 
     /** Unsubscribe from a specific event */
-    off(event: string, handler: EventHandler): void {
+    off(event: string, handler: EventHandler<unknown>): void {
         this.handlers.get(event)?.delete(handler);
     }
 
     /** Subscribe to ALL events (useful for logging / debugging) */
-    onAny(handler: EventHandler<{ type: string; payload: any }>): () => void {
+    onAny(handler: EventHandler<{ type: string; payload: unknown }>): () => void {
         this.anyHandlers.add(handler);
         return () => this.anyHandlers.delete(handler);
     }
 
     /** Unsubscribe from all events */
-    offAny(handler: EventHandler<{ type: string; payload: any }>): void {
+    offAny(handler: EventHandler<{ type: string; payload: unknown }>): void {
         this.anyHandlers.delete(handler);
     }
 
     /** Emit an event to all subscribers */
-    emit(event: string, payload?: any): void {
+    emit(event: string, payload?: unknown): void {
         // 1. Exact Match
         this.handlers.get(event)?.forEach(h => this.safeInvoke(h, payload));
 
@@ -73,11 +76,12 @@ export class EventEmitter {
         this.anyHandlers.forEach(h => this.safeInvoke(h, { type: event, payload }));
     }
 
-    private safeInvoke(handler: EventHandler, payload: any): void {
+    private safeInvoke(handler: EventHandler<unknown>, payload: unknown): void {
         try {
             handler(payload);
-        } catch (err) {
-            console.error('EventEmitter handler error:', err);
+        } catch (err: unknown) {
+            const error = err as Error;
+            console.error('EventEmitter handler error:', error.message);
         }
     }
 

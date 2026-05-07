@@ -5,6 +5,8 @@ import { AeroComponent } from '../components/Aero.js';
 import { VectorMath } from '../math/VectorMath.js';
 import { Physics } from '../PhysicsConstants.js';
 import { LogisticsComponent, TurnaroundState, FacilityComponent } from '../components/Logistics.js';
+import { EntityProfile } from '../core/Types.js';
+import { ProfileRegistry } from '../core/ProfileRegistry.js';
 
 /**
  * PhysicsSystem: The Final Integrator.
@@ -122,7 +124,8 @@ export class PhysicsSystem implements ISystem {
                 // Submarines and Torpedoes are allowed below 0.
                 // Air units (Aircraft, Helos, Weapons) should NOT be clamped, allowing them to pass 
                 // through the floor and be destroyed by the CollisionSystem.
-                const profile = world.profileRegistry.get(entity.profileId);
+                const profileRegistry = world.profileRegistry as ProfileRegistry;
+                const profile = profileRegistry.get(entity.profileId) as EntityProfile | undefined;
                 const isSurfaceEntity = profile?.type === 'Ship' || profile?.type === 'Facility';
                 const isSubsurfaceCapable = profile?.type === 'Submarine' || entity.id.includes('torpedo');
 

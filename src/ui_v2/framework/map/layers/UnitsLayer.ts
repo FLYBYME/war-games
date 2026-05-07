@@ -1,7 +1,8 @@
 import { Container, Graphics, Rectangle } from 'pixi.js';
 import { MapLayer } from '../MapLayer';
-import { ViewState, UIStore } from '../../UIStore';
-import { SymbologyService, Affiliation, Domain } from '../SymbologyService';
+import { ViewState, UIStore, ViewUnit } from '../../UIStore';
+import { SymbologyService, Domain } from '../SymbologyService';
+import { latLonToWorld } from '../CoordUtils';
 
 export class UnitsLayer implements MapLayer {
     readonly id = 'units';
@@ -37,11 +38,15 @@ export class UnitsLayer implements MapLayer {
             const isSelected = UIStore.selectedEntityId.get() === unit.id;
             
             // 1. Render WEZ (Weapon Engagement Zone) if enabled
-            if (showWEZ && (unit as any).coveragePolygons?.wez) {
-                const wez = (unit as any).coveragePolygons.wez;
+            if (showWEZ && unit.coveragePolygons?.wez) {
+                const wez = unit.coveragePolygons.wez;
                 if (wez.length > 0) {
+                    const origin = state.origin as { lat: number; lon: number };
                     const wezG = new Graphics();
-                    wezG.poly(wez.map((p: any) => ({ x: p.x - unit.pos.x, y: -p.y + unit.pos.y })));
+                    wezG.poly(wez.map((p) => {
+                        const world = latLonToWorld(p.lat, p.lon, origin);
+                        return { x: world.x - unit.pos.x, y: -world.y + unit.pos.y };
+                    }));
                     wezG.fill({ color: 0xff0000, alpha: 0.1 });
                     wezG.stroke({ width: 1 / viewScale, color: 0xff0000, alpha: 0.3 });
                     c.addChild(wezG);
@@ -129,7 +134,7 @@ export class UnitsLayer implements MapLayer {
 
     private tooltipEl: HTMLElement | null = null;
 
-    private showTooltip(unit: any, x: number, y: number) {
+    private showTooltip(unit: ViewUnit, x: number, y: number) {
         if (!this.tooltipEl) {
             this.tooltipEl = document.createElement('div');
             this.tooltipEl.className = 'map-tooltip';

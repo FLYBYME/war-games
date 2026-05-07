@@ -43,5 +43,5 @@ export interface TacticalEvent {
     message: string;
     entityId?: string;
     pos?: Vector3;
-    payload?: Record<string, any>;
+    payload?: Record<string, unknown>;
 }

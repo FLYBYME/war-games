@@ -1,6 +1,7 @@
 import { ISystem, IWorldView, SystemPhase } from '../core/ISystem.js';
 import { Command } from '../core/Command.js';
-import { MissionComponent, MissionType, MissionStatus, isMission } from '../components/Missions.js';
+import { MissionType } from '../core/Types.js';
+import { MissionComponent, MissionStatus, isMission } from '../components/Missions.js';
 import { DesiredState } from './ministries/IMinistry.js';
 import { TaskType, TaskStatus, isNavigateTask } from '../core/TaskGraph.js';
 import { MinistryOfPatrol } from './ministries/MinistryOfPatrol.js';

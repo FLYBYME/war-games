@@ -1,8 +1,8 @@
 import { ISystem, IWorldView, SystemPhase } from '../core/ISystem.js';
 import { Command } from '../core/Command.js';
-import { ScenarioEvent, ScenarioAssertion } from '../core/ScenarioLoader.js';
+import { ScenarioEvent, ScenarioAssertion, ScenarioTrigger } from '../core/Types.js';
 import { CommandFactory } from '../core/CommandFactory.js';
-import { Side, Vector3 } from '../core/Types.js';
+import { Side, SimulationEvent, EngineCommandPayload } from '../core/Types.js';
 import { KinematicsComponent, TransformComponent } from '../components/Physics.js';
 import { FuelComponent } from '../components/Propulsion.js';
 import { HealthComponent } from '../components/Health.js';
@@ -24,23 +24,19 @@ export class ScenarioAutomationSystem implements ISystem {
     private occurredEventTypes = new Set<string>();
     private assertionResults: { type: string, tick: number, success: boolean, message: string }[] = [];
 
-    private worldView?: IWorldView;
-
     public setup(events: ScenarioEvent[], assertions: ScenarioAssertion[], world: IWorldView) {
-        this.worldView = world;
-        
         // Normalize events: if tick is present but no trigger, create a tick trigger
         this.events = events.map(e => {
             if (e.tick !== undefined && !e.trigger) {
-                return { ...e, trigger: { type: 'tick', tick: e.tick } };
+                return { ...e, trigger: { type: 'tick', tick: e.tick } } as ScenarioEvent;
             }
             return e;
         });
 
         this.assertions = assertions.map(a => {
-            const assertion = a as any;
+            const assertion = a as unknown as { tick?: number, trigger?: ScenarioTrigger };
             if (assertion.tick !== undefined && !assertion.trigger) {
-                return { ...a, trigger: { type: 'tick', tick: assertion.tick } } as any;
+                return { ...a, trigger: { type: 'tick', tick: assertion.tick } } as unknown as ScenarioAssertion;
             }
             return a;
         });
@@ -50,9 +46,9 @@ export class ScenarioAutomationSystem implements ISystem {
         this.assertionResults = [];
 
         // Subscribe to all events for tracking and triggers
-        world.events.onAny((evt: any) => {
+        world.events.onAny((evt: SimulationEvent) => {
             if (evt.type) this.occurredEventTypes.add(evt.type);
-            if (evt.type === 'TacticalEvent') this.handleTacticalEvent(evt);
+            this.handleTacticalEvent(evt);
         });
         
         logger.info(`Automation Setup: ${this.events.length} events, ${this.assertions.length} assertions`);
@@ -101,14 +97,16 @@ export class ScenarioAutomationSystem implements ISystem {
         while (this.triggeredEvents.length > 0) {
             const event = this.triggeredEvents.shift()!;
             try {
-                const side = (event.command as any).side || Side.Blue;
-                const cmd = CommandFactory.create(event.command, side);
+                const cmdPayload = event.command as EngineCommandPayload & { side?: Side };
+                const side = cmdPayload.side || Side.Blue;
+                const cmd = CommandFactory.create(cmdPayload, side);
                 if (cmd) {
                     commands.push(cmd);
                     logger.info(`Scenario Automation: Triggered command ${event.command.type} at tick ${world.currentTick}`);
                 }
-            } catch (err) {
-                logger.error(`Scenario Automation: Failed to trigger command`, { error: err });
+            } catch (err: unknown) {
+                const error = err as Error;
+                logger.error(`Scenario Automation: Failed to trigger command`, { error: error.message });
             }
         }
 
@@ -116,7 +114,7 @@ export class ScenarioAutomationSystem implements ISystem {
         const remainingAssertions: ScenarioAssertion[] = [];
         for (const assertion of this.assertions) {
             let evaluate = false;
-            const trigger = (assertion as any).trigger;
+            const trigger = (assertion as unknown as { trigger?: ScenarioTrigger }).trigger;
 
             if (!trigger) {
                 // If no trigger, it might be a cumulative assertion (e.g. event_occurred byTick)
@@ -132,7 +130,7 @@ export class ScenarioAutomationSystem implements ISystem {
                 }
             }
 
-            if (!evaluate) {
+            if (!evaluate && trigger) {
                 if (trigger.type === 'tick') {
                     if (trigger.tick <= world.currentTick) evaluate = true;
                 }
@@ -164,17 +162,19 @@ export class ScenarioAutomationSystem implements ISystem {
         return commands;
     }
 
-    private handleTacticalEvent(evt: any) {
-        const data = evt.data; // The TacticalEvent object
+    private handleTacticalEvent(evt: SimulationEvent) {
+        const data = evt.data as { type?: string, category?: string } | undefined;
         
-        if (data.type) this.occurredEventTypes.add(data.type);
-        if (data.category) this.occurredEventTypes.add(data.category);
+        if (data) {
+            if (data.type) this.occurredEventTypes.add(data.type);
+            if (data.category) this.occurredEventTypes.add(data.category);
+        }
 
         const remainingEvents: ScenarioEvent[] = [];
 
         for (const event of this.events) {
             const trigger = event.trigger;
-            if (trigger?.type === 'tactical_event') {
+            if (trigger?.type === 'tactical_event' && data) {
                 if (data.type === trigger.eventType || data.category === trigger.eventType) {
                     // TODO: Apply filters
                     this.triggeredEvents.push(event);
@@ -188,7 +188,9 @@ export class ScenarioAutomationSystem implements ISystem {
         this.events = remainingEvents;
     }
 
-    private evaluateCondition(world: IWorldView, trigger: any): boolean {
+    private evaluateCondition(world: IWorldView, trigger: ScenarioTrigger): boolean {
+        if (trigger.type !== 'condition') return false;
+        
         const entity = world.getEntity(trigger.entityId);
         if (!entity) return false;
 

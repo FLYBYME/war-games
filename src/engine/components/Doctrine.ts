@@ -1,5 +1,5 @@
 import { z } from 'zod';
-import { IComponent, IdentificationStatus } from '../core/Types.js';
+import { IComponent } from '../core/Types.js';
 
 export enum ROE {
     FREE = 'Free',     // Fire at any hostile

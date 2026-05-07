@@ -9,13 +9,13 @@ export interface CommandHandler<T extends Command> {
  * CommandDispatcher: Decouples command execution logic from the World.
  */
 export class CommandDispatcher {
-    private handlers = new Map<string, CommandHandler<any>>();
+    private handlers = new Map<string, CommandHandler<Command>>();
 
     /**
      * Register a handler for a specific command class.
      */
-    public register<T extends Command>(commandClass: new (...args: any[]) => T, handler: CommandHandler<T>): void {
-        this.handlers.set(commandClass.name, handler);
+    public register<T extends Command>(commandClass: new (...args: unknown[]) => T, handler: CommandHandler<T>): void {
+        this.handlers.set(commandClass.name, handler as unknown as CommandHandler<Command>);
     }
 
     /**

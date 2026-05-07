@@ -1,5 +1,5 @@
 import { World } from '../../engine/core/World.js';
-import { Side } from '../../engine/core/Types.js';
+import { Side, ViewStateSnapshot, SimulationEvent, MatchInfo, EntityProfile, WeaponProfile } from '../../engine/core/Types.js';
 import { HealthComponent } from '../../engine/components/Health.js';
 import { ProfileRegistry } from '../../engine/core/ProfileRegistry.js';
 import { EntityManager } from '../../engine/core/EntityManager.js';
@@ -51,8 +51,8 @@ export class MatchService {
     private readonly mapData = new MapDataService();
     public readonly terrainService: TerrainService;
     public globalWorld: World;
-    private broadcastCallback?: (matchId: string, snapshot: any) => void;
-    private eventCallback?: (matchId: string, event: any) => void;
+    private broadcastCallback?: (matchId: string, snapshot: ViewStateSnapshot) => void;
+    private eventCallback?: (matchId: string, event: SimulationEvent) => void;
     private onMatchTimeChanged?: (matchId: string, rate: number, paused: boolean) => void;
     private onMatchCreated?: (matchId: string) => void;
     private onMatchDeleted?: (matchId: string) => void;
@@ -72,7 +72,7 @@ export class MatchService {
 
         // 1. Load Type-Safe Demo Profiles
         for (const [id, profile] of Object.entries(demoData.profiles)) {
-            this.profiles.register(id, profile);
+            this.profiles.register(id, profile as EntityProfile);
         }
 
         this.mapData.loadAll();
@@ -108,14 +108,14 @@ export class MatchService {
     }
 
 
-    public setBroadcastCallback(cb: (matchId: string, snapshot: any) => void) {
+    public setBroadcastCallback(cb: (matchId: string, snapshot: ViewStateSnapshot) => void) {
         this.broadcastCallback = cb;
     }
 
     public setOnMatchCreated(cb: (matchId: string) => void) { this.onMatchCreated = cb; }
     public setOnMatchDeleted(cb: (matchId: string) => void) { this.onMatchDeleted = cb; }
 
-    public setEventCallback(cb: (matchId: string, event: any) => void) {
+    public setEventCallback(cb: (matchId: string, event: SimulationEvent) => void) {
         this.eventCallback = cb;
     }
 
@@ -126,36 +126,32 @@ export class MatchService {
         this.logger.info('Global world replaced and synchronized in MatchService');
     }
 
-    public registerProfile(id: string, profile: any) {
+    public registerMatch(matchId: string, world: World) {
+        this.matches.set(matchId, world);
+        this.setupEventBus(matchId, world);
+        if (this.onMatchCreated) this.onMatchCreated(matchId);
+    }
+
+    public registerProfile(id: string, profile: EntityProfile) {
         this.profiles.register(id, profile);
         // Also update global world for immediate effect if needed
         this.globalWorld.profileRegistry.register(id, profile);
     }
 
     public setupEventBus(matchId: string, world: World): void {
-        console.log(`MatchService: setupEventBus for match ${matchId}`);
-        world.events.on('TacticalEvent', (event: any) => {
-            if (this.eventCallback) this.eventCallback(matchId, { type: event.data.type || 'tactical', ...event.data });
+        world.events.onAny((event: SimulationEvent) => {
+            if (this.eventCallback) this.eventCallback(matchId, event);
         });
 
-        const relayEvents = ['WeaponFired', 'Impact', 'EntityDestroyed', 'Detonation', 'BoardingStarted', 'EntitySideChanged'];
-        relayEvents.forEach(type => {
-            world.events.on(type, (event: any) => {
-                if (this.eventCallback) this.eventCallback(matchId, { type, ...event });
+        const vss = world.getSystem(ViewStateSystem);
+        if (vss) {
+            world.events.on('ViewStateUpdated', (evt: unknown) => {
+                if (this.broadcastCallback) {
+                    const vsEvt = evt as { data: ViewStateSnapshot };
+                    this.broadcastCallback(matchId, vsEvt.data);
+                }
             });
-        });
-
-        world.events.on('ViewStateUpdated', (evt: any) => {
-            if (this.broadcastCallback) {
-                this.broadcastCallback(matchId, evt.data);
-            } else {
-                console.warn(`MatchService: No broadcast callback set for match ${matchId}`);
-            }
-        });
-
-        world.events.on('metrics:performance', (data: any) => {
-            if (this.eventCallback) this.eventCallback(matchId, { type: 'PERFORMANCE_METRICS', ...data });
-        });
+        }
     }
 
     public initializeWorldSystems(world: World): void {
@@ -188,8 +184,6 @@ export class MatchService {
         world.addSystem(new ScenarioAutomationSystem());
         world.addSystem(new CollisionSystem(world.grid));
         world.addSystem(new ViewStateSystem(projection, terrain, this.weaponProfiles, this.mapData));
-
-        console.log("Initialized all systems in MatchService");
     }
 
     private registerWeaponProfiles(): void {
@@ -230,7 +224,7 @@ export class MatchService {
         return this.matches.get(matchId);
     }
 
-    public listMatches(): any[] {
+    public listMatches(): MatchInfo[] {
         return Array.from(this.matches.entries()).map(([id, world]) => ({
             id,
             tick: world.currentTick,
@@ -281,24 +275,24 @@ export class MatchService {
         return { over: false };
     }
 
-    public getRecentEvents(matchId: string, count: number = 50): any[] {
+    public getRecentEvents(matchId: string, count: number = 50): SimulationEvent[] {
         const world = this.getMatch(matchId);
         if (!world) return [];
         const tel = world.getSystem(TelemetrySystem);
-        return tel ? tel.getRecentEvents(count) : [];
+        return (tel ? tel.getRecentEvents(count) : []) as SimulationEvent[];
     }
 
-    public getProfile(id: string) {
+    public getProfile(id: string): EntityProfile | undefined {
         return this.profiles.get(id);
     }
 
-    public getStats(): any {
+    public getStats(): { totalMatches: number; totalEntities: number; profilesCount: number; weaponProfilesCount: number } {
         const matches = Array.from(this.matches.values());
         return {
             totalMatches: matches.length,
             totalEntities: matches.reduce((acc, world) => acc + Array.from(world.getEntities()).length, 0),
-            profilesCount: (this.profiles as any).profiles.size,
-            weaponProfilesCount: (this.weaponProfiles as any).profiles.size
+            profilesCount: this.profiles.list().length,
+            weaponProfilesCount: this.weaponProfiles.list().length
         };
     }
 
@@ -307,11 +301,18 @@ export class MatchService {
         if (this.onMatchDeleted) this.onMatchDeleted(matchId);
     }
 
+    public async getTelemetry(matchId: string): Promise<Record<string, unknown[]>> {
+        const world = this.getMatch(matchId);
+        if (!world) return {};
+        const tel = world.getSystem(TelemetrySystem);
+        return tel ? { events: tel.getRecentEvents(1000) } : {};
+    }
+
     /**
      * tickAll: Global heartbeat for all active matches.
      */
     public async tickAll(dt: number): Promise<void> {
-        const tickPromises = [];
+        const tickPromises: Promise<void>[] = [];
         for (const world of this.matches.values()) {
             tickPromises.push(world.tick(dt));
         }
@@ -321,17 +322,17 @@ export class MatchService {
     /**
      * getInitialState: Generates a hydration snapshot for a new session.
      */
-    public async getInitialState(matchId: string, side: Side): Promise<any> {
+    public async getInitialState(matchId: string, side: Side): Promise<ViewStateSnapshot | null> {
         const world = this.getMatch(matchId);
         if (!world) return null;
-        const vss = world.getSystem<any>('ViewStateSystem');
+        const vss = world.getSystem(ViewStateSystem);
         return vss ? await vss.generateSnapshot(world, side) : null;
     }
 
-    public getProfileDatabase(): any {
+    public getProfileDatabase(): { units: [string, EntityProfile][], weapons: [string, WeaponProfile][] } {
         return {
-            units: Array.from((this.profiles as any).profiles.entries()),
-            weapons: Array.from((this.weaponProfiles as any).profiles.entries())
+            units: Array.from(this.profiles.getInternalMap().entries()),
+            weapons: Array.from(this.weaponProfiles.getInternalMap().entries())
         };
     }
 
@@ -345,10 +346,11 @@ export class MatchService {
                     const filePath = this.storage.join(unitsDir, file);
                     try {
                         const content = await this.storage.readFile(filePath, 'utf8') as string;
-                        this.profiles.register(id, JSON.parse(content));
+                        this.profiles.register(id, JSON.parse(content) as EntityProfile);
                         this.logger.info(`Registered Unit Profile: ${id}`);
-                    } catch (err) {
-                        this.logger.error(`Failed to register unit profile: ${id}`, { error: err });
+                    } catch (err: unknown) {
+                        const error = err as Error;
+                        this.logger.error(`Failed to register unit profile: ${id}`, { error: error.message });
                     }
                 }
             }

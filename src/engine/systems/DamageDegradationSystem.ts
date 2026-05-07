@@ -1,6 +1,6 @@
 import { ISystem, IWorldView, SystemPhase } from '../core/ISystem.js';
 import { Command, ApplyDamageCommand, ApplySubsystemDamageCommand } from '../core/Command.js';
-import { HealthComponent, SubsystemType } from '../components/Health.js';
+import { HealthComponent } from '../components/Health.js';
 
 /**
  * DamageDegradationSystem: Processes over-time effects like fires and flooding.

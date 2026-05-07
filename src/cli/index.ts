@@ -9,7 +9,7 @@ import { SimControlCommand } from './commands/SimControlCommand.js';
 import { ListMatchesCommand } from './commands/ListMatchesCommand.js';
 import { ServerMetricsCommand } from './commands/ServerMetricsCommand.js';
 import { DuelCommand } from './commands/DuelCommand.js';
-import { ViewBugsCommand } from './commands/ViewBugsCommand.js';
+import { BugsCommand } from './commands/BugsCommand.js';
 import { DebugAgentCommand } from './commands/DebugAgentCommand.js';
 import { C } from './core/Utils.js';
 
@@ -26,7 +26,7 @@ registry.register(new SimControlCommand());
 registry.register(new ListMatchesCommand());
 registry.register(new ServerMetricsCommand());
 registry.register(new DuelCommand());
-registry.register(new ViewBugsCommand());
+registry.register(new BugsCommand());
 registry.register(new DebugAgentCommand());
 
 program
@@ -60,10 +60,11 @@ program.on('command:*', () => {
 async function main() {
     try {
         await program.parseAsync(process.argv);
-    } catch (err: any) {
-        console.error(`\n${C.red}${C.bold}✖ Critical Failure:${C.reset} ${err.message}`);
+    } catch (err: unknown) {
+        const error = err as Error;
+        console.error(`\n${C.red}${C.bold}✖ Critical Failure:${C.reset} ${error.message}`);
         process.exit(1);
     }
 }
 
-main();
+void main();

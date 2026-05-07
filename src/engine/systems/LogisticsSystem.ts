@@ -1,9 +1,10 @@
 import { ISystem, IWorldView, SystemPhase } from '../core/ISystem.js';
-import { Command, UpdateLogisticsStateCommand, ConsumeFuelCommand } from '../core/Command.js';
+import { Command, UpdateLogisticsStateCommand } from '../core/Command.js';
 import { LogisticsComponent, FacilityComponent, TurnaroundState } from '../components/Logistics.js';
 import { FuelComponent } from '../components/Propulsion.js';
 import { CombatComponent } from '../components/Combat.js';
 import { logger } from '../core/Logger.js';
+import { World } from '../core/World.js';
 
 /**
  * LogisticsSystem: Manages base operations, refueling, and rearming.
@@ -15,6 +16,7 @@ export class LogisticsSystem implements ISystem {
 
     public async process(world: IWorldView, _dt: number): Promise<Command[]> {
         const commands: Command[] = [];
+        const fullWorld = world as World;
 
         for (const entity of world.getEntities()) {
             const log = entity.getComponent(LogisticsComponent);
@@ -29,7 +31,7 @@ export class LogisticsSystem implements ISystem {
             }
 
             const elapsed = world.currentTick - log.stateStartTick;
-            const sideLogistics = (world as any).sideLogistics?.get(entity.side);
+            const sideLogistics = fullWorld.sideLogistics?.get(entity.side);
 
             // Periodically replenish base from side stockpile
             if (world.currentTick % 600 === 0 && sideLogistics) {
@@ -52,7 +54,7 @@ export class LogisticsSystem implements ISystem {
                     }
                     break;
 
-                case TurnaroundState.Refueling:
+                case TurnaroundState.Refueling: {
                     const fuel = entity.getComponent(FuelComponent);
                     if (fuel && fuel.currentKg < fuel.maxKg) {
                         const transferRate = 50; // kg per tick
@@ -70,8 +72,9 @@ export class LogisticsSystem implements ISystem {
                         commands.push(new UpdateLogisticsStateCommand(entity.id, TurnaroundState.Rearming, 600));
                     }
                     break;
+                }
 
-                case TurnaroundState.Rearming:
+                case TurnaroundState.Rearming: {
                     const combat = entity.getComponent(CombatComponent);
                     if (combat) {
                         // For each magazine, try to pull from facility ammo
@@ -93,6 +96,7 @@ export class LogisticsSystem implements ISystem {
                         commands.push(new UpdateLogisticsStateCommand(entity.id, TurnaroundState.PreFlight, 200));
                     }
                     break;
+                }
 
                 case TurnaroundState.PreFlight:
                     if (elapsed >= log.stateDurationTicks) {

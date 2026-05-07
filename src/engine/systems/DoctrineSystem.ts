@@ -1,6 +1,6 @@
 import { ISystem, IWorldView, SystemPhase } from '../core/ISystem.js';
-import { Command, SetROECommand } from '../core/Command.js';
-import { DoctrineComponent, EMCONState, ROE } from '../components/Doctrine.js';
+import { Command } from '../core/Command.js';
+import { DoctrineComponent, EMCONState } from '../components/Doctrine.js';
 import { SensorComponent } from '../components/Sensors.js';
 import { SensorType } from '../core/Types.js';
 

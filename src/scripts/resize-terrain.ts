@@ -1,6 +1,5 @@
 import sharp from 'sharp';
 import fs from 'fs';
-import path from 'path';
 
 async function resize() {
     const input = 'src/ui/public/terrain.png';

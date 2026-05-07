@@ -10,8 +10,8 @@ import {
     AssignWeaponCommand,
     SetIntentCommand
 } from '../Command.js';
-import { DoctrineComponent, ROE, EMCONState } from '../../components/Doctrine.js';
-import { MissionComponent, MissionType } from '../../components/Missions.js';
+import { DoctrineComponent, ROE, EMCONState, WRARule } from '../../components/Doctrine.js';
+import { MissionComponent, MissionType, MissionStatus } from '../../components/Missions.js';
 import { GroupComponent, GroupFormation } from '../../components/Group.js';
 import { LogisticsComponent } from '../../components/Logistics.js';
 import { CombatComponent } from '../../components/Combat.js';
@@ -38,7 +38,7 @@ export class SetIntentHandler implements CommandHandler<SetIntentCommand> {
                             if (intent.roe) doctrine.roe = intent.roe as ROE;
                             if (intent.emcon) doctrine.emcon = intent.emcon as EMCONState;
                             if (intent.wra) {
-                                doctrine.wraRules = intent.wra.map(r => ({
+                                doctrine.wraRules = intent.wra.map((r): WRARule => ({
                                     ...r,
                                     maxRangePct: r.maxRangePct ?? 1.0,
                                     quantity: r.quantity ?? 1
@@ -54,7 +54,7 @@ export class SetIntentHandler implements CommandHandler<SetIntentCommand> {
                                 if (intent.roe) doctrine.roe = intent.roe as ROE;
                                 if (intent.emcon) doctrine.emcon = intent.emcon as EMCONState;
                                 if (intent.wra) {
-                                    doctrine.wraRules = intent.wra.map(r => ({
+                                    doctrine.wraRules = intent.wra.map((r): WRARule => ({
                                         ...r,
                                         maxRangePct: r.maxRangePct ?? 1.0,
                                         quantity: r.quantity ?? 1
@@ -173,7 +173,7 @@ export class UpdateWRARulesHandler implements CommandHandler<UpdateWRARulesComma
         const entity = world.getEntity(cmd.entityId);
         const doctrine = entity?.getComponent(DoctrineComponent);
         if (doctrine) {
-            doctrine.wraRules = cmd.rules;
+            doctrine.wraRules = cmd.rules as WRARule[];
         }
     }
 }
@@ -197,7 +197,7 @@ export class SetMissionHandler implements CommandHandler<SetMissionCommand> {
         if (entity) {
             entity.removeComponent(MissionComponent);
             const newMission = new MissionComponent(cmd.missionType as MissionType, cmd.params);
-            newMission.status = 'Pending' as any;
+            newMission.status = MissionStatus.Pending;
             entity.addComponent(newMission);
         }
     }

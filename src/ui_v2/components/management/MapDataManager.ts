@@ -1,12 +1,13 @@
 import { Component } from '../../framework/Component';
 import { UIStore } from '../../framework/UIStore';
 import { logger } from '../../framework/Logger';
+import { MapRegion } from '../../../sdk/schemas';
 
 /**
  * MapDataManager: Enhanced UI for managing terrain data.
  */
 export class MapDataManager extends Component {
-    private refreshInterval: any;
+    private refreshInterval: ReturnType<typeof setInterval> | undefined;
 
     constructor() {
         super('div', 'map-data-manager', 'map-data-manager');
@@ -263,10 +264,11 @@ export class MapDataManager extends Component {
 
             // Update Regions
             const regionsList = this.element.querySelector('#regions-list')!;
-            if (manifest.regions.length === 0) {
+            const regions = manifest.regions as MapRegion[];
+            if (regions.length === 0) {
                 regionsList.innerHTML = '<div class="empty-state">No regions found</div>';
             } else {
-                regionsList.innerHTML = manifest.regions.map(r => `
+                regionsList.innerHTML = regions.map(r => `
                     <div class="region-item">
                         <div>
                             <div class="region-name">${r.name}</div>

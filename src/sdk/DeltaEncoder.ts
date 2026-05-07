@@ -1,4 +1,22 @@
 import { ViewStatePayload as ViewState } from './schemas/index.js';
+import { Vector3, Side } from './schemas/domain.js';
+
+interface SessionStateEntry {
+    pos: Vector3;
+    rot?: number;
+    hp?: number;
+    isDestroyed?: boolean;
+    desiredSpeedKts?: number;
+    desiredAltitudeM?: number;
+    profileId?: string;
+    sensorMask?: number;
+    vel?: Vector3;
+    side?: Side;
+    fuelPct?: number;
+    identification?: string;
+    classification?: string;
+    cep?: number;
+}
 
 /**
  * DeltaEncoder: Compresses ViewStateSnapshots into a compact binary format.
@@ -7,7 +25,7 @@ import { ViewStatePayload as ViewState } from './schemas/index.js';
  */
 export class DeltaEncoder {
     // Stores the last state sent to each session to calculate deltas
-    private lastStates = new Map<string, Map<string, any>>();
+    private lastStates = new Map<string, Map<string, SessionStateEntry>>();
 
     public encode(snapshot: ViewState, sessionId: string): Uint8Array {
         const units = snapshot.units;
@@ -15,7 +33,7 @@ export class DeltaEncoder {
         
         let sessionState = this.lastStates.get(sessionId);
         if (!sessionState) {
-            sessionState = new Map();
+            sessionState = new Map<string, SessionStateEntry>();
             this.lastStates.set(sessionId, sessionState);
         }
 
@@ -27,7 +45,7 @@ export class DeltaEncoder {
             esmBearings: snapshot.esmBearings,
             weaponBindings: snapshot.weaponBindings,
             datalinkGraph: snapshot.datalinkGraph,
-            unitExtras: snapshot.units.reduce((acc, u) => {
+            unitExtras: snapshot.units.reduce((acc: Record<string, unknown>, u) => {
                 acc[u.id] = {
                     sensors: u.sensors,
                     mounts: u.mounts,
@@ -37,7 +55,7 @@ export class DeltaEncoder {
                     doctrine: u.doctrine
                 };
                 return acc;
-            }, {} as any),
+            }, {}),
             losses: snapshot.losses,
             weather: snapshot.weather
         };
@@ -67,13 +85,13 @@ export class DeltaEncoder {
             let mask = 0;
             const hasPos = u.pos && typeof u.pos.x === 'number';
             const posChanged = hasPos && (!last || Math.abs(u.pos.x - last.pos.x) > 0.1 || Math.abs(u.pos.y - last.pos.y) > 0.1 || Math.abs(u.pos.z - last.pos.z) > 0.1);
-            const rotChanged = !last || Math.abs(u.rot - last.rot) > 1;
+            const rotChanged = !last || Math.abs(u.rot - (last.rot ?? 0)) > 1;
             const statusChanged = !last || u.hp !== last.hp || u.isDestroyed !== last.isDestroyed;
             const navChanged = !last || u.desiredSpeedKts !== last.desiredSpeedKts || u.desiredAltitudeM !== last.desiredAltitudeM;
             const profileChanged = !last || u.profileId !== last.profileId || u.sensorMask !== last.sensorMask;
             const velChanged = !last || (u.vel && (!last.vel || u.vel.x !== last.vel.x || u.vel.y !== last.vel.y || u.vel.z !== last.vel.z));
             const sideChanged = !last || u.side !== last.side;
-            const fuelChanged = !last || Math.abs(u.fuelPct - last.fuelPct) > 0.01;
+            const fuelChanged = !last || Math.abs(u.fuelPct - (last.fuelPct ?? 1.0)) > 0.01;
 
             if (posChanged) mask |= (1 << 0);
             if (rotChanged) mask |= (1 << 1);
@@ -153,7 +171,7 @@ export class DeltaEncoder {
             const posChanged = hasPos && (!last || Math.abs(t.pos.x - last.pos.x) > 1.0 || Math.abs(t.pos.y - last.pos.y) > 1.0);
             const velChanged = !last || (t.vel && (!last.vel || Math.abs(t.vel.x - last.vel.x) > 0.1 || Math.abs(t.vel.y - last.vel.y) > 0.1));
             const typeChanged = !last || t.identification !== last.identification || t.classification !== last.classification;
-            const cepChanged = !last || Math.abs(t.cep - last.cep) > 1.0;
+            const cepChanged = !last || Math.abs((t.cep ?? 0) - (last.cep ?? 0)) > 1.0;
 
             if (posChanged) mask |= (1 << 0);
             if (velChanged) mask |= (1 << 1);
@@ -208,12 +226,12 @@ export class DeltaEncoder {
         this.lastStates.clear();
     }
 
-    private mapSide(side: string): number {
+    private mapSide(side: Side): number {
         switch (side) {
-            case 'Blue': return 0;
-            case 'Red': return 1;
-            case 'Neutral': return 2;
-            case 'Green': return 3;
+            case Side.Blue: return 0;
+            case Side.Red: return 1;
+            case Side.Neutral: return 2;
+            case Side.Green: return 3;
             default: return 255;
         }
     }

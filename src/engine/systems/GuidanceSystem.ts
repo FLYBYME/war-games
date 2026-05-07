@@ -3,6 +3,7 @@ import { Command } from '../core/Command.js';
 import { GuidanceComponent, GuidanceType } from '../components/Guidance.js';
 import { SensorComponent, DetectionComponent } from '../components/Sensors.js';
 import { SensorMode } from '../core/Types.js';
+import { Entity } from '../core/Entity.js';
 
 /**
  * GuidanceSystem: Manages weapon lock-on and illumination requirements.
@@ -29,7 +30,7 @@ export class GuidanceSystem implements ISystem {
                     hasLock = this.checkARHLock(entity);
                     break;
                 case GuidanceType.IR:
-                    hasLock = this.checkIRLock(world, entity, guidance);
+                    hasLock = this.checkIRLock(entity, guidance);
                     break;
                 default:
                     hasLock = true; // INS/GPS/Command always "working" for now
@@ -70,7 +71,7 @@ export class GuidanceSystem implements ISystem {
         return hasTrack;
     }
 
-    private checkARHLock(entity: any): boolean {
+    private checkARHLock(entity: Entity): boolean {
         // Active Radar Homing: Missile has its own sensor
         const sensor = entity.getComponent(SensorComponent);
         const detection = entity.getComponent(DetectionComponent);
@@ -81,7 +82,7 @@ export class GuidanceSystem implements ISystem {
         return sensor.isActive && detection.detectedEntityIds.has(guidance.targetId);
     }
 
-    private checkIRLock(world: IWorldView, entity: any, guidance: GuidanceComponent): boolean {
+    private checkIRLock(entity: Entity, guidance: GuidanceComponent): boolean {
         // Simplified IR: Requires LOS and heat signature (IRST/Visual detection)
         const detection = entity.getComponent(DetectionComponent);
         return detection?.detectedEntityIds.has(guidance.targetId) || false;
