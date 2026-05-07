@@ -1,5 +1,5 @@
 import { test, expect } from '@playwright/test';
-import { waitForSDK, navigateTo } from './test-utils';
+import { waitForSDK, navigateTo, MockWindow } from './test-utils';
 
 test.describe('V2 UI Sanity', () => {
     
@@ -37,7 +37,7 @@ test.describe('V2 UI Sanity', () => {
         await waitForSDK(page);
         
         // Check if the UIStore shows the server's pause state
-        const isPaused = await page.evaluate(() => (window as unknown as { [key: string]: unknown }).UIStore.isPaused.get());
+        const isPaused = await page.evaluate(() => (window as unknown as MockWindow).UIStore.isPaused.get());
         expect(typeof isPaused).toBe('boolean');
     });
 });

@@ -96,9 +96,9 @@ export class FormationEditor extends Component {
         controls.appendChild(saveBtn);
         this.element.appendChild(controls);
 
-        this.canvas.addEventListener('mousedown', (e) => this.onMouseDown(e));
-        window.addEventListener('mousemove', (e) => this.onMouseMove(e));
-        window.addEventListener('mouseup', () => { this.draggingIdx = -1; });
+        this.listen<MouseEvent>(this.canvas, 'mousedown', (e) => this.onMouseDown(e));
+        this.listen<MouseEvent>(window, 'mousemove', (e) => this.onMouseMove(e));
+        this.listen<MouseEvent>(window, 'mouseup', () => { this.draggingIdx = -1; });
 
         this.applyPreset('Line Abreast');
     }
@@ -197,11 +197,11 @@ export class FormationEditor extends Component {
             offsetY: (n.offsetY - lead.offsetY) * 100
         }));
 
-        commandDispatcher.dispatch({
-            type: 'SetFormation',
+        void UIStore.issueCommand({
+            type: 'JoinFormation',
             entityId: selectedId,
-            formationType: this.formationType,
-            stations
+            leaderId: 'LEAD', // Placeholder
+            offset: { x: stations[0]?.offsetX || 0, y: stations[0]?.offsetY || 0, z: 0 }
         });
         
         console.log(`Saved formation for ${selectedId}`, stations);

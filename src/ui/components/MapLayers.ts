@@ -284,3 +284,13 @@ export class DatalinkLayer implements MapLayer {
     }
 }
 
+// --- Stubs for V1 compatibility ---
+export class BordersLayer implements MapLayer { readonly id = 'borders'; readonly container = new Container(); update() {} }
+export class BathymetryLayer implements MapLayer { readonly id = 'bathymetry'; readonly container = new Container(); update() {} }
+export class RegionalTerrainLayer implements MapLayer { readonly id = 'terrain'; readonly container = new Container(); update() {} async init() {} }
+export class RasterBordersLayer implements MapLayer { readonly id = 'bordersRaster'; readonly container = new Container(); update() {} async init() {} }
+export class CoverageLayer implements MapLayer { readonly id = 'coverage'; readonly container = new Container(); update() {} }
+export class UnitLabelsLayer extends LabelsLayer {}
+export class TacticalGraphicsLayer implements MapLayer { readonly id = 'tactical'; readonly container = new Container(); update() {} }
+export class WeatherOverlayLayer implements MapLayer { readonly id = 'weather'; readonly container = new Container(); update() {} }
+

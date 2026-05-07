@@ -1,5 +1,5 @@
 import { test, expect } from '@playwright/test';
-import { waitForSDK } from './test-utils';
+import { waitForSDK, MockWindow } from './test-utils';
 
 test.describe('V2 UI Reactivity & Map Layers', () => {
     
@@ -29,7 +29,7 @@ test.describe('V2 UI Reactivity & Map Layers', () => {
 
         // 3. Verify UIStore state via page.evaluate
         const isGridOn = await page.evaluate(() => {
-            return (window as unknown as { [key: string]: unknown }).UIStore.getLayerSignal('grid').get();
+            return (window as unknown as MockWindow).UIStore.getLayerSignal('grid').get();
         });
         expect(isGridOn).toBe(true);
 
@@ -51,7 +51,7 @@ test.describe('V2 UI Reactivity & Map Layers', () => {
 
         // Verify still ON
         const isGridOn = await page.evaluate(() => {
-            return (window as unknown as { [key: string]: unknown }).UIStore.getLayerSignal('grid').get();
+            return (window as unknown as MockWindow).UIStore.getLayerSignal('grid').get();
         });
         expect(isGridOn).toBe(true);
     });

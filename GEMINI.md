@@ -91,3 +91,48 @@ Data passing from the Engine/Server to the UI must maintain its type integrity a
 
 * **Rule:** Do not pass raw generic blobs into presentation components.
 * **Rule:** Destructure and pass explicitly typed primitives or inferred Zod objects to UI components. If a map layer needs a unit's WEZ (Weapon Engagement Zone), pass the `wez` array specifically, not the entire untyped unit object.
+
+## 6. Universal Command Pattern (CQRS)
+To prevent interface fragmentation and ensure total parity between the UI, Server, and AI Agents, all state-mutating actions MUST utilize the Universal Command Pattern. 
+
+* **Rule: Single Source of Truth:** All commands must be defined as strict Zod objects and exported within the master `EngineCommandSchema` `z.discriminatedUnion`.
+* **Rule: Strict Payloads (No Unknowns):** Never use `z.record(z.unknown())`, `z.any()`, or loose generic types to bypass strict typing on complex commands. If a command like `SetMission` has wildly different parameters based on the mission type, you MUST use a nested discriminated union. 
+* **Rule: Universal Dispatch:** The SDK, UI, CLI, and test suites must never use specialized wrapper functions (e.g., `setCourse(x,y)`). They must construct the raw command object and pass it to the singular `executeCommand(payload)` method.
+* **Rule: Self-Documenting LLM Schemas:** Every field in a command schema MUST include a `.describe("...")` annotation. AI Tools are generated directly and automatically from these Zod schemas; if you omit descriptions, the AI will not know how to command the engine.
+
+**Bad (Fragmented & Lazy):**
+```typescript
+// Hand-written wrapper
+function assignMission(id: string, missionType: string, params: any) { ... }
+
+// Lazy Schema
+const SetMissionSchema = z.object({
+    type: z.literal('SetMission'),
+    entityId: z.string(),
+    missionType: z.string(),
+    params: z.record(z.unknown()) // ILLEGAL: Allows AI hallucinations
+});
+```
+
+**Good (Strict & Universal):**
+```typescript
+// Strict Nested Union
+const InterceptMissionSchema = z.object({
+    missionType: z.literal('Intercept').describe("Assign intercept mission"),
+    targetId: z.string().describe("Hostile track ID to intercept"),
+    speedKts: z.number().describe("Intercept velocity")
+});
+
+const SetMissionSchema = z.object({
+    type: z.literal('SetMission').describe("Assigns a new mission to a unit"),
+    entityId: z.string().describe("ID of the executing unit"),
+    mission: z.discriminatedUnion('missionType', [InterceptMissionSchema, PatrolMissionSchema])
+});
+
+// Universal Execution
+client.executeCommand({
+    type: 'SetMission',
+    entityId: 'F35-Alpha',
+    mission: { missionType: 'Intercept', targetId: 'TRK-09', speedKts: 450 }
+});
+```

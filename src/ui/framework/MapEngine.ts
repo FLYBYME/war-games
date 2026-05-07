@@ -6,7 +6,7 @@ import { MapLayer } from './map/MapLayer';
 import { layerRegistry } from './map/LayerRegistry';
 import { latLonToWorld } from './map/CoordUtils';
 
-export class MapRenderer {
+export class MapEngine {
     private app: Application;
     public viewport: Viewport;
     private layers = new Map<string, MapLayer>();
@@ -19,7 +19,7 @@ export class MapRenderer {
     constructor() {
         this.app = new Application();
         // Viewport will be initialized after app.init
-        this.viewport = null as unknown;
+        this.viewport = null!;
     }
 
     async init(containerElement: HTMLElement) {
@@ -82,8 +82,8 @@ export class MapRenderer {
                         // Clear layers to avoid coordinate artifacts
                         this.layers.forEach(layer => {
                             if (layer.id === 'terrain') {
-                                (layer as unknown).destroy?.();
-                                (layer as unknown).init?.();
+                                layer.destroy?.();
+                                void layer.init?.();
                             }
                         });
 
