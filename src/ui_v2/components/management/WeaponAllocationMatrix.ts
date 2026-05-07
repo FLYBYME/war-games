@@ -80,7 +80,7 @@ export class WeaponAllocationMatrix extends Component {
         }
 
         try {
-            await sdkClient.combat.fireWeapon(shooterId, readyMountIdx, targetId);
+            await sdkClient.dispatch({ type: 'FireWeapon', entityId: shooterId, mountIndex: readyMountIdx, targetId: targetId });
             console.log(`Commanded ${shooterId} to engage ${targetId}`);
         } catch (e) {
             console.error('Fire coordinated failed', e);

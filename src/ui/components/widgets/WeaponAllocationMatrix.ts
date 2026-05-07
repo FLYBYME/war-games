@@ -71,11 +71,12 @@ export class WeaponAllocationMatrix extends Component {
         const shooter = this.shooters.find(u => u.id === shooterId);
         if (!shooter) return;
 
-        const readyMountIdx = shooter.mounts.findIndex(m => m.ready);
+        // roundsRemaining > 0 is our 'ready' state now
+        const readyMountIdx = shooter.mounts.findIndex(m => m.roundsRemaining > 0);
         if (readyMountIdx === -1) return;
 
         try {
-            await sdkClient.combat.fireWeapon(shooterId, readyMountIdx, targetId);
+            await sdkClient.dispatch({ type: 'FireWeapon', entityId: shooterId, mountIndex: readyMountIdx, targetId: targetId });
         } catch (e) {
             console.error('Fire failed', e);
         }

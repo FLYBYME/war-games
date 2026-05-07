@@ -1,10 +1,10 @@
-import { 
-    ViewStatePayload as ViewState, 
-    Side, 
-    MatchInfo, 
-    EngineCommandPayload, 
-    ServerMessage, 
-    ClientMessage, 
+import {
+    ViewStatePayload as ViewState,
+    Side,
+    MatchInfo,
+    EngineCommandPayload,
+    ServerMessage,
+    ClientMessage,
     ScenarioIntent,
     Vector3,
     TacticalEvent,
@@ -53,9 +53,6 @@ interface PendingCommand {
  * WarGamesClient: Primary SDK entry point.
  */
 export class WarGamesClient {
-    public readonly nav: NavigationModule;
-    public readonly combat: CombatModule;
-    public readonly sensors: SensorModule;
     public readonly scenario: ScenarioModule;
     public readonly terrain: TerrainModule;
     public readonly bugs: BugModule;
@@ -86,9 +83,6 @@ export class WarGamesClient {
         };
 
         this.events = new EventEmitter();
-        this.nav = new NavigationModule(this);
-        this.combat = new CombatModule(this);
-        this.sensors = new SensorModule(this);
         this.scenario = new ScenarioModule(this);
         this.terrain = new TerrainModule(this);
         this.bugs = new BugModule(this);
@@ -190,10 +184,10 @@ export class WarGamesClient {
         this.matchId = matchId;
         this.side = side;
         this.currentTick = 0;
-        this.send({ 
-            type: 'JOIN_MATCH', 
-            matchId, 
-            side, 
+        this.send({
+            type: 'JOIN_MATCH',
+            matchId,
+            side,
             syncRateHz: this.config.syncRateHz,
             fullSyncIntervalMs: this.config.fullSyncIntervalMs
         });
@@ -330,7 +324,7 @@ export class WarGamesClient {
     private onConnected(): void {
         this.setState(ConnectionState.Connected);
         this.reconnectAttempts = 0;
-        
+
         // Rejoin match if we were in one
         if (this.matchId && this.side) {
             this.joinMatch(this.side, this.matchId);
@@ -384,12 +378,12 @@ export class WarGamesClient {
                 }
 
                 case 'EVENT': {
-                   const evt = msg.payload;
-                   this.events.emit('events:new', evt);
-                   if (evt.type) {
-                       this.events.emit(`event:${evt.type}`, evt);
-                   }
-                   break;
+                    const evt = msg.payload;
+                    this.events.emit('events:new', evt);
+                    if (evt.type) {
+                        this.events.emit(`event:${evt.type}`, evt);
+                    }
+                    break;
                 }
 
                 case 'ERROR': {
@@ -423,86 +417,94 @@ export class WarGamesClient {
 
 // ─── SDK Modules ─────────────────────────────────────────────
 
-export class NavigationModule {
-    constructor(private client: WarGamesClient) { }
-    setCourse(entityId: string, position: Vector3, speedKts: number) { return this.client.dispatch({ type: 'SetCourse', entityId, position, speedKts }); }
-    addWaypoint(entityId: string, position: Vector3, speedKts: number) { return this.client.dispatch({ type: 'AddWaypoint', entityId, position, speedKts }); }
-    clearWaypoints(entityId: string) { return this.client.dispatch({ type: 'ClearWaypoints', entityId }); }
-    setHeading(entityId: string, heading: number) { return this.client.dispatch({ type: 'SetHeading', entityId, heading }); }
-    setSpeed(entityId: string, speedKts: number) { return this.client.dispatch({ type: 'SetSpeed', entityId, speedKts }); }
-    setAltitude(entityId: string, altitudeM: number) { return this.client.dispatch({ type: 'SetAltitude', entityId, altitudeM }); }
-}
-
-export class CombatModule {
-    constructor(private client: WarGamesClient) { }
-    fireWeapon(shooterId: string, mountIndex: number, targetId: string) { return this.client.dispatch({ type: 'FireWeapon', entityId: shooterId, mountIndex, targetId }); }
-    setUnitROE(entityId: string, roe: string) { return this.client.dispatch({ type: 'SetUnitROE', entityId, roe }); }
-    setGlobalROE(roe: string) { return this.client.dispatch({ type: 'SetGlobalROE', roe }); }
-}
-
-export class SensorModule {
-    constructor(private client: WarGamesClient) { }
-    setSensorState(entityId: string, sensorName: string, active: boolean) { return this.client.dispatch({ type: 'SetSensorState', entityId, sensor: sensorName, active }); }
-    setEMCON(state: string, entityId?: string) { return this.client.dispatch({ type: 'SetEMCON', entityId, state }); }
-}
-
 export class BugModule {
     constructor(private client: WarGamesClient) { }
-    async list() { return await this.client.apiFetch<BugReport[]>('/api/bugs'); }
-    async get(id: string) { return await this.client.apiFetch<BugReport>(`/api/bugs/${id}`); }
-    async report(data: unknown) { return await this.client.apiFetch<BugReport>('/api/bugs', { method: 'POST', body: JSON.stringify(data) }); }
-    async update(id: string, updates: unknown) { return await this.client.apiFetch<BugReport>(`/api/bugs/${id}`, { method: 'PATCH', body: JSON.stringify(updates) }); }
-    async comment(id: string, data: unknown) { return await this.client.apiFetch<unknown>(`/api/bugs/${id}/comments`, { method: 'POST', body: JSON.stringify(data) }); }
+    async list() {
+        return await this.client.apiFetch<BugReport[]>('/api/bugs');
+    }
+    async get(id: string) {
+        return await this.client.apiFetch<BugReport>(`/api/bugs/${id}`);
+    }
+    async report(data: unknown) {
+        return await this.client.apiFetch<BugReport>('/api/bugs', { method: 'POST', body: JSON.stringify(data) });
+    }
+    async update(id: string, updates: unknown) {
+        return await this.client.apiFetch<BugReport>(`/api/bugs/${id}`, { method: 'PATCH', body: JSON.stringify(updates) });
+    }
+    async comment(id: string, data: unknown) {
+        return await this.client.apiFetch<unknown>(`/api/bugs/${id}/comments`, { method: 'POST', body: JSON.stringify(data) });
+    }
 }
 
 export class ScenarioModule {
     constructor(private client: WarGamesClient) { }
-    async getCurrentState(): Promise<ViewState | null> { return await this.client.getLatestViewState(); }
-    async listMatches(): Promise<MatchInfo[]> { return await this.client.listMatches(); }
-    async deleteMatch(matchId: string): Promise<{ success: boolean }> { return await this.client.deleteMatch(matchId); }
-    async queryWinState(matchId: string): Promise<{ over: boolean, winner?: string }> { return await this.client.queryWinState(matchId); }
-    async getRecentEvents(matchId: string, count: number = 50): Promise<TacticalEvent[]> { return await this.client.getRecentEvents(matchId, count); }
-    async getProfile(profileId: string): Promise<EntityProfile | null> { return await this.client.getProfile(profileId); }
-    pause() { this.client.pause(); }
-    resume(rate = 1) { this.client.resume(rate); }
-    spawnEntity(id: string, profileId: string, side: Side, position: Vector3, heading: number = 0) { return this.client.dispatch({ type: 'SpawnEntity', id, profileId, side, position, heading }); }
-    setTimeCompression(rate: number) { this.client.setTimeCompression(rate); }
-    setIntent(intent: ScenarioIntent) { return this.client.dispatch({ type: 'SetIntent', intent }); }
-    setMission(entityId: string, missionType: MissionType, params: unknown) { 
-        return this.client.dispatch({ 
-            type: 'SetMission', 
-            entityId, 
-            missionType, 
-            params: params as Record<string, unknown> 
-        }); 
+    async getCurrentState(): Promise<ViewState | null> {
+        return await this.client.getLatestViewState();
+    }
+    async listMatches(): Promise<MatchInfo[]> {
+        return await this.client.listMatches();
+    }
+    async deleteMatch(matchId: string): Promise<{ success: boolean }> {
+        return await this.client.deleteMatch(matchId);
+    }
+    async queryWinState(matchId: string): Promise<{ over: boolean, winner?: string }> {
+        return await this.client.queryWinState(matchId);
+    }
+    async getRecentEvents(matchId: string, count: number = 50): Promise<TacticalEvent[]> {
+        return await this.client.getRecentEvents(matchId, count);
+    }
+    async getProfile(profileId: string): Promise<EntityProfile | null> {
+        return await this.client.getProfile(profileId);
     }
     exportScenario(): Promise<unknown> { return new Promise((resolve) => { this.client.events.once('scenario:exported', (payload: unknown) => { resolve(payload); }); this.client.dispatchImmediate({ type: 'EXPORT_SCENARIO', matchId: this.client.currentMatchId || 'default' } as unknown as ClientMessage); }); }
-    importScenario(payload: unknown, options: { matchId?: string; side?: Side } = {}): Promise<{ success: boolean }> { 
-        if (options.side) { this.client.side = options.side; } 
-        return new Promise((resolve) => { 
-            this.client.events.once('scenario:imported', (result: { success: boolean }) => { resolve(result); }); 
-            this.client.dispatchImmediate({ 
-                type: 'IMPORT_SCENARIO', 
-                matchId: options.matchId || this.client.currentMatchId || 'default', 
-                payload: payload as unknown as Record<string, unknown> 
-            } as unknown as ClientMessage); 
-        }); 
+    importScenario(payload: unknown, options: { matchId?: string; side?: Side } = {}): Promise<{ success: boolean }> {
+        if (options.side) { this.client.side = options.side; }
+        return new Promise((resolve) => {
+            this.client.events.once('scenario:imported', (result: { success: boolean }) => { resolve(result); });
+            this.client.dispatchImmediate({
+                type: 'IMPORT_SCENARIO',
+                matchId: options.matchId || this.client.currentMatchId || 'default',
+                payload: payload as unknown as Record<string, unknown>
+            });
+        });
     }
-    async fetchProfiles(): Promise<{ units: [string, EntityProfile][], weapons: [string, unknown][] }> { return await this.client.apiFetch('/api/database/profiles'); }
-    async saveProfile(id: string, profile: EntityProfile): Promise<{ success: boolean }> { return await this.client.apiFetch('/api/database/profiles', { method: 'POST', body: JSON.stringify({ id, profile }) }); }
-    async listScenarios(): Promise<{ filename: string; name: string; description: string; entityCount: number }[]> { return await this.client.apiFetch('/api/scenarios'); }
-    async getScenario(filename: string): Promise<unknown> { return await this.client.apiFetch(`/api/scenarios/${encodeURIComponent(filename)}`); }
-    async saveScenario(filename: string, manifest: unknown): Promise<{ success: boolean }> { return await this.client.apiFetch('/api/scenarios', { method: 'POST', body: JSON.stringify({ filename, manifest }) }); }
-    async deleteScenario(filename: string): Promise<{ success: boolean }> { return await this.client.apiFetch(`/api/scenarios/${encodeURIComponent(filename)}`, { method: 'DELETE' }); }
+    async fetchProfiles(): Promise<{ units: [string, EntityProfile][], weapons: [string, unknown][] }> {
+        return await this.client.apiFetch('/api/database/profiles');
+    }
+    async saveProfile(id: string, profile: EntityProfile): Promise<{ success: boolean }> {
+        return await this.client.apiFetch('/api/database/profiles', { method: 'POST', body: JSON.stringify({ id, profile }) });
+    }
+    async listScenarios(): Promise<{ filename: string; name: string; description: string; entityCount: number }[]> {
+        return await this.client.apiFetch('/api/scenarios');
+    }
+    async getScenario(filename: string): Promise<unknown> {
+        return await this.client.apiFetch(`/api/scenarios/${encodeURIComponent(filename)}`);
+    }
+    async saveScenario(filename: string, manifest: unknown): Promise<{ success: boolean }> {
+        return await this.client.apiFetch('/api/scenarios', { method: 'POST', body: JSON.stringify({ filename, manifest }) });
+    }
+    async deleteScenario(filename: string): Promise<{ success: boolean }> {
+        return await this.client.apiFetch(`/api/scenarios/${encodeURIComponent(filename)}`, { method: 'DELETE' });
+    }
     async loadScenarioIntoEngine(filename: string): Promise<{ success: boolean; name?: string; entityCount?: number; matchId?: string }> { return await this.client.apiFetch('/api/scenarios/load', { method: 'POST', body: JSON.stringify({ filename }) }); }
     async getTelemetry(matchId: string): Promise<Record<string, unknown[]>> { return await this.client.apiFetch(`/api/matches/${encodeURIComponent(matchId)}/telemetry`); }
 }
 
 export class TerrainModule {
     constructor(private client: WarGamesClient) { }
-    async fetchManifest(): Promise<{ regions: unknown[] }> { return await this.client.apiFetch('/api/terrain/manifest'); }
-    async fetchStats(): Promise<{ regions: number; cachedEngineTiles: number; cachedUITiles: number; engineSizeMb: number; uiSizeMb: number; memoryCacheSize: number; pendingJobs: string[]; }> { return await this.client.apiFetch('/api/terrain/stats'); }
-    async clearCache(): Promise<{ success: boolean }> { return await this.client.apiFetch('/api/terrain/clear-cache', { method: 'POST' }); }
-    async fetchTile(lat: number, lon: number): Promise<ArrayBuffer> { return await this.client.apiFetch(`/api/terrain/tiles/${lat}/${lon}`); }
-    async fetchUITile(lat: number, lon: number): Promise<ArrayBuffer> { return await this.client.apiFetch(`/api/terrain/ui-tiles/${lat}/${lon}`); }
+    async fetchManifest(): Promise<{ regions: unknown[] }> {
+        return await this.client.apiFetch('/api/terrain/manifest');
+    }
+    async fetchStats(): Promise<{ regions: number; cachedEngineTiles: number; cachedUITiles: number; engineSizeMb: number; uiSizeMb: number; memoryCacheSize: number; pendingJobs: string[]; }> {
+        return await this.client.apiFetch('/api/terrain/stats');
+    }
+    async clearCache(): Promise<{ success: boolean }> {
+        return await this.client.apiFetch('/api/terrain/clear-cache', { method: 'POST' });
+    }
+    async fetchTile(lat: number, lon: number): Promise<ArrayBuffer> {
+        return await this.client.apiFetch(`/api/terrain/tiles/${lat}/${lon}`);
+    }
+    async fetchUITile(lat: number, lon: number): Promise<ArrayBuffer> {
+        return await this.client.apiFetch(`/api/terrain/ui-tiles/${lat}/${lon}`);
+    }
 }

@@ -381,8 +381,7 @@ export const scenarios: ScenarioManifest[] = [
                 command: {
                     type: "SetMission",
                     entityId: "hornet-1",
-                    missionType: MissionType.Patrol,
-                    params: { center: { x: 5000, y: 5000, z: 5000 }, radiusM: 2000, speedKts: 400 }
+                    mission: { missionType: "Patrol", center: { x: 5000, y: 5000, z: 5000 }, radiusM: 2000, speedKts: 400 }
                 }
             },
             {
@@ -394,8 +393,7 @@ export const scenarios: ScenarioManifest[] = [
                 command: {
                     type: "SetMission",
                     entityId: "hornet-2",
-                    missionType: MissionType.Patrol,
-                    params: { center: { x: -5000, y: 5000, z: 5000 }, radiusM: 2000, speedKts: 400 }
+                    mission: { missionType: "Patrol", center: { x: -5000, y: 5000, z: 5000 }, radiusM: 2000, speedKts: 400 }
                 }
             }
         ],

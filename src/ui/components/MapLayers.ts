@@ -48,7 +48,7 @@ export class UnitsLayer implements MapLayer {
             }
             const u = items[i];
             c.position.set(u.pos.x * SCALE, -u.pos.y * SCALE);
-            c.rotation = u.rot * (Math.PI / 180); // Convert degrees to radians
+            c.rotation = u.heading * (Math.PI / 180); // Convert degrees to radians
             const s = 6 / viewScale;
             const selected = u.id === UIStore.selectedEntityId.get();
 

@@ -28,6 +28,7 @@ export class KinematicsComponent implements IComponent {
         public acceleration: Vector3 = { x: 0, y: 0, z: 0 },
         public massKg: number = 1000,
         public dragCoeff: number = 0.05,
-        public thrustN: number = 0
+        public thrustN: number = 0,
+        public massEmptyKg: number = 1000
     ) {}
 }

@@ -152,8 +152,8 @@ export class UnitInspector extends Component {
 
     private renderKinematics(entity: ViewUnitPayload | ViewTrackPayload) {
         if (!this.kinArea) return;
-        const hdg = 'rot' in entity ? entity.rot : 0;
-        const speed = 'speedKts' in entity ? entity.speedKts : 0;
+        const hdg = ('heading' in entity ? (entity as any).heading : 0) as number;
+        const speed = ('speedKts' in entity ? (entity as any).speedKts : 0) as number;
 
         this.kinArea.innerHTML = `
             <div class="section-title">Kinematics</div>

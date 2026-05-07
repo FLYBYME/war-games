@@ -28,27 +28,27 @@ class CommandDispatcher {
             switch (intent.type) {
                 case 'SetCourse': {
                     const p = intent.payload as { position: Vector3, speedKts: number };
-                    await sdkClient.nav.setCourse(intent.entityId, p.position, p.speedKts);
+                    await sdkClient.dispatch({ type: 'SetCourse', entityId: intent.entityId, position: p.position, speedKts: p.speedKts });
                     break;
                 }
                 case 'FireWeapon': {
                     const p = intent.payload as { mountIndex: number, targetId: string };
-                    await sdkClient.combat.fireWeapon(intent.entityId, p.mountIndex, p.targetId);
+                    await sdkClient.dispatch({ type: 'FireWeapon', entityId: intent.entityId, mountIndex: p.mountIndex, targetId: p.targetId });
                     break;
                 }
                 case 'SetSpeed': {
                     const p = intent.payload as { speedKts: number };
-                    await sdkClient.nav.setSpeed(intent.entityId, p.speedKts);
+                    await sdkClient.dispatch({ type: 'SetSpeed', entityId: intent.entityId, speedKts: p.speedKts });
                     break;
                 }
                 case 'SetAltitude': {
                     const p = intent.payload as { altitudeM: number };
-                    await sdkClient.nav.setAltitude(intent.entityId, p.altitudeM);
+                    await sdkClient.dispatch({ type: 'SetAltitude', entityId: intent.entityId, altitudeM: p.altitudeM });
                     break;
                 }
                 case 'SetHeading': {
                     const p = intent.payload as { heading: number };
-                    await sdkClient.nav.setHeading(intent.entityId, p.heading);
+                    await sdkClient.dispatch({ type: 'SetHeading', entityId: intent.entityId, heading: p.heading });
                     break;
                 }
             }

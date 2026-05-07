@@ -313,9 +313,9 @@ export class MatchService {
      */
     public async tickAll(dt: number): Promise<void> {
         const tickPromises: Promise<void>[] = [];
-        for (const world of this.matches.values()) {
+        this.matches.forEach(world => {
             tickPromises.push(world.tick(dt));
-        }
+        });
         await Promise.all(tickPromises);
     }
 

@@ -3,7 +3,7 @@ import { Vector3, Side } from './schemas/domain.js';
 
 interface SessionStateEntry {
     pos: Vector3;
-    rot?: number;
+    heading?: number;
     hp?: number;
     isDestroyed?: boolean;
     desiredSpeedKts?: number;
@@ -85,7 +85,7 @@ export class DeltaEncoder {
             let mask = 0;
             const hasPos = u.pos && typeof u.pos.x === 'number';
             const posChanged = hasPos && (!last || Math.abs(u.pos.x - last.pos.x) > 0.1 || Math.abs(u.pos.y - last.pos.y) > 0.1 || Math.abs(u.pos.z - last.pos.z) > 0.1);
-            const rotChanged = !last || Math.abs(u.rot - (last.rot ?? 0)) > 1;
+            const headingChanged = !last || Math.abs(u.heading - (last.heading ?? 0)) > 1;
             const statusChanged = !last || u.hp !== last.hp || u.isDestroyed !== last.isDestroyed;
             const navChanged = !last || u.desiredSpeedKts !== last.desiredSpeedKts || u.desiredAltitudeM !== last.desiredAltitudeM;
             const profileChanged = !last || u.profileId !== last.profileId || u.sensorMask !== last.sensorMask;
@@ -94,7 +94,7 @@ export class DeltaEncoder {
             const fuelChanged = !last || Math.abs(u.fuelPct - (last.fuelPct ?? 1.0)) > 0.01;
 
             if (posChanged) mask |= (1 << 0);
-            if (rotChanged) mask |= (1 << 1);
+            if (headingChanged) mask |= (1 << 1);
             if (statusChanged) mask |= (1 << 2);
             if (navChanged) mask |= (1 << 3);
             if (profileChanged) mask |= (1 << 4);
@@ -115,7 +115,7 @@ export class DeltaEncoder {
                 view.setFloat32(offset, u.pos.z, true); offset += 4;
             }
             if (mask & (1 << 1)) {
-                view.setUint16(offset, Math.floor(u.rot % 360), true); offset += 2;
+                view.setUint16(offset, Math.floor(u.heading % 360), true); offset += 2;
             }
             if (mask & (1 << 2)) {
                 view.setUint8(offset, Math.min(255, u.hp)); offset += 1;
@@ -146,7 +146,7 @@ export class DeltaEncoder {
             // Update session state
             sessionState.set(u.id, { 
                 pos: { ...u.pos }, 
-                rot: u.rot, 
+                heading: u.heading, 
                 hp: u.hp, 
                 isDestroyed: u.isDestroyed,
                 desiredSpeedKts: u.desiredSpeedKts,

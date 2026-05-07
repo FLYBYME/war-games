@@ -9,8 +9,35 @@ import {
     EntityProfileSchema,
     MatchInfoSchema,
     MissionTypeSchema,
-    MissionParamsSchema
+    MissionParamsSchema,
+    EngineCommandPayloadSchema,
+    EngineCommandPayload
 } from "../schemas/index.js";
+
+/**
+ * generateCommandTools: Dynamically maps the Zod command schemas to LLM tools.
+ */
+export function generateCommandTools(client: WarGamesClient) {
+    return EngineCommandPayloadSchema.options.map(schema => {
+        // Extract the literal command type (e.g. 'SetCourse')
+        const commandType = (schema.shape.type as z.ZodLiteral<string>)._def.value;
+        
+        // The LLM doesn't need to pass the 'type' field, we re-inject it.
+        const inputSchema = (schema as unknown as z.ZodObject<z.ZodRawShape>).omit({ type: true });
+
+        return defineTool({
+            name: `engine_${commandType.replace(/([a-z])([A-Z])/g, '$1_$2').toLowerCase()}`,
+            description: (schema._def as any).description || `Execute ${commandType} command on the engine.`,
+            inputSchema,
+            outputSchema: z.object({ success: z.boolean(), commandType: z.string() }),
+            async call(_matchId, _side, args) {
+                const payload = { type: commandType, ...args } as EngineCommandPayload;
+                const result = await client.dispatchRest(payload);
+                return { success: result.success, commandType: result.commandType };
+            }
+        });
+    });
+}
 
 /**
  * createTacticalTools: Factory for the core tactical command and query set.
@@ -113,124 +140,6 @@ export function createTacticalTools(client: WarGamesClient) {
     });
 
     /**
-     * set_unit_course: Direct navigation control.
-     */
-    const set_unit_course = defineTool({
-        name: "set_unit_course",
-        description: "Orders a unit to move to a specific coordinate at a specified speed.",
-        inputSchema: z.object({
-            unitId: z.string(),
-            destination: Vector3Schema,
-            speedKts: z.number()
-        }),
-        outputSchema: z.object({ success: z.boolean(), message: z.string() }),
-        async call(_matchId, _side, args) {
-            await client.dispatchRest({
-                type: 'SetCourse',
-                entityId: args.unitId,
-                position: args.destination,
-                speedKts: args.speedKts
-            });
-            return { success: true, message: `Course set for ${args.unitId}` };
-        }
-    });
-
-    /**
-     * assign_mission: High-level operational control.
-     */
-    const assign_mission = defineTool({
-        name: "assign_mission",
-        description: "Assigns a mission to a unit or group.",
-        inputSchema: z.object({
-            unitId: z.string(),
-            missionType: MissionTypeSchema,
-            params: MissionParamsSchema.optional()
-        }),
-        outputSchema: z.object({ success: z.boolean(), message: z.string() }),
-        async call(_matchId, _side, args) {
-            await client.dispatchRest({
-                type: 'SetMission',
-                entityId: args.unitId,
-                missionType: args.missionType,
-                params: args.params
-            });
-            return { success: true, message: `Mission ${args.missionType} assigned to ${args.unitId}` };
-        }
-    });
-
-    /**
-     * set_emcon: Electronic signature management.
-     */
-    const set_emcon = defineTool({
-        name: "set_emcon",
-        description: "Sets EMCON (Emission Control) state.",
-        inputSchema: z.object({
-            state: z.string().describe("e.g. 'Active', 'Silent', 'Alpha', 'Bravo'"),
-            unitId: z.string().optional().describe("If omitted, applies to the entire side.")
-        }),
-        outputSchema: z.object({ success: z.boolean(), message: z.string() }),
-        async call(_matchId, _side, args) {
-            await client.dispatchRest({
-                type: 'SetEMCON',
-                entityId: args.unitId,
-                state: args.state
-            });
-            return { success: true, message: `EMCON set to ${args.state}${args.unitId ? ' for ' + args.unitId : ''}` };
-        }
-    });
-
-    /**
-     * engage_target: Tactical weapon release.
-     */
-    const engage_target = defineTool({
-        name: "engage_target",
-        description: "Orders a unit to engage a specific target track with its active weapon mounts.",
-        inputSchema: z.object({
-            unitId: z.string(),
-            targetId: z.string(),
-            mountIndex: z.number().optional().default(0)
-        }),
-        outputSchema: z.object({ success: z.boolean(), message: z.string() }),
-        async call(_matchId, _side, args) {
-            await client.dispatchRest({
-                type: 'FireWeapon',
-                entityId: args.unitId,
-                targetId: args.targetId,
-                mountIndex: args.mountIndex
-            });
-            return { success: true, message: `Engagement ordered: ${args.unitId} -> ${args.targetId}` };
-        }
-    });
-
-    /**
-     * spawn_unit: Dynamic scenario injection.
-     */
-    const spawn_unit = defineTool({
-        name: "spawn_unit",
-        description: "Spawns a new unit from the database into the live match.",
-        inputSchema: z.object({
-            profileId: z.string().describe("e.g. 'f-35a', 'ddg-51'"),
-            side: SideSchema,
-            pos: Vector3Schema,
-            heading: z.number().optional().default(0)
-        }),
-        outputSchema: z.object({ success: z.boolean(), unitId: z.string() }),
-        async call(_matchId, _side, args) {
-            const id = `${args.profileId}-${Math.floor(Math.random() * 1000)}`;
-            await client.dispatchRest({
-                type: 'SpawnEntity',
-                id,
-                profileId: args.profileId,
-                side: args.side,
-                position: args.pos,
-                heading: args.heading,
-                speedKts: 0
-            });
-            return { success: true, unitId: id };
-        }
-    });
-
-    /**
      * wait: Time advancement.
      */
     const wait = defineTool({
@@ -281,13 +190,9 @@ export function createTacticalTools(client: WarGamesClient) {
         set_paused,
         set_time_compression,
         get_unit_details,
-        set_unit_course,
-        assign_mission,
-        set_emcon,
-        engage_target,
-        spawn_unit,
-        wait,
         list_matches,
-        query_profile_data
+        query_profile_data,
+        wait,
+        ...generateCommandTools(client)
     ];
 }

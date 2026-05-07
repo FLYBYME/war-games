@@ -67,12 +67,12 @@ export class TracksLayer implements MapLayer {
             });
 
             // 2. Heading Stem
-            if (track.rot !== undefined) {
+            if (track.heading !== undefined) {
                 const stemLen = size * 2.5;
-                // Pixi rotation 0 is North (+Y), but Pixi screen Y is down, so we need to be careful.
-                // In UnitsLayer we use rotation = deg * rad.
+                // Pixi headingation 0 is North (+Y), but Pixi screen Y is down, so we need to be careful.
+                // In UnitsLayer we use headingation = deg * rad.
                 // Here we draw directly in Graphics.
-                const rad = (track.rot - 90) * Math.PI / 180;
+                const rad = (track.heading - 90) * Math.PI / 180;
                 g.moveTo(0, 0).lineTo(
                     Math.cos(rad) * stemLen,
                     Math.sin(rad) * stemLen

@@ -46,7 +46,7 @@ export class IntentManager extends Component {
 
     private async issueIntent(intent: ScenarioIntent) {
         try {
-            await sdkClient.scenario.setIntent(intent);
+            await sdkClient.dispatch({ type: 'SetIntent', intent });
             console.log('Intent issued:', intent.type);
         } catch (e: unknown) {
             const error = e as Error;

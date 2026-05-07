@@ -1,5 +1,5 @@
 import { z } from 'zod';
-import { EntityIdSchema, Vector3Schema, LlaSchema, SideSchema, MissionTypeSchema, MissionSchema, MissionParamsSchema, GeoJSONSchema } from './domain.js';
+import { EntityIdSchema, Vector3Schema, LlaSchema, SideSchema, MissionTypeSchema, MissionSchema, MissionParamsSchema, GeoJSONSchema, WRARuleSchema } from './domain.js';
 
 // ─── Scenario Intents ─────────────────────────────────────────
 
@@ -49,11 +49,11 @@ export const ViewUnitPayloadSchema = z.object({
     pos: Vector3Schema,
     vel: Vector3Schema.optional(),
     lla: LlaSchema.optional(),
-    rot: z.number().describe("Heading in degrees [0-360]"),
+    heading: z.number().describe("Heading in degrees [0-360]"),
     hp: z.number().describe("Current hitpoints"),
     isDestroyed: z.boolean(),
     logState: z.string().describe("Logistics state, e.g. 'Ready', 'Taxiing', 'Refueling'"),
-    fuelPct: z.number().min(0).max(1).describe("Remaining fuel percentage [0-1]. 0 means motor burnout for missiles."),
+    fuelPct: z.number().min(0).max(1).describe("0.0 to 1.0. A value of 0 on a missile means motor burnout, NOT that it needs a refueling tanker"),
     isBingo: z.boolean().describe("True if unit has reached critical fuel state"),
     sensors: z.array(z.object({
         name: z.string(),
@@ -79,7 +79,7 @@ export const ViewUnitPayloadSchema = z.object({
         isActive: z.boolean().optional(),
         latency: z.number().optional(),
         nodes: z.array(z.string()).optional(), 
-        edges: z.array(z.unknown()).optional() 
+        edges: z.array(z.object({ a: z.string(), b: z.string(), latencyMs: z.number() })).optional() 
     }).optional(),
     coveragePolygons: z.object({ 
         radar: z.array(z.object({ lat: z.number(), lon: z.number() })).optional(), 
@@ -88,16 +88,14 @@ export const ViewUnitPayloadSchema = z.object({
     doctrine: z.object({ 
         roe: z.string(), 
         emcon: z.string(), 
-        wraRules: z.array(z.unknown()) 
+        wraRules: z.array(WRARuleSchema) 
     }).optional(),
     mission: MissionSchema.optional(),
-    taskGraph: z.object({
-        activeTasks: z.array(z.object({
-            id: z.string(),
-            type: z.string(),
-            status: z.string()
-        }))
-    }).optional()
+    activeTasks: z.array(z.object({
+        id: z.string(),
+        type: z.string(),
+        status: z.string()
+    })).optional()
 });
 export type ViewUnitPayload = z.infer<typeof ViewUnitPayloadSchema>;
 
@@ -110,7 +108,7 @@ export const ViewTrackPayloadSchema = z.object({
     identification: z.string().optional(),
     lastSeen: z.number().describe("Server tick when this track was last updated"),
     cep: z.number().describe("Circular Error Probable radius in meters"),
-    rot: z.number().optional(),
+    heading: z.number().optional().describe("Heading in degrees [0-360]"),
     speedKts: z.number().optional().describe("Kinematic speed derived from velocity in knots")
 });
 export type ViewTrackPayload = z.infer<typeof ViewTrackPayloadSchema>;
@@ -139,7 +137,7 @@ export const ViewStatePayloadSchema = z.object({
         nodes: z.array(z.string()),
         edges: z.array(z.object({ a: z.string(), b: z.string(), latencyMs: z.number() }))
     }),
-    threatMap: z.array(z.unknown()).optional(),
+    threatMap: z.array(z.object({ lat: z.number(), lon: z.number(), level: z.number() })).optional(),
     weaponBindings: z.array(z.object({
         weaponId: z.string(),
         targetId: z.string(),
@@ -161,33 +159,236 @@ export type ViewStateSnapshot = ViewStatePayload;
 
 // ─── Engine Command Payloads ─────────────────────────────────
 
+export const SetCourseSchema = z.object({
+    type: z.literal('SetCourse').describe("Directly set a destination coordinate for the unit"),
+    entityId: EntityIdSchema.describe("The unique ID of the unit to command"),
+    position: Vector3Schema.describe("Target destination coordinates (x, y, z) in meters"),
+    speedKts: z.number().describe("Desired speed in knots for the transit")
+});
+
+export const AddWaypointSchema = z.object({
+    type: z.literal('AddWaypoint').describe("Add a waypoint to the unit's existing navigation path"),
+    entityId: EntityIdSchema.describe("The unique ID of the unit to command"),
+    position: Vector3Schema.describe("Waypoint coordinates (x, y, z) in meters"),
+    speedKts: z.number().describe("Desired speed in knots for this segment of the path")
+});
+
+export const ClearWaypointsSchema = z.object({
+    type: z.literal('ClearWaypoints').describe("Clear all waypoints and stop navigation for the unit"),
+    entityId: EntityIdSchema.describe("The unique ID of the unit to command")
+});
+
+export const FireWeaponSchema = z.object({
+    type: z.literal('FireWeapon').describe("Order a unit to engage a target with a specific weapon mount"),
+    entityId: EntityIdSchema.describe("The unique ID of the shooter unit"),
+    mountIndex: z.number().describe("The index of the weapon mount to fire"),
+    targetId: EntityIdSchema.describe("The unique ID of the target unit or track")
+});
+
+export const SetHeadingSchema = z.object({
+    type: z.literal('SetHeading').describe("Set a specific absolute heading for the unit"),
+    entityId: EntityIdSchema.describe("The unique ID of the unit to command"),
+    heading: z.number().describe("Target heading in degrees [0-360]")
+});
+
+export const SetSpeedSchema = z.object({
+    type: z.literal('SetSpeed').describe("Set a desired speed for the unit"),
+    entityId: EntityIdSchema.describe("The unique ID of the unit to command"),
+    speedKts: z.number().describe("Desired speed in knots")
+});
+
+export const SetAltitudeSchema = z.object({
+    type: z.literal('SetAltitude').describe("Set a desired altitude or depth for the unit"),
+    entityId: EntityIdSchema.describe("The unique ID of the unit to command"),
+    altitudeM: z.number().describe("Desired altitude (positive) or depth (negative) in meters")
+});
+
+export const SetEMCONSchema = z.object({
+    type: z.literal('SetEMCON').describe("Set the Emission Control state for a unit or the entire side"),
+    entityId: EntityIdSchema.optional().describe("The unique ID of the unit. If omitted, applies to the entire side."),
+    state: z.string().describe("The EMCON state name (e.g., 'Active', 'Silent', 'A', 'B')")
+});
+
+export const SetSensorStateSchema = z.object({
+    type: z.literal('SetSensorState').describe("Turn a specific sensor on or off"),
+    entityId: EntityIdSchema.describe("The unique ID of the unit"),
+    sensor: z.string().describe("The name or ID of the sensor to toggle"),
+    active: z.boolean().describe("True to activate, false to deactivate")
+});
+
+export const SetUnitROESchema = z.object({
+    type: z.literal('SetUnitROE').describe("Set the Rules of Engagement for a specific unit"),
+    entityId: EntityIdSchema.describe("The unique ID of the unit"),
+    roe: z.string().describe("The ROE state (e.g., 'Free', 'Tight', 'Hold')")
+});
+
+export const SetGlobalROESchema = z.object({
+    type: z.literal('SetGlobalROE').describe("Set the Rules of Engagement for all units on the side"),
+    roe: z.string().describe("The ROE state (e.g., 'Free', 'Tight', 'Hold')")
+});
+
+export const SetMissionROESchema = z.object({
+    type: z.literal('SetMissionROE').describe("Set the Rules of Engagement for a specific mission"),
+    roe: z.string().describe("The ROE state (e.g., 'Free', 'Tight', 'Hold')")
+});
+
+export const InterceptMissionSchema = z.object({
+    missionType: z.literal('Intercept').describe("Assign intercept mission"),
+    targetId: z.string().describe("Hostile track ID to intercept"),
+    speedKts: z.number().describe("Intercept velocity")
+});
+
+export const PatrolMissionSchema = z.object({
+    missionType: z.literal('Patrol').describe("Assign patrol mission"),
+    center: Vector3Schema.describe("Center of patrol area"),
+    radiusM: z.number().describe("Radius of patrol area"),
+    searchPattern: z.string().optional().describe("Pattern type for searches"),
+    speedKts: z.number().optional().describe("Patrol speed")
+});
+
+export const StrikeMissionSchema = z.object({
+    missionType: z.literal('Strike').describe("Assign strike mission"),
+    targetId: z.string().describe("Target ID to strike"),
+    speedKts: z.number().optional().describe("Strike speed")
+});
+
+export const EscortMissionSchema = z.object({
+    missionType: z.literal('Escort').describe("Assign escort mission"),
+    targetId: z.string().describe("Friendly unit ID to escort"),
+    speedKts: z.number().optional().describe("Escort speed")
+});
+
+export const VBSSMissionSchema = z.object({
+    missionType: z.literal('VBSS').describe("Assign VBSS mission"),
+    targetId: z.string(),
+    boardingDurationTicks: z.number().optional(),
+    allowedArea: z.unknown().optional()
+});
+
+export const MCMMissionSchema = z.object({
+    missionType: z.literal('MCM').describe("Assign MCM mission"),
+    method: z.string().optional(),
+    area: z.unknown().optional()
+});
+
+export const IdleMissionSchema = z.object({
+    missionType: z.literal('Idle').describe("Assign idle mission")
+});
+
+export const SetMissionSchema = z.object({
+    type: z.literal('SetMission').describe("Assigns a new mission to a unit"),
+    entityId: EntityIdSchema.describe("ID of the executing unit"),
+    mission: z.discriminatedUnion('missionType', [InterceptMissionSchema, PatrolMissionSchema, StrikeMissionSchema, EscortMissionSchema, IdleMissionSchema, VBSSMissionSchema, MCMMissionSchema])
+});
+
+export const AssignWeaponSchema = z.object({
+    type: z.literal('AssignWeapon').describe("Manually assign a weapon to a target"),
+    entityId: EntityIdSchema.describe("The unique ID of the shooter unit"),
+    mount: z.string().describe("The ID or index of the weapon mount"),
+    targetId: EntityIdSchema.describe("The unique ID of the target unit or track")
+});
+
+export const JoinFormationSchema = z.object({
+    type: z.literal('JoinFormation').describe("Order a unit to join a formation with a leader"),
+    entityId: EntityIdSchema.describe("The unique ID of the unit to join"),
+    leaderId: EntityIdSchema.describe("The unique ID of the formation leader"),
+    offset: Vector3Schema.describe("The relative offset (x, y, z) from the leader in meters")
+});
+
+export const BreakFormationSchema = z.object({
+    type: z.literal('BreakFormation').describe("Order a unit to leave its current formation"),
+    entityId: EntityIdSchema.describe("The unique ID of the unit")
+});
+
+export const SetLoadoutSchema = z.object({
+    type: z.literal('SetLoadout').describe("Change the weapon and fuel loadout of a unit (must be at a facility)"),
+    entityId: EntityIdSchema.describe("The unique ID of the unit"),
+    loadout: z.string().describe("The ID of the loadout profile to apply")
+});
+
+export const SetEnvironmentSchema = z.object({
+    type: z.literal('SetEnvironment').describe("Cheat/Debug: Modify environmental conditions"),
+    key: z.string().describe("The environmental parameter to change (e.g., 'WindSpeed')"),
+    value: z.number().describe("The new value for the parameter")
+});
+
+export const LandAtFacilitySchema = z.object({
+    type: z.literal('LandAtFacility').describe("Order an aircraft to land at a specific facility"),
+    entityId: EntityIdSchema.describe("The unique ID of the aircraft"),
+    facilityId: EntityIdSchema.describe("The unique ID of the airbase or carrier")
+});
+
+export const TransferResourcesSchema = z.object({
+    type: z.literal('TransferResources').describe("Transfer resources (e.g., fuel) between units"),
+    fromId: EntityIdSchema.describe("The unique ID of the source unit"),
+    toId: EntityIdSchema.describe("The unique ID of the recipient unit"),
+    fuelKg: z.number().describe("The amount of fuel to transfer in kilograms")
+});
+
+export const ApplyDamageSchema = z.object({
+    type: z.literal('ApplyDamage').describe("Cheat/Debug: Manually apply damage to a unit"),
+    entityId: EntityIdSchema.describe("The unique ID of the unit"),
+    damage: z.number().describe("The amount of damage to apply (0-100+)")
+});
+
+export const DestroyEntitySchema = z.object({
+    type: z.literal('DestroyEntity').describe("Cheat/Debug: Immediately destroy a unit"),
+    entityId: EntityIdSchema.describe("The unique ID of the unit")
+});
+
+export const SpawnEntitySchema = z.object({
+    type: z.literal('SpawnEntity').describe("Spawn a new entity into the match from a profile"),
+    id: z.string().describe("The unique ID to assign to the new entity"),
+    profileId: z.string().describe("The ID of the platform profile to use (e.g., 'f-35a')"),
+    side: SideSchema.describe("The side the unit belongs to"),
+    position: Vector3Schema.describe("Initial spawning coordinates (x, y, z) in meters"),
+    heading: z.number().describe("Initial spawning heading in degrees [0-360]"),
+    speedKts: z.number().optional().describe("Optional initial speed in knots")
+});
+
+export const SetIntentSchema = z.object({
+    type: z.literal('SetIntent').describe("High-level scenario automation: Set a tactical intent"),
+    intent: ScenarioIntentSchema.describe("The scenario intent payload")
+});
+
+export const UpdateWRARulesSchema = z.object({
+    type: z.literal('UpdateWRARules').describe("Update Weapon Release Authority rules for a unit"),
+    entityId: EntityIdSchema.describe("The unique ID of the unit"),
+    rules: z.array(WRARuleSchema).describe("The list of WRA rule objects")
+});
+
+export const LaunchAircraftSchema = z.object({
+    type: z.literal('LaunchAircraft').describe("Order a ready aircraft to launch from its host facility"),
+    entityId: EntityIdSchema.describe("The unique ID of the aircraft to launch")
+});
+
 export const EngineCommandPayloadSchema = z.discriminatedUnion('type', [
-    z.object({ type: z.literal('SetCourse'), entityId: EntityIdSchema, position: Vector3Schema, speedKts: z.number() }),
-    z.object({ type: z.literal('AddWaypoint'), entityId: EntityIdSchema, position: Vector3Schema, speedKts: z.number() }),
-    z.object({ type: z.literal('ClearWaypoints'), entityId: EntityIdSchema }),
-    z.object({ type: z.literal('FireWeapon'), entityId: EntityIdSchema, mountIndex: z.number(), targetId: EntityIdSchema }),
-    z.object({ type: z.literal('SetHeading'), entityId: EntityIdSchema, heading: z.number() }),
-    z.object({ type: z.literal('SetSpeed'), entityId: EntityIdSchema, speedKts: z.number() }),
-    z.object({ type: z.literal('SetAltitude'), entityId: EntityIdSchema, altitudeM: z.number() }),
-    z.object({ type: z.literal('SetEMCON'), entityId: EntityIdSchema.optional(), state: z.string() }),
-    z.object({ type: z.literal('SetSensorState'), entityId: EntityIdSchema, sensor: z.string(), active: z.boolean() }),
-    z.object({ type: z.literal('SetUnitROE'), entityId: EntityIdSchema, roe: z.string() }),
-    z.object({ type: z.literal('SetGlobalROE'), roe: z.string() }),
-    z.object({ type: z.literal('SetMissionROE'), roe: z.string() }), 
-    z.object({ type: z.literal('SetMission'), entityId: EntityIdSchema, missionType: MissionTypeSchema, params: MissionParamsSchema.optional() }),
-    z.object({ type: z.literal('AssignWeapon'), entityId: EntityIdSchema, mount: z.string(), targetId: EntityIdSchema }),
-    z.object({ type: z.literal('JoinFormation'), entityId: EntityIdSchema, leaderId: EntityIdSchema, offset: Vector3Schema }),
-    z.object({ type: z.literal('BreakFormation'), entityId: EntityIdSchema }),
-    z.object({ type: z.literal('SetLoadout'), entityId: EntityIdSchema, loadout: z.string() }), 
-    z.object({ type: z.literal('SetEnvironment'), key: z.string(), value: z.number() }),
-    z.object({ type: z.literal('LandAtFacility'), entityId: EntityIdSchema, facilityId: EntityIdSchema }),
-    z.object({ type: z.literal('TransferResources'), fromId: EntityIdSchema, toId: EntityIdSchema, fuelKg: z.number() }),
-    z.object({ type: z.literal('ApplyDamage'), entityId: EntityIdSchema, damage: z.number() }),
-    z.object({ type: z.literal('DestroyEntity'), entityId: EntityIdSchema }),
-    z.object({ type: z.literal('SpawnEntity'), id: z.string(), profileId: z.string(), side: SideSchema, position: Vector3Schema, heading: z.number(), speedKts: z.number().optional() }),
-    z.object({ type: z.literal('SetIntent'), intent: ScenarioIntentSchema }),
-    z.object({ type: z.literal('UpdateWRARules'), entityId: EntityIdSchema, rules: z.array(z.unknown()) }),
-    z.object({ type: z.literal('LaunchAircraft'), entityId: EntityIdSchema })
+    SetCourseSchema,
+    AddWaypointSchema,
+    ClearWaypointsSchema,
+    FireWeaponSchema,
+    SetHeadingSchema,
+    SetSpeedSchema,
+    SetAltitudeSchema,
+    SetEMCONSchema,
+    SetSensorStateSchema,
+    SetUnitROESchema,
+    SetGlobalROESchema,
+    SetMissionROESchema,
+    SetMissionSchema,
+    AssignWeaponSchema,
+    JoinFormationSchema,
+    BreakFormationSchema,
+    SetLoadoutSchema,
+    SetEnvironmentSchema,
+    LandAtFacilitySchema,
+    TransferResourcesSchema,
+    ApplyDamageSchema,
+    DestroyEntitySchema,
+    SpawnEntitySchema,
+    SetIntentSchema,
+    UpdateWRARulesSchema,
+    LaunchAircraftSchema
 ]);
 export type EngineCommandPayload = z.infer<typeof EngineCommandPayloadSchema>;
 
@@ -198,7 +399,7 @@ export const EngineEventSchema = z.object({
     type: z.string(),
     entityId: EntityIdSchema.optional(),
     targetId: EntityIdSchema.optional(),
-    data: z.record(z.unknown()).optional()
+    data: z.record(z.string(), z.any()).optional()
 });
 export type EngineEvent = z.infer<typeof EngineEventSchema>;
 

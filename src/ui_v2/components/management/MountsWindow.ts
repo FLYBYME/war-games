@@ -134,7 +134,8 @@ export class MountsWindowContent extends Component {
                 const fireBtn = card.querySelector('.fire-btn') as HTMLButtonElement;
                 fireBtn.onclick = () => {
                     console.log(`Firing mount ${idx} from ${unit.id}`);
-                    UIStore.client.combat.fireWeapon(unit.id, idx, 'TARGET_ID_HERE'); 
+                    UIStore.client.dispatch({ type: 'FireWeapon', entityId: unit.id, mountIndex: idx, targetId: 'TARGET_ID_HERE' });
+ 
                 };
             }
 

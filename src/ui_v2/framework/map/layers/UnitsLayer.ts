@@ -67,7 +67,7 @@ export class UnitsLayer implements MapLayer {
             const size = baseSize / viewScale;
 
             const iconContainer = new Container();
-            iconContainer.rotation = (unit.rot) * (Math.PI / 180);
+            iconContainer.rotation = (unit.heading || 0) * (Math.PI / 180);
             
             const iconG = new Graphics();
             

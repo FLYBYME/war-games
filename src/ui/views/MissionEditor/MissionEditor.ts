@@ -35,7 +35,7 @@ export class MissionEditor extends Component {
         return `<div class="empty-message">Select a unit to assign missions</div>`;
     }
 
-    private renderUnitEditor(unit: { id: string, status: string }): string {
+    private renderUnitEditor(unit: any): string {
         return `
             <div class="editor-section">
                 <div class="label">Assigned Unit</div>
@@ -43,7 +43,7 @@ export class MissionEditor extends Component {
             </div>
             <div class="editor-section">
                 <div class="label">Current Status</div>
-                <div class="value">${unit.status}</div>
+                <div class="value">${unit.logState || 'Unknown'}</div>
             </div>
             <div class="editor-section">
                 <div class="label">Mission Type</div>

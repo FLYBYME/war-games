@@ -95,7 +95,7 @@ export class CommandFactory {
                 return new SetMissionROECommand('MISSION', payload.roe);
 
             case 'SetMission':
-                return new SetMissionCommand(payload.entityId, payload.missionType as MissionType, payload.params);
+                return new SetMissionCommand(payload.entityId, payload.mission.missionType as MissionType, payload.mission);
 
             case 'SetAltitude':
                 return new SetAltitudeCommand(payload.entityId, payload.altitudeM);

@@ -33,7 +33,8 @@ export class ProfileEditor extends Component {
     }
 
     private renderProfileRow(p: EntityProfile, state: unknown): string {
-        const isSelected = state?.selectedProfileId === p.platformClass;
+        const stateRecord = state as Record<string, unknown> | null | undefined;
+        const isSelected = stateRecord?.selectedProfileId === p.platformClass;
         return `
             <div class="profile-row ${isSelected ? 'selected' : ''}" onclick="this.dispatchEvent(new CustomEvent('select-profile', {detail: '${p.platformClass}'}))">
                 <div class="name">${p.variantName}</div>

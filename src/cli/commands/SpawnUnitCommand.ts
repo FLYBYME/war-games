@@ -42,13 +42,14 @@ export class SpawnUnitCommand extends BaseCommand {
             await client.connect();
             client.joinMatch(Side.Neutral, matchId); // We need to be joined to dispatch commands
 
-            const res = await client.scenario.spawnEntity(
-                `${profileId}-${Date.now()}`,
+            const res = await client.dispatch({
+                type: 'SpawnEntity',
+                id: `${profileId}-${Date.now()}`,
                 profileId,
-                side as Side,
+                side: side as Side,
                 position,
-                parseFloat(heading)
-            );
+                heading: parseFloat(heading)
+            });
 
             if (res.success) {
                 console.log(`${C.green}✔ Unit ${C.bold}${profileId}${C.reset} spawned successfully at ${pos}.`);

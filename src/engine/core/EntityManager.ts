@@ -16,7 +16,7 @@ import { EnvironmentComponent } from '../components/Environment.js';
 import { NavigationComponent } from '../components/Navigation.js';
 import { DoctrineComponent } from '../components/Doctrine.js';
 import { DatalinkComponent } from '../components/Datalink.js';
-import { MissionComponent, MissionType } from '../components/Missions.js';
+import { MissionComponent, MissionType, MissionStatus } from '../components/Missions.js';
 import { FacilityComponent, FacilityType, LogisticsComponent } from '../components/Logistics.js';
 import { TaskGraphComponent } from '../components/TaskGraph.js';
 
@@ -90,12 +90,18 @@ export class EntityManager {
         };
 
         if (profile.kinematics) {
+            const massEmpty = profile.kinematics.massEmptyKg || profile.kinematics.massKg || 1000;
+            const initialFuel = profile.fuel?.maxKg || 0;
+            const totalMass = massEmpty + initialFuel;
+
             entity.addComponent(new KinematicsComponent(
                 vel,
                 { x: 0, y: 0, z: 0 },
                 { x: 0, y: 0, z: 0 },
-                profile.kinematics.massEmptyKg || profile.kinematics.massKg || 1000,
-                (profile.aero?.dragCoeffCd || profile.kinematics.dragCoeff || 0.05)
+                totalMass,
+                (profile.aero?.dragCoeffCd || profile.kinematics.dragCoeff || 0.05),
+                0,
+                massEmpty
             ));
         }
 
@@ -155,6 +161,8 @@ export class EntityManager {
             entity.addComponent(new DatalinkComponent('default-net'));
             entity.addComponent(new MissionComponent(MissionType.Idle, {}));
             entity.addComponent(new TaskGraphComponent());
+        } else if (profile.type === 'Weapon') {
+            entity.addComponent(new MissionComponent(MissionType.Intercept, { targetId: 'unknown' }, MissionStatus.Active));
         }
 
         if (profile.stages && profile.stages.length > 0) {

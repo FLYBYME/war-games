@@ -56,7 +56,7 @@ export class StudyCommand extends BaseCommand {
 
         await client.joinMatch(Side.Neutral, `study-${timestamp}`);
         await client.scenario.importScenario(selectedScenario);
-        await client.scenario.setTimeCompression(100);
+        client.setTimeCompression(100);
 
         let lastVs: ViewStatePayload | null = null;
         let tickCount = 0;

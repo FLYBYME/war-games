@@ -1,12 +1,12 @@
 import { CommandHandler } from '../CommandDispatcher.js';
 import { World } from '../World.js';
-import { 
-    SetROECommand, 
-    SetSideROECommand, 
-    SetMissionROECommand, 
+import {
+    SetROECommand,
+    SetSideROECommand,
+    SetMissionROECommand,
     SetMissionCommand,
-    UpdateWRARulesCommand, 
-    SetLoadoutCommand, 
+    UpdateWRARulesCommand,
+    SetLoadoutCommand,
     AssignWeaponCommand,
     SetIntentCommand
 } from '../Command.js';
@@ -106,7 +106,9 @@ export class SetSideROEHandler implements CommandHandler<SetSideROECommand> {
         for (const entity of world.getEntities()) {
             if (entity.side === cmd.side) {
                 const doctrine = entity.getComponent(DoctrineComponent);
-                if (doctrine) doctrine.roe = cmd.roe as ROE;
+                if (doctrine) {
+                    doctrine.roe = cmd.roe as ROE;
+                }
             }
         }
     }
@@ -157,7 +159,7 @@ export class SetLoadoutHandler implements CommandHandler<SetLoadoutCommand> {
                             });
                             addedWeapons.add(weaponProfileId);
                         }
-                        
+
                         if (combat.mounts[mountIndex]) {
                             combat.mounts[mountIndex].activeMagazineIndex = Array.from(addedWeapons).indexOf(weaponProfileId);
                         }

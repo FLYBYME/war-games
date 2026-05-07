@@ -9,7 +9,7 @@ export enum Side {
     Red = 'Red',
     Green = 'Green'
 }
-export const SideSchema = z.nativeEnum(Side);
+export const SideSchema = z.nativeEnum(Side).describe("The tactical side/alliance of the entity (Blue, Red, Neutral)");
 
 export const Vector3Schema = z.object({
     x: z.number().describe("WGS84 Easting / Longitude offset in meters from origin"),
@@ -36,7 +36,7 @@ export enum MissionType {
     MCM = 'MCM',
     Intercept = 'Intercept'
 }
-export const MissionTypeSchema = z.nativeEnum(MissionType);
+export const MissionTypeSchema = z.nativeEnum(MissionType).describe("The tactical objective type (e.g., Patrol, Strike, ASW, Escort, Intercept, Idle)");
 
 export const AreaV3Schema = z.object({
     id: z.string().optional(),
@@ -62,7 +62,10 @@ export const MissionParamsSchema = z.object({
     searchPattern: z.string().optional().describe("Pattern type for searches"),
     area: AreaSchema.optional().describe("Geographic constraint area"),
     allowedArea: AreaSchema.optional().describe("VBSS/Boarding allowed area"),
-}).catchall(z.unknown());
+    speedKts: z.number().optional().describe("Desired speed in knots for the mission"),
+    boardingDurationTicks: z.number().optional().describe("Duration in ticks for VBSS boarding"),
+    method: z.string().optional().describe("MCM clearing method"),
+});
 export type MissionParams = z.infer<typeof MissionParamsSchema>;
 
 export enum MissionStatus {

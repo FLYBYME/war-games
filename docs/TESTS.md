@@ -1,0 +1,333 @@
+# War Games Tactical Simulation: Test Case Checklist
+
+This document contains a comprehensive checklist of 300 test cases designed to cover the core components, physics, combat systems, AI, and network protocols of the simulation engine.
+
+## 1. Physics & Kinematics (1-20)
+- [x] 1. Calculate velocity correctly from speed and heading
+- [x] 2. Entity accelerates up to max speed over time
+- [x] 3. Entity decelerates correctly when commanded to lower speed
+- [x] 4. Turn rate respects maximum slew/turn rate limits
+- [x] 5. Altitude change obeys pitch and thrust constraints
+- [x] 6. Aerodynamic drag scales with velocity squared
+- [x] 7. Air density reduces aerodynamic drag at higher altitudes
+- [x] 8. VectorMath.magnitude returns correct length
+- [x] 9. VectorMath.dot returns correct dot product
+- [x] 10. VectorMath.cross returns correct cross product
+- [x] 11. GeoProjection correctly converts Lat/Lon to cartesian X/Y
+- [x] 12. GeoProjection correctly converts cartesian X/Y to Lat/Lon
+- [x] 13. Great circle distance calculation is accurate
+- [x] 14. Pitch changes affect horizontal velocity component
+- [x] 15. Fuel mass reduction correctly updates overall entity mass
+- [x] 16. Surface entities are clamped to Z=0 (prevent falling through world)
+- [x] 17. Kinematics integration respects delta time accurately
+- [x] 18. Entities cannot exceed Mach 10 safety limit
+- [x] 19. Gravity applies correctly to ballistic munitions
+- [x] 20. Subsurface entities can have negative altitude/Z component
+
+## 2. Sensors & Detection (21-40)
+- [x] 21. Radar detects target within max range and line of sight
+- [x] 22. Radar fails to detect target outside max range
+- [x] 23. Radar fails to detect target behind terrain (masking)
+- [x] 24. Sonar detects submarine within acoustic range
+- [x] 25. Thermal layers block sonar detection appropriately
+- [x] 26. ESM detects active radar emissions at extended range
+- [x] 27. IRST detects high-speed aircraft (heat signatures)
+- [x] 28. Visual sensors require daylight and clear weather
+- [x] 29. Active radar gives away position to enemy ESM
+- [x] 30. Sensor sweeping azimuth updates correctly per tick
+- [x] 31. Target outside sensor cone is not detected
+- [x] 32. Sea state degrades surface radar detection
+- [x] 33. Cloud cover degrades visual and IRST detection
+- [x] 34. Turning off active sensor removes emissions instantly
+- [x] 35. Radar Cross Section (RCS) scales detection probability
+- [x] 36. Acoustic Source Level (SL) scales sonar detection probability
+- [x] 37. Active sonar ping detects silent submarines
+- [x] 38. Multiple active sensors correctly combine detection probabilities
+- [x] 39. Stealth aircraft evade radar detection at medium range
+- [x] 40. Electronic warfare (ECM) reduces radar detection range
+
+## 3. Tracking & Fusion (41-60)
+- [x] 41. New detection generates a Pending track
+- [x] 42. Three consecutive detections promote track to Active
+- [x] 43. Track position interpolates correctly between updates
+- [x] 44. Missing detections cause track to enter Coasting state
+- [x] 45. Coasting track degrades CEP over time
+- [x] 46. Track is Dropped after coasting for too long
+- [x] 47. Multiple sensors detecting same entity fuse into single track
+- [x] 48. Datalink shares tracks between friendly units
+- [x] 49. Track classification correctly identifies "Aircraft" vs "Ship"
+- [x] 50. IFF identifies friendly transponders automatically
+- [x] 51. Hostile act (firing weapon) marks track as Hostile
+- [x] 52. Track ID remains consistent across coasting periods
+- [x] 53. Fused track accuracy uses the best sensor's CEP
+- [x] 54. ESM-only track generates a line of bearing, not exact position
+- [ ] 55. Triangulation of multiple ESM bearings resolves a track position
+- [x] 56. Track velocity is correctly estimated from position delta
+- [x] 57. High-speed maneuvering degrades track velocity estimate
+- [x] 58. Splitting tracks (e.g., missile launch) creates distinct track IDs
+- [ ] 59. Jamming introduces ghost tracks or high CEP
+- [x] 60. Re-acquiring a dropped track generates a new track ID
+
+## 4. Combat & Fire Control (61-80)
+- [ ] 61. FireWeaponCommand successfully checks magazine capacity
+- [ ] 62. FireWeaponCommand fails if magazine is empty
+- [ ] 63. Mount slew rate delays firing until aligned
+- [ ] 64. Firing weapon reduces magazine count by exactly 1
+- [ ] 65. Reloading transfers rounds from reserve to active magazine
+- [ ] 66. Reloading is paused if mount is actively tracking
+- [ ] 67. Target out of weapon range rejects firing command
+- [ ] 68. Target out of mount arc rejects firing command
+- [ ] 69. Advanced ballistic solution calculates correct lead angle
+- [ ] 70. Advanced ballistic solution accounts for target velocity
+- [ ] 71. Advanced ballistic solution accounts for wind deflection
+- [ ] 72. Advanced ballistic solution accounts for gravity drop
+- [ ] 73. VLS cells fire vertically before pitching toward target
+- [ ] 74. FireSalvoCommand consumes specified quantity of munitions
+- [ ] 75. Salvo spreads munitions using dispersion angle
+- [ ] 76. WRA rules dictate correct number of weapons to fire
+- [ ] 77. WRA rules respect max and min range constraints
+- [ ] 78. CIWS automatically engages incoming missiles
+- [ ] 79. Point defense respects target priority based on time-to-impact
+- [ ] 80. Mounts cannot fire if subsystem is destroyed
+
+## 5. Weapons & Munitions (81-100)
+- [ ] 81. Missile accelerates to cruise speed using rocket motor
+- [ ] 82. Missile runs out of fuel and coasts to target
+- [ ] 83. Torpedo seeks target using active acoustic guidance
+- [ ] 84. Torpedo wire-guidance breaks if launching sub turns too sharply
+- [ ] 85. Semi-Active Radar Homing (SARH) requires continuous illumination
+- [ ] 86. SARH missile loses lock if launching platform loses track
+- [ ] 87. Active Radar Homing (ARH) missile goes "pitbull" and seeks autonomously
+- [ ] 88. Heat-seeking (IR) missile tracks target engine exhaust
+- [ ] 89. Flares successfully decoy IR missiles with probability based on generation
+- [ ] 90. Chaff successfully decoys ARH missiles with probability
+- [ ] 91. Anti-Radiation Missile (ARM) homes in on active radar emitter
+- [ ] 92. ARM loses track if target radar is turned off
+- [ ] 93. Unguided bomb falls ballistically to target coordinates
+- [ ] 94. Cruise missile follows terrain-following waypoints
+- [ ] 95. Weapon stage separation discards booster and changes mass
+- [ ] 96. Proximity fuse detonates weapon when passing near target
+- [ ] 97. Contact fuse detonates only on direct physical collision
+- [ ] 98. Munition self-destructs if target is lost and no fuel remains
+- [ ] 99. Torpedo circular search pattern engages first valid target
+- [ ] 100. Depth charge detonates at specified crush depth
+
+## 6. Damage & Vulnerability (101-120)
+- [ ] 101. ApplyDamageCommand reduces entity HP correctly
+- [ ] 102. EntityDestroyed event fires when HP reaches 0
+- [ ] 103. Armor thickness reduces incoming kinetic damage
+- [ ] 104. Blast fragmentation deals splash damage to nearby entities
+- [ ] 105. Splash damage scales inversely with distance from epicenter
+- [ ] 106. Subsystem damage disables specific sensors
+- [ ] 107. Subsystem damage disables specific weapon mounts
+- [ ] 108. Subsystem damage to propulsion reduces max speed
+- [ ] 109. Fire condition applies damage over time
+- [ ] 110. Flooding condition reduces speed and alters buoyancy
+- [ ] 111. Damage Control teams put out fires over time
+- [ ] 112. Damage Control teams stop flooding over time
+- [ ] 113. Nuclear detonation instantly destroys units in blast radius
+- [ ] 114. EMP effect from nuclear blast disables electronics
+- [ ] 115. Munition magazine hit causes catastrophic secondary explosion
+- [ ] 116. Aviation fuel hit causes massive fire
+- [ ] 117. Runways can be cratered, preventing aircraft launch/recovery
+- [ ] 118. Destroyed entities are correctly removed from the simulation world
+- [ ] 119. Submarines crush if diving below crush depth
+- [ ] 120. Collisions between ships cause severe damage to both
+
+## 7. Navigation & Autopilot (121-140)
+- [ ] 121. Entity correctly steers toward assigned waypoint
+- [ ] 122. Entity proceeds to next waypoint upon reaching current one
+- [ ] 123. Entity stops and loiters when final waypoint is reached
+- [ ] 124. ClearWaypointsCommand stops entity and clears path
+- [ ] 125. SetCourseCommand replaces existing waypoints with a single destination
+- [ ] 126. SetHeadingCommand overrides autopilot and steers to specific angle
+- [ ] 127. SetSpeedCommand sets desired speed and autopilot adjusts thrust
+- [ ] 128. SetAltitudeCommand adjusts pitch to reach target altitude
+- [ ] 129. Aircraft maintains minimum flight speed to avoid stall
+- [ ] 130. Ships avoid running aground on land geometry
+- [ ] 131. Submarines avoid colliding with bathymetric sea floor
+- [ ] 132. Formation leader movement updates follower waypoints
+- [ ] 133. Formation followers maintain relative offset positions
+- [ ] 134. Formation breaks cleanly upon BreakFormationCommand
+- [ ] 135. Autopilot avoids collision with friendly entities
+- [ ] 136. Autopilot banks aircraft correctly during turns
+- [ ] 137. Ships have a turning circle radius based on speed and rudder
+- [ ] 138. Submarines change depth at maximum dive/rise angles
+- [ ] 139. Hovering helicopters maintain zero ground speed
+- [ ] 140. Evasive maneuvers break straight-line pathing randomly
+
+## 8. Missions & AI Tasks (141-160)
+- [ ] 141. Patrol mission generates search pattern waypoints
+- [ ] 142. Patrol mission repeats pattern when finished
+- [ ] 143. Strike mission navigates to target and releases weapons
+- [ ] 144. Strike mission returns to base after weapons released
+- [ ] 145. Intercept mission constantly updates course to target track
+- [ ] 146. Intercept mission accelerates to max speed
+- [ ] 147. Escort mission follows high-value unit dynamically
+- [ ] 148. ASW mission drops sonobuoys in pattern
+- [ ] 149. ASW mission attacks identified submarines
+- [ ] 150. MCM mission navigates sweep area systematically
+- [ ] 151. MCM mission destroys identified sea mines
+- [ ] 152. VBSS mission closes to 0 range and holds for duration
+- [ ] 153. RTB (Return to Base) task finds nearest friendly airbase
+- [ ] 154. RTB task executes automatic landing sequence
+- [ ] 155. MissionStatus transitions to Active when started
+- [ ] 156. MissionStatus transitions to Completed when goal met
+- [ ] 157. MissionStatus transitions to Aborted on impossible command
+- [ ] 158. AI respects ROE (Rules of Engagement) before firing
+- [ ] 159. Free ROE allows AI to engage any hostile track
+- [ ] 160. Hold ROE prevents AI from firing unless fired upon
+
+## 9. Signatures & Stealth (161-180)
+- [ ] 161. Stealth aircraft have significantly reduced RCS
+- [ ] 162. Active jamming increases noise floor for enemy radar
+- [ ] 163. Jamming strobe generates bearing-only track for enemy
+- [ ] 164. EMCON Alpha leaves all sensors active
+- [ ] 165. EMCON Charlie forces all radar and active sonar off
+- [ ] 166. Acoustic signature increases linearly with ship speed
+- [ ] 167. Cavitation sharply increases acoustic signature at high speed
+- [ ] 168. Submarines running silent have minimal acoustic signature
+- [ ] 169. Surface ships have larger RCS than small patrol boats
+- [ ] 170. Aircraft RCS varies by aspect angle (head-on vs broadside)
+- [ ] 171. Opening weapon bay doors temporarily spikes RCS
+- [ ] 172. Firing a missile creates a massive visual and IR signature
+- [ ] 173. Infrared signature increases when afterburners are active
+- [ ] 174. Wake homing torpedoes track ship wake duration
+- [ ] 175. Sonobuoys have near-zero RCS and visual signature
+- [ ] 176. Decoys generate false RCS matching specific ship profiles
+- [ ] 177. Radar Warning Receiver (RWR) alerts on being painted by radar
+- [ ] 178. RWR distinguishes between Search and Track/Lock radar modes
+- [ ] 179. Submarine anechoic coating reduces active sonar return
+- [ ] 180. Low-flying aircraft use terrain masking to hide from ship radar
+
+## 10. Environment & Terrain (181-200)
+- [ ] 181. TerrainOracle correctly returns elevation for Lat/Lon
+- [ ] 182. Terrain block line-of-sight between two low-altitude points
+- [ ] 183. High altitude aircraft have line-of-sight over mountains
+- [ ] 184. Bathymetry oracle correctly returns depth for Lat/Lon
+- [ ] 185. Shallow water reduces sonar detection range
+- [ ] 186. Convergence Zone (CZ) allows extreme range sonar detection
+- [ ] 187. Thermal layer reflects active sonar pings
+- [ ] 188. Sea State 5+ degrades small boat speed
+- [ ] 189. Sea State 5+ reduces torpedo accuracy
+- [ ] 190. High winds push ballistic unguided weapons off course
+- [ ] 191. High winds affect aircraft ground speed calculation
+- [ ] 192. Rain attenuation reduces X-band radar range
+- [ ] 193. Rain attenuation reduces IRST range significantly
+- [ ] 194. Fog reduces visual detection range to near zero
+- [ ] 195. Time of day affects visual sensor baseline range
+- [ ] 196. Sun glare creates blind spot for visual/IR sensors
+- [ ] 197. Magnetic anomalies affect MAD (Magnetic Anomaly Detector) sensors
+- [ ] 198. Ice coverage prevents submarine surfacing
+- [ ] 199. Ice coverage blocks sonobuoy deployment
+- [ ] 200. MapDataService properly loads GeoJSON region boundaries
+
+## 11. Logistics & Aviation (201-220)
+- [ ] 201. FuelComponent correctly drains fuel based on engine thrust
+- [ ] 202. Aircraft reaches Bingo fuel and triggers RTB mission
+- [ ] 203. Aircraft crashes when fuel reaches 0
+- [ ] 204. Ship fuel consumption scales with speed curve
+- [ ] 205. Air-to-Air Refueling transfers fuel between tanker and receiver
+- [ ] 206. FacilityComponent hosts aircraft in hangars
+- [ ] 207. LaunchAircraftCommand moves aircraft from hangar to runway
+- [ ] 208. LaunchAircraftCommand accelerates aircraft to takeoff speed
+- [ ] 209. Launching is blocked if runway is damaged
+- [ ] 210. Launching is delayed if runway is occupied
+- [ ] 211. Landing aircraft approach glide slope and reduce speed
+- [ ] 212. Landing aircraft transfer to hangar upon touchdown
+- [ ] 213. Reloading aircraft at base replenishes magazines instantly (simulated)
+- [ ] 214. Reloading aircraft at base replenishes fuel
+- [ ] 215. SetLoadoutCommand changes aircraft weapon profile
+- [ ] 216. TransferResourcesCommand moves fuel between ships
+- [ ] 217. Aircraft weight limits prevent overloading weapons/fuel
+- [ ] 218. Carrier deck spotting limits concurrent launches
+- [ ] 219. Helicopters can land on small ship helipads
+- [ ] 220. VTOL aircraft do not require runway length
+
+## 12. Network & Protocol Serialization (221-240)
+- [ ] 221. Zod safely parses valid ViewStatePayload
+- [ ] 222. Zod rejects ViewStatePayload missing required fields
+- [ ] 223. Binary DeltaEncoder correctly compresses ViewState
+- [ ] 224. Binary DeltaDecoder accurately restores ViewState
+- [ ] 225. Delta encoding only sends changed properties for existing entities
+- [ ] 226. Delta decoding handles new entity spawns smoothly
+- [ ] 227. Delta decoding handles entity deletions correctly
+- [ ] 228. String tables reduce bandwidth for repeated strings (e.g. profiles)
+- [ ] 229. CommandFactory parses FireWeaponCommand JSON
+- [ ] 230. CommandFactory rejects invalid SetCourseCommand (missing coords)
+- [ ] 231. SetMissionSchema union strictly enforces parameter structures
+- [ ] 232. WebSocket connection handles message framing properly
+- [ ] 233. Client reconnects and requests full sync on connection drop
+- [ ] 234. Server Message Error payload correctly propagates to client
+- [ ] 235. ScenarioIntent Schema strictly validates nested WRA rules
+- [ ] 236. EngineEventSchema serializes weapon fire events
+- [ ] 237. EngineEventSchema serializes impact events
+- [ ] 238. Telemetry history is correctly chunked for historical sync
+- [ ] 239. Zod descriptions are exported successfully for LLM tools
+- [ ] 240. MatchInfo payload correctly omits heavy state arrays
+
+## 13. Scenario & State Management (241-260)
+- [ ] 241. ScenarioLoader creates entities from profile definitions
+- [ ] 242. ScenarioLoader applies initial waypoints correctly
+- [ ] 243. ScenarioLoader assigns entities to correct sides
+- [ ] 244. ScenarioLoader imports GeoJSON zones as MapRegions
+- [ ] 245. Time compression 2x updates physics at double rate
+- [ ] 246. Time compression 10x skips render frames but maintains physics delta
+- [ ] 247. Pause state freezes all entity kinematics
+- [ ] 248. Pause state freezes sensor rotations and fuel burn
+- [ ] 249. Commands can be issued and queued while paused
+- [ ] 250. TickManager strictly maintains deterministic tick count
+- [ ] 251. Random seed ensures deterministic weapon accuracy
+- [ ] 252. Scenario Export serializes current world state to JSON
+- [ ] 253. Scenario Import accurately restores world state from JSON
+- [ ] 254. Multiple concurrent matches run in isolated World instances
+- [ ] 255. DatabaseService logs MatchInfo properly
+- [ ] 256. World reaper cleans up destroyed entities at end of tick
+- [ ] 257. World querying by quadtree returns accurate nearby entities
+- [ ] 258. Collision layer masking prevents subs from hitting aircraft
+- [ ] 259. Side identification prevents Blue forces from seeing Red truth data
+- [ ] 260. Neutral ships default to unknown classification until scanned
+
+## 14. Commands & Command Handlers (261-280)
+- [ ] 261. ApplyDamageCommand executes via CommandDispatcher
+- [ ] 262. DestroyEntityCommand completely removes entity
+- [ ] 263. SpawnEntityCommand instantiates new entity at runtime
+- [ ] 264. SetSensorStateCommand correctly toggles isActive flag
+- [ ] 265. SetEMCONCommand iterates all unit sensors and applies state
+- [ ] 266. SetUnitROECommand updates DoctrineComponent
+- [ ] 267. UpdateWRARulesCommand merges new rules into Doctrine
+- [ ] 268. JoinFormationCommand correctly sets leader ID
+- [ ] 269. BreakFormationCommand nullifies leader ID
+- [ ] 270. AddWaypointCommand appends to NavigationComponent array
+- [ ] 271. ClearWaypointsCommand truncates NavigationComponent array
+- [ ] 272. SetAltitudeCommand creates a dive/climb waypoint
+- [ ] 273. FireSalvoCommand handles quantity boundaries correctly
+- [ ] 274. NextWeaponStageCommand forces booster separation
+- [ ] 275. SetEnvironmentCommand alters wind speed globally
+- [ ] 276. LandAtFacilityCommand sets Navigation to facility coords
+- [ ] 277. DetonateCommand applies splash damage at coordinate
+- [ ] 278. SetConditionCommand applies fire/flooding flags
+- [ ] 279. SetIntentCommand executes complex group directives
+- [ ] 280. Command queues are flushed exactly once per tick
+
+## 15. UI, MapRenderer & Tools (281-300)
+- [ ] 281. MapEngine renders units at correct geo-projected canvas coordinates
+- [ ] 282. MapEngine interpolates unit movement smoothly between ticks
+- [ ] 283. MapEngine scales unit icons correctly with zoom level
+- [ ] 284. MapEngine hides units that are not in the ViewState payload
+- [ ] 285. Radar rings render at correct radius based on maxRangeM
+- [ ] 286. WEZ polygons correctly calculate maximum missile ranges
+- [ ] 287. DatalinkLayer draws lines between networked entities
+- [ ] 288. UnitInspector displays correct heading and speed
+- [ ] 289. UnitInspector updates sensor active/inactive toggles
+- [ ] 290. AdvancedMissionPlanner parses map clicks into waypoints
+- [ ] 291. AdvancedMissionPlanner displays expected Time On Target (TOT)
+- [ ] 292. UIStore auto-pauses on 'WeaponFired' event
+- [ ] 293. UIStore auto-pauses on 'NewHostile' track event
+- [ ] 294. UIStore correctly aggregates match logs
+- [ ] 295. MatchSelector queries active matches from server API
+- [ ] 296. ProfileEditor displays correct kinematics from schema
+- [ ] 297. SpeedAltitudeSlider dispatches SetSpeed and SetAltitude commands
+- [ ] 298. TacticalTools LLM tool returns formatted unit lists
+- [ ] 299. TacticalTools LLM tool strictly adheres to Zod domains
+- [ ] 300. MapEngine properly destroys PIXI application on unmount

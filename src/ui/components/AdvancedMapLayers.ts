@@ -232,7 +232,7 @@ export class SensorArcsLayer implements MapLayer {
         const g = new Graphics();
         for (const u of state.units) {
             const ox = u.pos.x * SCALE, oy = -u.pos.y * SCALE;
-            const headRad = (-u.rot * Math.PI) / 180 + Math.PI / 2;
+            const headRad = (-u.heading * Math.PI) / 180 + Math.PI / 2;
             const range = 120000 * SCALE;
             const halfArc = Math.PI / 3; // 60 deg half-arc
             g.moveTo(ox, oy);

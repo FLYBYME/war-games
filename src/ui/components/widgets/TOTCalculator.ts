@@ -81,8 +81,7 @@ export class TOTCalculator extends Component {
                 sdkClient.dispatch({
                     type: 'SetMission',
                     entityId: unit.id,
-                    missionType: MissionType.Strike,
-                    params: { targetId: targetTrack.id, timeOverTargetTick: targetTick }
+                    mission: { missionType: "Strike", targetId: targetTrack.id, timeOverTargetTick: targetTick } as unknown as any
                 });
             }
         });

@@ -130,9 +130,9 @@ const SetMissionSchema = z.object({
 });
 
 // Universal Execution
-client.executeCommand({
-    type: 'SetMission',
-    entityId: 'F35-Alpha',
-    mission: { missionType: 'Intercept', targetId: 'TRK-09', speedKts: 450 }
+sdkClient.dispatch({
+    type: 'SetHeading',
+    entityId: intent.entityId,
+    heading: p.heading
 });
 ```

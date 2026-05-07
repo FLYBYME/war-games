@@ -29,7 +29,7 @@ export class RightPanelInspector extends Component {
 
         this.element.querySelectorAll('.panel-tabs button').forEach(btn => {
             this.listen(btn as HTMLElement, 'click', () => {
-                this.mode = btn.getAttribute('data-mode') as unknown as string;
+                this.mode = btn.getAttribute('data-mode') as 'unit' | 'contacts' | 'system';
                 this.render();
             });
         });

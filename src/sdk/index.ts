@@ -11,7 +11,7 @@
 
 export { WarGamesClient, ConnectionState } from './WarGamesClient.js';
 export type { ClientConfig } from './WarGamesClient.js';
-export { NavigationModule, CombatModule, SensorModule, ScenarioModule, TerrainModule } from './WarGamesClient.js';
+export { ScenarioModule, TerrainModule } from './WarGamesClient.js';
 export { EventEmitter } from './EventEmitter.js';
 export { Formatters } from './Formatters.js';
 export { DeltaEncoder } from './DeltaEncoder.js';

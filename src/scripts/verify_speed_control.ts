@@ -10,28 +10,28 @@ async function main() {
     console.log("Joined match:", matchId);
 
     // Initial State
-    const vs1 = await client.getLatestViewState() as ViewStatePayload;
+    const vs1 = await client.getLatestViewState();
     const startTick = vs1.tick;
-    
+
     console.log("Start Tick:", startTick);
     await client.resume(1);
 
     // Wait 2 seconds real time
     await new Promise(r => setTimeout(r, 2000));
 
-    const vs2 = await client.getLatestViewState() as ViewStatePayload;
+    const vs2 = await client.getLatestViewState();
     const unit = vs2.units.find((u) => u.side === Side.Blue);
-    
+
     if (unit) {
         console.log(`Unit ${unit.id} speed: ${unit.speedKts} kts`);
-        
+
         // Command speed change
         console.log("Setting speed to 600 kts...");
-        await client.nav.setSpeed(unit.id, 600);
-        
+        await client.dispatch({ type: 'SetSpeed', entityId: unit.id, speedKts: 600 });
+
         await new Promise(r => setTimeout(r, 5000));
-        
-        const vs3 = await client.getLatestViewState() as ViewStatePayload;
+
+        const vs3 = await client.getLatestViewState();
         const unitUpdated = vs3.units.find(u => u.id === unit.id);
         console.log(`Unit ${unit.id} updated speed: ${unitUpdated?.speedKts} kts`);
     }

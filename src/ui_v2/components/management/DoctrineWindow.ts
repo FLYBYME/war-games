@@ -56,15 +56,16 @@ export class DoctrineWindow extends Component {
         this.listen(roeSelect, 'change', () => {
             const unit = UIStore.selectedEntityId.get();
             if (unit) {
-                void sdkClient.combat.setUnitROE(unit, roeSelect.value);
+                void sdkClient.dispatch({ type: 'SetUnitROE', entityId: unit, roe: roeSelect.value });
             }
         });
 
         this.listen(emconSelect, 'change', () => {
             const unit = UIStore.selectedEntityId.get();
             if (unit) {
-                void sdkClient.sensors.setEMCON(emconSelect.value, unit);
+                void sdkClient.dispatch({ type: 'SetEMCON', entityId: unit, state: emconSelect.value });
             }
         });
+
     }
 }

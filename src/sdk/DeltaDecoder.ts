@@ -1,133 +1,168 @@
 import { ViewUnitPayload, ViewTrackPayload, ViewStateSnapshot, Side } from './schemas/index.js';
 
+/**
+ * DeltaDecoder: Decompresses the V3 binary protocol.
+ * Synchronized with DeltaEncoder's bitmask-based delta logic.
+ */
 export class DeltaDecoder {
-    private lastSnapshot: ViewStateSnapshot | null = null;
     private units: Map<string, ViewUnitPayload> = new Map();
     private tracks: Map<string, ViewTrackPayload> = new Map();
 
     public clear(): void {
         this.units.clear();
         this.tracks.clear();
-        this.lastSnapshot = null;
     }
 
     public decode(buffer: ArrayBuffer): ViewStateSnapshot {
         const view = new DataView(buffer);
         let offset = 0;
+        const decoder = new TextDecoder();
 
+        // 1. Header (20 bytes)
         const tick = view.getUint32(offset, true); offset += 4;
         const sequence = view.getUint32(offset, true); offset += 4;
         const isPaused = view.getUint8(offset) === 1; offset += 1;
         const sideVal = view.getUint8(offset); offset += 1;
         const side = DeltaDecoder.mapSide(sideVal);
-        const originLat = view.getFloat64(offset, true); offset += 8;
-        const originLon = view.getFloat64(offset, true); offset += 8;
+        const originLat = view.getFloat32(offset, true); offset += 4;
+        const originLon = view.getFloat32(offset, true); offset += 4;
+        const unitCount = view.getUint16(offset, true); offset += 2;
 
-        const unitCount = view.getUint32(offset, true); offset += 4;
         const updatedUnitIds = new Set<string>();
 
+        // 2. Units
         for (let i = 0; i < unitCount; i++) {
-            const idLen = view.getUint16(offset, true); offset += 2;
-            const id = new TextDecoder().decode(buffer.slice(offset, offset + idLen)); offset += idLen;
+            const idLen = view.getUint8(offset); offset += 1;
+            const id = decoder.decode(new Uint8Array(buffer, offset, idLen)); offset += idLen;
             updatedUnitIds.add(id);
 
-            const x = view.getFloat64(offset, true); offset += 8;
-            const y = view.getFloat64(offset, true); offset += 8;
-            const z = view.getFloat32(offset, true); offset += 4;
-            const rot = view.getFloat32(offset, true); offset += 4;
-            const hp = view.getFloat32(offset, true); offset += 4;
-            const fuelPct = view.getFloat32(offset, true); offset += 4;
+            const mask = view.getUint8(offset); offset += 1;
 
             let unit = this.units.get(id);
             if (!unit) {
+                // Initialize with defaults if it's a new unit
                 unit = {
                     id,
-                    side,
-                    pos: { x, y, z },
-                    rot,
-                    hp,
-                    fuelPct,
-                    isDestroyed: hp <= 0,
+                    side: side,
+                    pos: { x: 0, y: 0, z: 0 },
+                    heading: 0,
+                    hp: 100,
+                    fuelPct: 1,
+                    isDestroyed: false,
                     logState: 'Ready',
-                    isBingo: fuelPct < 0.1,
+                    isBingo: false,
                     sensors: [],
                     mounts: []
                 };
                 this.units.set(id, unit);
-            } else {
-                unit.pos = { x, y, z };
-                unit.rot = rot;
-                unit.hp = hp;
-                unit.fuelPct = fuelPct;
-                unit.isDestroyed = hp <= 0;
+            }
+
+            if (mask & (1 << 0)) { // Position
+                unit.pos.x = view.getFloat32(offset, true); offset += 4;
+                unit.pos.y = view.getFloat32(offset, true); offset += 4;
+                unit.pos.z = view.getFloat32(offset, true); offset += 4;
+            }
+            if (mask & (1 << 1)) { // Rotation
+                unit.heading = view.getUint16(offset, true); offset += 2;
+            }
+            if (mask & (1 << 2)) { // HP/Status
+                unit.hp = view.getUint8(offset); offset += 1;
+                unit.isDestroyed = view.getUint8(offset) === 1; offset += 1;
+            }
+            if (mask & (1 << 3)) { // Nav (Speed/Alt)
+                unit.desiredSpeedKts = view.getUint16(offset, true); offset += 2;
+                unit.desiredAltitudeM = view.getInt16(offset, true); offset += 2;
+            }
+            if (mask & (1 << 4)) { // Profile/Sensors
+                const pIdLen = view.getUint8(offset); offset += 1;
+                unit.profileId = decoder.decode(new Uint8Array(buffer, offset, pIdLen)); offset += pIdLen;
+                unit.sensorMask = view.getUint16(offset, true); offset += 2;
+            }
+            if (mask & (1 << 5)) { // Velocity
+                unit.vel = {
+                    x: view.getFloat32(offset, true),
+                    y: view.getFloat32(offset, true),
+                    z: view.getFloat32(offset, true)
+                };
+                offset += 12;
+            }
+            if (mask & (1 << 6)) { // Side
+                unit.side = DeltaDecoder.mapSide(view.getUint8(offset)); offset += 1;
+            }
+            if (mask & (1 << 7)) { // Fuel
+                unit.fuelPct = view.getUint8(offset) / 100; offset += 1;
+                unit.isBingo = unit.fuelPct < 0.1;
             }
         }
 
-        // Remove units not in snapshot
-        for (const id of this.units.keys()) {
+        // Cleanup stale units
+        for (const [id] of this.units) {
             if (!updatedUnitIds.has(id)) this.units.delete(id);
         }
 
-        const trackCount = view.getUint32(offset, true); offset += 4;
+        // 3. Tracks
+        const trackCount = view.getUint16(offset, true); offset += 2;
         const updatedTrackIds = new Set<string>();
 
         for (let i = 0; i < trackCount; i++) {
-            const idLen = view.getUint16(offset, true); offset += 2;
-            const id = new TextDecoder().decode(buffer.slice(offset, offset + idLen)); offset += idLen;
+            const idLen = view.getUint8(offset); offset += 1;
+            const id = decoder.decode(new Uint8Array(buffer, offset, idLen)); offset += idLen;
             updatedTrackIds.add(id);
 
-            const tx = view.getFloat64(offset, true); offset += 8;
-            const ty = view.getFloat64(offset, true); offset += 8;
-            const tz = view.getFloat32(offset, true); offset += 4;
-            const vx = view.getFloat32(offset, true); offset += 4;
-            const vy = view.getFloat32(offset, true); offset += 4;
-            const vz = view.getFloat32(offset, true); offset += 4;
-            
-            const classLen = view.getUint8(offset); offset += 1;
-            const classification = new TextDecoder().decode(buffer.slice(offset, offset + classLen)); offset += classLen;
-            
-            const identVal = view.getUint8(offset); offset += 1;
-            const identification = DeltaDecoder.mapIdentification(identVal);
-            
-            const lastSeen = view.getUint32(offset, true); offset += 4;
-            const cep = view.getFloat32(offset, true); offset += 4;
+            const mask = view.getUint8(offset); offset += 1;
 
-            this.tracks.set(id, {
-                id,
-                pos: { x: tx, y: ty, z: tz },
-                vel: { x: vx, y: vy, z: vz },
-                classification,
-                identification,
-                lastSeen,
-                cep,
-                speedKts: Math.sqrt(vx * vx + vy * vy + vz * vz) * 1.94384
-            });
+            let track = this.tracks.get(id);
+            if (!track) {
+                track = {
+                    id,
+                    pos: { x: 0, y: 0, z: 0 },
+                    vel: { x: 0, y: 0, z: 0 },
+                    classification: 'Unknown',
+                    identification: 'Unknown',
+                    lastSeen: tick,
+                    cep: 0,
+                    speedKts: 0
+                };
+                this.tracks.set(id, track);
+            }
+
+            if (mask & (1 << 0)) {
+                track.pos.x = view.getFloat32(offset, true); offset += 4;
+                track.pos.y = view.getFloat32(offset, true); offset += 4;
+                track.pos.z = view.getFloat32(offset, true); offset += 4;
+            }
+            if (mask & (1 << 1)) {
+                track.vel.x = view.getFloat32(offset, true); offset += 4;
+                track.vel.y = view.getFloat32(offset, true); offset += 4;
+                track.vel.z = view.getFloat32(offset, true); offset += 4;
+                track.speedKts = Math.sqrt(track.vel.x**2 + track.vel.y**2 + track.vel.z**2) * 1.94384;
+            }
+            if (mask & (1 << 2)) {
+                track.identification = DeltaDecoder.mapIdentification(view.getUint8(offset)); offset += 1;
+                track.classification = DeltaDecoder.mapClassification(view.getUint8(offset)); offset += 1;
+            }
+            if (mask & (1 << 3)) {
+                track.cep = view.getFloat32(offset, true); offset += 4;
+            }
+            
+            track.lastSeen = tick;
         }
 
-        for (const id of this.tracks.keys()) {
+        for (const [id] of this.tracks) {
             if (!updatedTrackIds.has(id)) this.tracks.delete(id);
         }
 
-        // Remaining data is dynamic JSON (events, losses, etc.)
+        // 4. Dynamic JSON Segment
         const jsonLen = view.getUint32(offset, true); offset += 4;
-        const dynamicData = JSON.parse(new TextDecoder().decode(buffer.slice(offset, offset + jsonLen)));
+        const jsonStr = decoder.decode(new Uint8Array(buffer, offset, jsonLen)); offset += jsonLen;
+        const dynamicData = JSON.parse(jsonStr);
 
-        const units = Array.from(this.units.values());
+        // Apply extras to units
         if (dynamicData.unitExtras) {
-            for (const extras of dynamicData.unitExtras) {
-                const u = this.units.get(extras.id);
-                if (u) {
-                    u.parentId = extras.parentId;
-                    u.profileId = extras.profileId;
-                    u.logState = extras.logState || 'Ready';
-                    u.mission = extras.mission;
-                    u.taskGraph = extras.taskGraph;
-                    u.sensors = extras.sensors || [];
-                    u.mounts = extras.mounts || [];
-                    u.datalink = extras.datalink;
-                    u.coveragePolygons = extras.coveragePolygons;
-                    u.doctrine = extras.doctrine;
-                    u.speedKts = extras.speedKts;
+            for (const [id, extras] of Object.entries(dynamicData.unitExtras)) {
+                const u = this.units.get(id);
+                if (u && extras && typeof extras === 'object') {
+                    Object.assign(u, extras);
                 }
             }
         }
@@ -139,12 +174,11 @@ export class DeltaDecoder {
             isPaused,
             side,
             origin: { lat: originLat, lon: originLon },
-            units,
+            units: Array.from(this.units.values()),
             tracks: Array.from(this.tracks.values()),
             losses: dynamicData.losses || { blue: 0, red: 0, munitionsExpended: 0 },
             weather: dynamicData.weather || { cloudCover: 0, seaState: 0, windSpeedKts: 0, windDirDeg: 0, visibilityNM: 20, temperatureC: 15 },
             datalinkGraph: dynamicData.datalinkGraph || { nodes: [], edges: [] },
-            threatMap: dynamicData.threatMap || [],
             weaponBindings: dynamicData.weaponBindings || [],
             esmBearings: dynamicData.esmBearings || [],
             mapData: dynamicData.mapData
@@ -166,6 +200,17 @@ export class DeltaDecoder {
             case 1: return 'Friendly';
             case 2: return 'Hostile';
             case 3: return 'Neutral';
+            default: return 'Unknown';
+        }
+    }
+
+    private static mapClassification(val: number): string {
+        switch (val) {
+            case 1: return 'Air';
+            case 2: return 'Surface';
+            case 3: return 'Subsurface';
+            case 4: return 'Weapon';
+            case 5: return 'Mine';
             default: return 'Unknown';
         }
     }

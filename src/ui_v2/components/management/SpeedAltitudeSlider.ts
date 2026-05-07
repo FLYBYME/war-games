@@ -87,14 +87,14 @@ export class SpeedAltitudeSlider extends Component {
     private handleSpeedChange() {
         const id = UIStore.selectedEntityId.get();
         if (id) {
-            void sdkClient.nav.setSpeed(id, parseFloat(this.speedSlider.value));
+            void sdkClient.dispatch({ type: 'SetSpeed', entityId: id, speedKts: parseFloat(this.speedSlider.value) });
         }
     }
 
     private handleAltChange() {
         const id = UIStore.selectedEntityId.get();
         if (id) {
-            void sdkClient.nav.setAltitude(id, parseFloat(this.altSlider.value));
+            void sdkClient.dispatch({ type: 'SetAltitude', entityId: id, altitudeM: parseFloat(this.altSlider.value) });
         }
     }
 }

@@ -148,6 +148,15 @@ export class TransferResourcesHandler implements CommandHandler<TransferResource
 
                 if (toFuel instanceof FuelComponent) toFuel.currentKg += transfer;
                 else (toFuel as FacilityComponent).fuelReservesKg += transfer;
+                
+                // Update Kinematics mass if applicable
+                [from, to].forEach(e => {
+                    const f = e.getComponent(FuelComponent);
+                    const k = e.getComponent(KinematicsComponent);
+                    if (f && k) {
+                        k.massKg = k.massEmptyKg + f.currentKg;
+                    }
+                });
             }
         }
 
@@ -223,9 +232,16 @@ export class ConsumeFuelHandler implements CommandHandler<ConsumeFuelCommand> {
     execute(cmd: ConsumeFuelCommand, world: World): void {
         const entity = world.getEntity(cmd.entityId);
         const fuel = entity?.getComponent(FuelComponent);
+        const kinematics = entity?.getComponent(KinematicsComponent);
+
         if (fuel) {
             fuel.currentKg = Math.max(0, fuel.currentKg - cmd.amountKg);
             fuel.isBingo = fuel.currentKg < (fuel.maxKg * 0.1);
+
+            if (kinematics) {
+                // massKg = massEmptyKg + currentFuelKg
+                kinematics.massKg = kinematics.massEmptyKg + fuel.currentKg;
+            }
         }
     }
 }

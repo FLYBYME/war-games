@@ -1,7 +1,7 @@
 import { ISystem, IWorldView, SystemPhase } from '../core/ISystem.js';
-import { Command, AddDetectionCommand, RemoveDetectionCommand, UpdateSensorScanCommand } from '../core/Command.js';
+import { Command, AddDetectionCommand, RemoveDetectionCommand, UpdateSensorScanCommand, SyncESMBearingsCommand } from '../core/Command.js';
 import { TransformComponent, KinematicsComponent } from '../components/Physics.js';
-import { SensorComponent, DetectionComponent } from '../components/Sensors.js';
+import { SensorComponent, DetectionComponent, ESMBearing } from '../components/Sensors.js';
 import { SensorType, Vector3 } from '../core/Types.js';
 import { RCSComponent } from '../components/Signatures.js';
 import { JammerComponent, JammerType } from '../components/ElectronicWarfare.js';
@@ -52,6 +52,9 @@ export class SensorSystem implements ISystem {
             const candidates = world.getNearbyEntities(transform.position, 200000); 
             const observerNoiseWatts = noiseMap.get(observer.id) || this.dbmToWatts(Physics.NOISE_FLOOR_DBM);
 
+            const newlyDetectedInTick = new Set<string>();
+            const currentESMBearings: ESMBearing[] = [];
+
             for (const sensor of sensors) {
                 if (!sensor.isActive) continue;
 
@@ -69,6 +72,7 @@ export class SensorSystem implements ISystem {
 
                 for (const target of candidates) {
                     if (target.id === observer.id) continue;
+                    if (newlyDetectedInTick.has(target.id)) continue;
 
                     // V3 Optimization: Ignore friendly weapons
                     if (target.side === observer.side) {
@@ -88,11 +92,21 @@ export class SensorSystem implements ISystem {
 
                     const isType = (t: SensorType) => sensor.sensorType.toLowerCase() === t.toLowerCase();
                     let isDetected = false;
+                    let isESMOnly = false;
 
                     if (this.isInBlindArc(targetAzBody, sensor)) continue;
 
                     if (isType(SensorType.ESM)) {
                         isDetected = this.calculateESMDetection(sensor, target, dist);
+                        if (isDetected) {
+                            isESMOnly = true;
+                            currentESMBearings.push({
+                                observerId: observer.id,
+                                bearingDeg: (transform.rotation + targetAzBody) % 360,
+                                confidencePct: 100, // For now
+                                targetId: target.id
+                            });
+                        }
                     } else if (dist <= sensor.maxRangeM) {
                         if (isType(SensorType.Radar)) {
                             if (!this.isWithinRadarHorizon(transform.position.z, targetTransform.position.z, dist)) continue;
@@ -123,13 +137,18 @@ export class SensorSystem implements ISystem {
                         }
                     }
 
-                    if (isDetected) {
+                    if (isDetected && !isESMOnly) {
                         if (!detection.detectedEntityIds.has(target.id)) {
                             logger.info(`New detection! observer=${observer.id} target=${target.id} sensor=${sensor.sensorType}`);
                             commands.push(new AddDetectionCommand(observer.id, target.id));
+                            newlyDetectedInTick.add(target.id);
                         }
                     }
                 }
+            }
+
+            if (currentESMBearings.length > 0) {
+                commands.push(new SyncESMBearingsCommand(observer.id, currentESMBearings));
             }
 
             for (const targetId of detection.detectedEntityIds) {
@@ -152,11 +171,11 @@ export class SensorSystem implements ISystem {
                 for (const sensor of sensors) {
                     if (!sensor.isActive) continue;
                     const isType = (t: SensorType) => sensor.sensorType.toLowerCase() === t.toLowerCase();
+                    if (isType(SensorType.ESM)) continue; // ESM doesn't maintain 'hard' detection in detectedEntityIds
+                    
                     if (this.isInBlindArc(targetAzBody, sensor)) continue;
 
-                    if (isType(SensorType.ESM)) {
-                        stillDetectable = this.calculateESMDetection(sensor, target, dist);
-                    } else if (dist <= sensor.maxRangeM) {
+                    if (dist <= sensor.maxRangeM) {
                         if (isType(SensorType.Radar)) {
                             if (!this.isWithinRadarHorizon(transform.position.z, targetTransform.position.z, dist)) continue;
                         }
@@ -216,7 +235,6 @@ export class SensorSystem implements ISystem {
                 // Directional Check for SOJ
                 if (j.jammer.beamWidthDeg < 360) {
                     const vToVictim = VectorMath.subtract(transform.position, j.pos);
-                    // For simplicity, we'll assume jammer is facing its transform rotation (0 = +X)
                     const jammerTransform = j.entity.getComponent(TransformComponent);
                     const jammerHeading = jammerTransform?.rotation || 0;
                     const angleToVictim = (Math.atan2(vToVictim.y, vToVictim.x) * Physics.RAD_TO_DEG + 360) % 360;
@@ -237,12 +255,8 @@ export class SensorSystem implements ISystem {
     }
 
     private isWithinRadarHorizon(h1: number, h2: number, dist: number): boolean {
-        // V3 Realism: Assume ships (at 0m) have a radar mast height of ~30m
-        // and a target height of ~15m.
         const h1_eff = Math.max(30, h1);
         const h2_eff = Math.max(15, h2);
-        
-        // standard 4/3 earth radius horizon formula
         const horizonKm = 4.12 * (Math.sqrt(h1_eff) + Math.sqrt(h2_eff));
         return dist <= horizonKm * 1000;
     }
@@ -273,11 +287,8 @@ export class SensorSystem implements ISystem {
             effectiveNoiseWatts += this.dbmToWatts(Physics.NOISE_FLOOR_DBM + clutterDb);
         }
         const snrDb = 10 * Math.log10(prWatts / effectiveNoiseWatts);
-        
-        // --- Scientific Pd Curve (Sigmoid Approximation) ---
         const threshold = Physics.RADAR_MIN_SNR_DB;
         const pd = 1 / (1 + Math.exp(-1.5 * (snrDb - threshold)));
-        
         return Math.random() < pd;
     }
 
@@ -323,9 +334,6 @@ export class SensorSystem implements ISystem {
         const vRel = VectorMath.subtract(tgtVel, obsVel);
         const uLOS = VectorMath.normalize(VectorMath.subtract(tgtPos, obsPos));
         const vRadial = VectorMath.dot(vRel, uLOS);
-        
-        // V3 Fix: 15m/s was too aggressive and notched stationary air units.
-        // Reduced to 2.0m/s for basic clutter rejection without losing slow targets.
         return Math.abs(vRadial) < 2.0;
     }
 
@@ -349,11 +357,8 @@ export class SensorSystem implements ISystem {
         const seaState = env?.seaState || targetEnv?.seaState || 0;
         const ambientNoise = Physics.AMBIENT_OCEAN_NOISE_DB + (seaState * 3);
         const snrDb = sl - tl - ambientNoise;
-        
-        // --- Sonar Pd Curve ---
         const threshold = Physics.SONAR_DT_DB;
         const pd = 1 / (1 + Math.exp(-0.8 * (snrDb - threshold))); 
-        
         return Math.random() < pd;
     }
 
@@ -364,7 +369,6 @@ export class SensorSystem implements ISystem {
     private async checkLOS(pos1: Vector3, pos2: Vector3, id1: string, id2: string): Promise<boolean> {
         const key = id1 < id2 ? `${id1}:${id2}` : `${id2}:${id1}`;
         if (this.losCache.has(key)) return this.losCache.get(key)!;
-
         const hasLOS = await this.terrain.isLineOfSightClear(pos1, pos2, this.projection);
         this.losCache.set(key, hasLOS);
         return hasLOS;

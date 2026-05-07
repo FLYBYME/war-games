@@ -63,7 +63,7 @@ export class UIStore {
     static readonly currentTick = new Signal<number>(0);
     static readonly currentMatchId = new Signal<string>('default');
     static readonly cameraTarget = new Signal<{ lat: number, lon: number } | null>(null);
-    static readonly matches = new Signal<{ id: string, entityCount: number }[]>([]);
+    static readonly matches = new Signal<any[]>([]);
     static readonly layerVisibility = new Map<string, Signal<boolean>>();
     static readonly logs = new Signal<LogEntry[]>([]);
     static client: WarGamesClient;

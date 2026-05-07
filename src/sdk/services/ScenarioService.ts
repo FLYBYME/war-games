@@ -42,7 +42,7 @@ export class ScenarioService {
         }
 
         // 2. Add In-Memory Scenarios
-        for (const [filename, manifest] of this.inMemoryScenarios) {
+        this.inMemoryScenarios.forEach((manifest, filename) => {
             summaries.push({
                 id: manifest.id || filename.replace('.json', ''),
                 filename,
@@ -50,7 +50,7 @@ export class ScenarioService {
                 description: manifest.description || '',
                 entityCount: manifest.entities?.length || 0
             });
-        }
+        });
 
         return summaries;
     }
@@ -72,7 +72,7 @@ export class ScenarioService {
         if (scenario) return scenario;
 
         // Try ID match (in-memory)
-        for (const s of this.inMemoryScenarios.values()) {
+        for (const s of Array.from(this.inMemoryScenarios.values())) {
             if (s.id === filename) return s;
         }
 

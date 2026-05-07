@@ -16,8 +16,8 @@ describe('SDK Datalink Serialization', () => {
             side: Side.Blue,
             origin: { lat: 20, lon: 108 },
             units: [
-                { id: 'unit-1', side: Side.Blue, pos: { x: 0, y: 0, z: 0 }, rot: 0, hp: 100, isDestroyed: false, fuelPct: 1, sensors: [], logState: 'Idle', isBingo: false, mounts: [] },
-                { id: 'unit-2', side: Side.Blue, pos: { x: 1000, y: 1000, z: 0 }, rot: 0, hp: 100, isDestroyed: false, fuelPct: 1, sensors: [], logState: 'Idle', isBingo: false, mounts: [] }
+                { id: 'unit-1', side: Side.Blue, pos: { x: 0, y: 0, z: 0 }, heading: 0, hp: 100, isDestroyed: false, fuelPct: 1, sensors: [], logState: 'Idle', isBingo: false, mounts: [] },
+                { id: 'unit-2', side: Side.Blue, pos: { x: 1000, y: 1000, z: 0 }, heading: 0, hp: 100, isDestroyed: false, fuelPct: 1, sensors: [], logState: 'Idle', isBingo: false, mounts: [] }
             ],
             tracks: [],
             datalinkGraph: {

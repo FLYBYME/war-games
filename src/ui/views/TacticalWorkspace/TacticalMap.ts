@@ -20,23 +20,22 @@ export class TacticalMap extends Component {
 
     onMount(): void {
         const canvas = this.element.querySelector('#tactical-canvas') as HTMLCanvasElement;
-        this.engine = new MapEngine(canvas);
+        this.engine = new MapEngine();
 
         // Standard Layers
-        this.engine.addLayer(new GridLayer());
-        this.engine.addLayer(new UnitsLayer());
-        this.engine.addLayer(new TracksLayer());
-        this.engine.addLayer(new LabelsLayer());
-        this.engine.addLayer(new DatalinkLayer());
-
-        this.engine.start();
-
-        this.subscribe(UIStore.viewState, (vs) => {
-            if (vs) this.engine.update(vs);
+        // Layers are automatically picked up by layer registry.
+        // this.engine.addLayer(...) is no longer needed in TacticalMap if using MapEngine v2
+        
+        // Actually MapEngine.init is called instead of start()
+        this.engine.init(canvas).then(() => {
+             console.log("Map engine init complete");
         });
+
+        // The ViewState subscription is handled inside MapEngine via UIStore.
+
     }
 
     onUnmount(): void {
-        this.engine.stop();
+        this.engine.destroy();
     }
 }

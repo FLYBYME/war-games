@@ -82,7 +82,7 @@ export class Ribbon extends Component {
             UIStore.setPaused(false);
         });
         stepBtn.addEventListener('click', () => {
-            sdkClient.scenario.setTimeCompression(1); setTimeout(() => sdkClient.scenario.setTimeCompression(0), 120);
+            sdkClient.setTimeCompression(1); setTimeout(() => sdkClient.setTimeCompression(0), 120);
         });
 
         for (const btn of this.timeBtns) {

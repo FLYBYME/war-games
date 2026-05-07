@@ -120,7 +120,7 @@ export class SensorsWindowContent extends Component {
 
                 const toggleBtn = card.querySelector('.toggle-btn') as HTMLButtonElement;
                 toggleBtn.onclick = () => {
-                    UIStore.client.sensors.setSensorState(unit.id, s.name, !s.active);
+                    UIStore.client.dispatch({ type: 'SetSensorState', entityId: unit.id, sensor: s.name, active: !s.active });
                 };
             }
 

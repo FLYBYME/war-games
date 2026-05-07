@@ -84,7 +84,7 @@ export class ViewStateSystem implements ISystem {
                     pos: { x: transform.position.x, y: transform.position.y, z: transform.position.z },
                     vel: kin ? { x: kin.velocity.x, y: kin.velocity.y, z: kin.velocity.z } : undefined,
                     lla: { lat: geo.lat, lon: geo.lon, alt: transform.position.z },
-                    rot: transform.rotation,
+                    heading: transform.rotation,
                     hp: health?.hp || 100,
                     isDestroyed: health?.isDestroyed || false,
                     logState: 'Ready', // Mock for now
@@ -108,7 +108,8 @@ export class ViewStateSystem implements ISystem {
                         type: mission.missionType, 
                         status: mission.status, 
                         params: mission.params as Record<string, unknown> 
-                    } : undefined
+                    } : undefined,
+                    activeTasks: []
                 };
 
                 units.push(unitPayload);

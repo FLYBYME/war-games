@@ -35,7 +35,7 @@ export class EMCONMatrix extends Component {
 
         const globalSelect = this.element.querySelector('#select-global-emcon') as HTMLSelectElement;
         this.listen(globalSelect, 'change', () => {
-            void sdkClient.sensors.setEMCON(globalSelect.value);
+            void sdkClient.dispatch({ type: 'SetEMCON', state: globalSelect.value });
         });
 
         this.subscribe(UIStore.viewState, () => this.sync());
@@ -60,7 +60,7 @@ export class EMCONMatrix extends Component {
             
             const select = row.querySelector('select') as HTMLSelectElement;
             this.listen(select, 'change', () => {
-                void sdkClient.sensors.setEMCON(select.value, u.id);
+                void sdkClient.dispatch({ type: 'SetEMCON', entityId: u.id, state: select.value });
             });
 
             list.appendChild(row);

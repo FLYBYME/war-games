@@ -9,9 +9,10 @@ import { Side } from '../../sdk/schemas';
 test('handle large scale engagement with 100+ entities', async ({ page }) => {
     await page.goto('/#tactical');
     const sdk = await getSDKClient(page) as unknown as { 
-        scenario: { loadScenarioIntoEngine: (s: string) => Promise<void>, setTimeCompression: (n: number) => Promise<void> },
+        scenario: { loadScenarioIntoEngine: (s: string) => Promise<void> },
         joinMatch: (s: Side, id: string) => Promise<void>,
-        combat: { setGlobalROE: (s: string) => Promise<void> },
+        dispatch: (cmd: unknown) => Promise<void>,
+        setTimeCompression: (n: number) => void,
         queryWinState: (id: string) => Promise<unknown>,
         deleteMatch: (id: string) => Promise<void>,
         getRecentEvents: (id: string, n: number) => { length: number }[]
@@ -28,8 +29,8 @@ test('handle large scale engagement with 100+ entities', async ({ page }) => {
     });
 
     // 3. Trigger Global Engagement
-    await sdk.combat.setGlobalROE('Free');
-    await sdk.scenario.setTimeCompression(20);
+    await sdk.dispatch({ type: 'SetGlobalROE', roe: 'Free' });
+    sdk.setTimeCompression(20);
 
     // 4. Verify Event Throughput
     // Wait for 1000 ticks of combat
@@ -55,7 +56,7 @@ test('handle large scale engagement with 100+ entities', async ({ page }) => {
     expect(winState).toBeDefined();
 
     // 7. Cleanup
-    await sdk.scenario.setTimeCompression(0);
+    sdk.setTimeCompression(0);
     await sdk.deleteMatch('stress-test');
 });
 

@@ -124,7 +124,7 @@ export class AdvancedMissionPlanner extends Component {
                 const params: Record<string, unknown> = {};
                 if (targetId) params.targetId = targetId;
 
-                await sdkClient.scenario.setMission(unitId, type, params);
+                await sdkClient.dispatch({ type: 'SetMission', entityId: unitId, mission: { missionType: type, ...params } } as unknown as any);
             } catch (err: unknown) {
                 const error = err as Error;
                 console.error(`Failed to assign mission to ${unitId}`, error);

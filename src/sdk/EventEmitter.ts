@@ -57,7 +57,7 @@ export class EventEmitter {
         this.handlers.get(event)?.forEach(h => this.safeInvoke(h, payload));
 
         // 2. Wildcard Matches (e.g. 'state:*' matches 'state:viewState')
-        for (const [pattern, set] of this.handlers) {
+        this.handlers.forEach((set, pattern) => {
             if (pattern.endsWith(':*')) {
                 const prefix = pattern.split(':*')[0];
                 if (event.startsWith(prefix + ':')) {
@@ -70,7 +70,7 @@ export class EventEmitter {
                     set.forEach(h => this.safeInvoke(h, payload));
                 }
             }
-        }
+        });
 
         // 3. Global Wildcards
         this.anyHandlers.forEach(h => this.safeInvoke(h, { type: event, payload }));
