@@ -2,7 +2,7 @@ import { ISystem, IWorldView, SystemPhase } from '../core/ISystem.js';
 import { Command, UpdateLogisticsStateCommand } from '../core/Command.js';
 import { LogisticsComponent, TurnaroundState } from '../components/Logistics.js';
 import { TaskGraphComponent } from '../components/TaskGraph.js';
-import { TaskType, TaskStatus } from '../core/TaskGraph.js';
+import { TaskType, TaskStatus, TaskGraphManager } from '../core/TaskGraph.js';
 import { VectorMath } from '../math/VectorMath.js';
 import { TransformComponent } from '../components/Physics.js';
 import { logger } from '../core/Logger.js';
@@ -24,14 +24,14 @@ export class BoardingSystem implements ISystem {
             const transform = entity.getComponent(TransformComponent);
             if (!taskComp || !transform) continue;
 
-            const boardingTasks = taskComp.graph.getActiveTasks().filter(t => t.task.type === TaskType.Boarding);
+            const boardingTasks = TaskGraphManager.getActiveTasks(taskComp.graph).filter(t => t.task.type === TaskType.Boarding);
 
             for (const node of boardingTasks) {
                 const payload = node.task.payload as { targetId: string, durationTicks: number };
                 const target = world.getEntity(payload.targetId);
 
                 if (!target) {
-                    taskComp.graph.markFailed(node.id, 'Target lost');
+                    TaskGraphManager.markFailed(taskComp.graph, node.id, 'Target lost');
                     continue;
                 }
 
@@ -62,7 +62,7 @@ export class BoardingSystem implements ISystem {
                         // Check completion
                         const log = entity.getComponent(LogisticsComponent);
                         if (log && log.state !== TurnaroundState.Boarding) {
-                            taskComp.graph.markCompleted(node.id, { success: true });
+                            TaskGraphManager.markCompleted(taskComp.graph, node.id, { success: true });
                             logger.info(`Boarding completed: ${entity.id} -> ${target.id}`);
                             
                             world.recordEvent({

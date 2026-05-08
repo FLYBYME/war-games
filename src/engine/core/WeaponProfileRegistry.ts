@@ -1,6 +1,8 @@
 import { z } from 'zod';
-import { GuidanceType, WarheadType, WeaponProfile, WeaponProfileSchema } from '../../sdk/schemas/index.js';
+import { GuidanceType, WarheadType, WeaponProfileSchema } from '../../sdk/schemas/index.js';
+import type { WeaponProfile } from '../../sdk/schemas/index.js';
 export { GuidanceType, WarheadType };
+export type { WeaponProfile };
 
 export class WeaponProfileRegistry {
     private profiles = new Map<string, WeaponProfile>();

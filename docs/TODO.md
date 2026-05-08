@@ -4,50 +4,50 @@ This checklist tracks the tasks required to bring the SDK into compliance with t
 
 ## 1. Type Safety & Standards Compliance
 
-- [ ] **Eliminate `any` usage**
-  - [ ] Remove `z.any()` from `EngineEventSchema` in `src/sdk/schemas/protocol.ts`.
-  - [ ] Replace `(schema._def as any).description` in `src/sdk/tools/TacticalTools.ts`.
-- [ ] **Remove Unsafe Type Assertions**
-  - [ ] Eliminate `as unknown as` casts in `src/sdk/mcp/index.ts`.
-  - [ ] Eliminate `as unknown as` casts in `src/sdk/WarGamesClient.ts`.
-  - [ ] Replace `as EngineCommandPayload` with `EngineCommandPayloadSchema.parse()` in `src/sdk/tools/TacticalTools.ts`.
-  - [ ] Refactor `MatchService.ts` to use type guards or schemas instead of `as EntityProfile` and `as SimulationEvent`.
-  - [ ] Refactor `TerrainService.ts` to use type guards instead of `as ArrayBuffer`.
-- [ ] **Error Handling**
-  - [ ] Replace manual error casting (`as Error`) in catch blocks with `instanceof Error` or a safe helper.
+- [x] **Eliminate `any` usage**
+  - [x] Remove `z.any()` from `EngineEventSchema` in `src/sdk/schemas/protocol.ts`.
+  - [x] Replace `(schema._def as any).description` in `src/sdk/tools/TacticalTools.ts`.
+- [x] **Remove Unsafe Type Assertions**
+  - [x] Eliminate `as unknown as` casts in `src/sdk/mcp/index.ts`.
+  - [x] Eliminate `as unknown as` casts in `src/sdk/WarGamesClient.ts`.
+  - [x] Replace `as EngineCommandPayload` with `EngineCommandPayloadSchema.parse()` in `src/sdk/tools/TacticalTools.ts`.
+  - [x] Refactor `MatchService.ts` to use type guards or schemas instead of `as EntityProfile` and `as SimulationEvent`.
+  - [x] Refactor `TerrainService.ts` to use type guards instead of `as ArrayBuffer`.
+- [x] **Error Handling**
+  - [x] Replace manual error casting (`as Error`) in catch blocks with `instanceof Error` or a safe helper.
 
 ## 2. Architectural Refactoring
 
-- [ ] **Decompose WarGamesClient**
-  - [ ] Move `BugModule` to `src/sdk/BugModule.ts`.
-  - [ ] Move `ScenarioModule` to `src/sdk/ScenarioModule.ts`.
-  - [ ] Move `TerrainModule` to `src/sdk/TerrainModule.ts`.
-- [ ] **Decouple SDK from Engine**
-  - [ ] Move `MatchService.ts` out of the SDK (e.g., to `src/server/` or a shared core).
-  - [ ] Move `ScenarioService.ts` out of the SDK.
-  - [ ] Move `TerrainService.ts` out of the SDK.
-- [ ] **Robust Tool Generation**
-  - [ ] Refactor `generateCommandTools` in `TacticalTools.ts` to avoid relying on internal Zod metadata (`_def`).
+- [x] **Decompose WarGamesClient**
+  - [x] Move `BugModule` to `src/sdk/BugModule.ts`.
+  - [x] Move `ScenarioModule` to `src/sdk/ScenarioModule.ts`.
+  - [x] Move `TerrainModule` to `src/sdk/TerrainModule.ts`.
+- [x] **Decouple SDK from Engine**
+  - [x] Move `MatchService.ts` out of the SDK (e.g., to `src/server/` or a shared core).
+  - [x] Move `ScenarioService.ts` out of the SDK.
+  - [x] Move `TerrainService.ts` out of the SDK.
+- [x] **Robust Tool Generation**
+  - [x] Refactor `generateCommandTools` in `TacticalTools.ts` to avoid relying on internal Zod metadata (`_def`).
 
 ## 3. Command Pattern Consistency
 
-- [ ] **Unified Dispatch**
-  - [ ] Evaluate moving session control (pause, resume, time compression) into the `EngineCommandPayload` to maintain a single path for all state mutations.
+- [x] **Unified Dispatch**
+  - [x] Evaluate moving session control (pause, resume, time compression) into the `EngineCommandPayload` to maintain a single path for all state mutations.
 
 ## 4. Engine & Component Smells
 
-- [ ] **Pure Data Violation (Logic in Components)**
-  - [ ] Move `periodSec` calculation from `OrbitalComponent` to `OrbitalSystem` or a math utility.
-  - [ ] Move `getEffectiveRCS` logic from `RCSComponent` to `SensorSystem` or `SignatureSystem`.
-  - [ ] Move history management (`record` method) from `TelemetryComponent` to `TelemetrySystem`.
-- [ ] **Duplicate Component Definitions**
-  - [ ] Resolve identical `TrackComponent` definitions in `src/engine/components/TMS.ts` and `src/engine/components/Track.ts`.
-- [ ] **Schema Location**
-  - [ ] Move `WRARuleSchema` and related types from `src/engine/components/Doctrine.ts` to a centralized schema directory.
-- [ ] **Heavy Component Dependencies**
-  - [ ] Refactor `TaskGraphComponent` to avoid direct instantiation/dependency on `TaskGraph` implementation if possible, or ensure it remains a data container.
-- [ ] **Consistency**
-  - [ ] Standardize component constructors (e.g., use of `Partial` and `Object.assign` vs. explicit parameters).
+- [x] **Pure Data Violation (Logic in Components)**
+  - [x] Move `periodSec` calculation from `OrbitalComponent` to `OrbitalSystem` or a math utility.
+  - [x] Move `getEffectiveRCS` logic from `RCSComponent` to `SensorSystem` or `SignatureSystem`.
+  - [x] Move history management (`record` method) from `TelemetryComponent` to `TelemetrySystem`.
+- [x] **Duplicate Component Definitions**
+  - [x] Resolve identical `TrackComponent` definitions in `src/engine/components/TMS.ts` and `src/engine/components/Track.ts`.
+- [x] **Schema Location**
+  - [x] Move `WRARuleSchema` and related types from `src/engine/components/Doctrine.ts` to a centralized schema directory.
+- [x] **Heavy Component Dependencies**
+  - [x] Refactor `TaskGraphComponent` to avoid direct instantiation/dependency on `TaskGraph` implementation if possible, or ensure it remains a data container.
+- [x] **Consistency**
+  - [x] Standardize component constructors (e.g., use of `Partial` and `Object.assign` vs. explicit parameters).
 
 ## 5. Engine Core & Handler Smells
 
@@ -112,9 +112,9 @@ This checklist tracks the tasks required to bring the SDK into compliance with t
 
 ## 9. Final SDK Smells
 
-- [ ] **Fragile Type Introspection**
-  - [ ] Refactor `OllamaAdapter.ts` to avoid direct access to Zod `shape`. Use a safer way to introspect schemas for tool definition generation.
-  - [ ] Fix `TacticalTools.ts` to remove the double cast `(schema as unknown as z.ZodObject<z.ZodRawShape>)`.
+- [x] **Fragile Type Introspection**
+  - [x] Refactor `OllamaAdapter.ts` to avoid direct access to Zod `shape`. Use a safer way to introspect schemas for tool definition generation.
+  - [x] Fix `TacticalTools.ts` to remove the double cast `(schema as unknown as z.ZodObject<z.ZodRawShape>)`.
 - [ ] **Binary Protocol Fragility**
   - [ ] Refactor `DeltaEncoder` and `DeltaDecoder` to handle potential buffer alignment issues and improve the efficiency of the "unitExtras" JSON segment (which currently partially negates the benefits of binary encoding).
   - [ ] Implement a cache eviction strategy for `DeltaEncoder.lastStates` to prevent indefinite memory growth if sessions aren't explicitly cleared.

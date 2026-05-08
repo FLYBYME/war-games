@@ -44,6 +44,14 @@ export const DamageDealtEventSchema = BaseEventPayloadSchema.extend({
     })
 });
 export type DamageDealtEvent = z.infer<typeof DamageDealtEventSchema>;
+export const SimulationSpeedChangedEventSchema = BaseEventPayloadSchema.extend({
+    type: z.literal('SimulationSpeedChanged'),
+    data: z.object({
+        timeCompression: z.number(),
+        isPaused: z.boolean()
+    })
+});
+export type SimulationSpeedChangedEvent = z.infer<typeof SimulationSpeedChangedEventSchema>;
 
 // The unified EngineEvent schema
 export const SimulationEventSchema = z.union([
@@ -51,6 +59,7 @@ export const SimulationEventSchema = z.union([
     EntityDestroyedEventSchema,
     WeaponFiredEventSchema,
     DamageDealtEventSchema,
+    SimulationSpeedChangedEventSchema,
     // Fallback for generic events
     BaseEventPayloadSchema.extend({
         type: z.string(),

@@ -111,6 +111,7 @@ export class TMSSystem implements ISystem {
                             trueEntityId: targetId,
                             position: { ...targetTransform.position },
                             velocity: targetKinematics ? { ...targetKinematics.velocity } : { x: 0, y: 0, z: 0 },
+                            firstSeenTick: currentTick,
                             lastSeenTick: currentTick,
                             cepM: 0,
                             status: TrackStatus.Active,

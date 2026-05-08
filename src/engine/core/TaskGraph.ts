@@ -97,67 +97,74 @@ export function isNavigateTask(node: TaskNode<TaskPayload, TaskResult>): node is
 
 /**
  * TaskGraph: A collection of tasks with dependency management.
+ * In V3, this is a pure data structure. Logic is in TaskGraphManager.
  */
-export class TaskGraph {
-    constructor(
-        public nodes: Map<string, TaskNode> = new Map(),
-        public activeNodeIds: Set<string> = new Set()
-    ) { }
+export interface TaskGraph {
+    nodes: Map<string, TaskNode>;
+    activeNodeIds: Set<string>;
+}
 
-    public addNode(node: TaskNode): void {
-        this.nodes.set(node.id, node);
-        this.updateActiveNodes();
+export class TaskGraphManager {
+    public static create(): TaskGraph {
+        return {
+            nodes: new Map(),
+            activeNodeIds: new Set()
+        };
+    }
+
+    public static addNode(graph: TaskGraph, node: TaskNode): void {
+        graph.nodes.set(node.id, node);
+        this.updateActiveNodes(graph);
     }
 
     /**
      * updateActiveNodes: Identifies nodes whose dependencies are satisfied.
      */
-    public updateActiveNodes(): void {
-        this.activeNodeIds.clear();
-        for (const node of this.nodes.values()) {
+    public static updateActiveNodes(graph: TaskGraph): void {
+        graph.activeNodeIds.clear();
+        for (const node of graph.nodes.values()) {
             if (node.status === TaskStatus.Pending) {
                 const depsSatisfied = node.dependencies.every(depId => {
-                    const depNode = this.nodes.get(depId);
+                    const depNode = graph.nodes.get(depId);
                     return depNode && depNode.status === TaskStatus.Completed;
                 });
 
                 if (depsSatisfied) {
-                    this.activeNodeIds.add(node.id);
+                    graph.activeNodeIds.add(node.id);
                 }
             }
         }
     }
 
-    public markCompleted(id: string, result?: TaskResult): void {
-        const node = this.nodes.get(id);
+    public static markCompleted(graph: TaskGraph, id: string, result?: TaskResult): void {
+        const node = graph.nodes.get(id);
         if (node) {
             node.status = TaskStatus.Completed;
             node.result = result;
-            this.updateActiveNodes();
+            this.updateActiveNodes(graph);
         }
     }
 
-    public markFailed(id: string, reason: string): void {
-        const node = this.nodes.get(id);
+    public static markFailed(graph: TaskGraph, id: string, reason: string): void {
+        const node = graph.nodes.get(id);
         if (node) {
             node.status = TaskStatus.Failed;
             node.result = { failureReason: reason };
-            // In a DAG, failure might invalidate child nodes
-            this.invalidateChildren(id);
+            this.invalidateChildren(graph, id);
         }
     }
 
-    private invalidateChildren(id: string): void {
-        for (const node of this.nodes.values()) {
+    private static invalidateChildren(graph: TaskGraph, id: string): void {
+        for (const node of graph.nodes.values()) {
             if (node.dependencies.includes(id)) {
                 node.status = TaskStatus.Failed;
                 node.result = { failureReason: `Dependency ${id} failed` };
-                this.invalidateChildren(node.id);
+                this.invalidateChildren(graph, node.id);
             }
         }
     }
 
-    public getActiveTasks(): TaskNode[] {
-        return Array.from(this.activeNodeIds).map(id => this.nodes.get(id)!);
+    public static getActiveTasks(graph: TaskGraph): TaskNode[] {
+        return Array.from(graph.activeNodeIds).map(id => graph.nodes.get(id)!);
     }
 }

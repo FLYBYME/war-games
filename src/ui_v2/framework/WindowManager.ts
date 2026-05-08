@@ -39,15 +39,13 @@ export class WindowManager {
         const saved = settingsStore.windowStates.get()[options.id];
         
         const current = new Map(this.windows.get());
-        const merged: WindowOptions = {
+        const merged: WindowOptions = Object.assign({
             width: 400,
             height: 300,
             x: 100 + (current.size * 20),
             y: 100 + (current.size * 20),
-            isDetached: false,
-            ...saved,
-            ...options
-        };
+            isDetached: false
+        }, saved, options);
         
         if (merged.isDetached) {
             this.detach(merged.id);

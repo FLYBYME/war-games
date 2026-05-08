@@ -20,7 +20,7 @@ export class Tracer {
             tick,
             entityId: cmd.entityId,
             commandType: cmd.constructor.name,
-            details: JSON.parse(JSON.stringify(cmd)) as unknown // Deep copy to avoid mutation issues
+            details: structuredClone(cmd) as unknown // Fast, modern deep copy
         });
     }
 

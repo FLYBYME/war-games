@@ -87,16 +87,14 @@ export class SettingsStore {
 
     public setWindowState(id: string, state: Partial<WindowState>) {
         const current = { ...this.windowStates.get() };
-        current[id] = {
+        current[id] = Object.assign({
             id,
             isOpen: true,
             x: 100,
             y: 100,
             width: 400,
-            height: 300,
-            ...current[id],
-            ...state
-        };
+            height: 300
+        }, current[id], state);
         this.windowStates.set(current);
     }
 

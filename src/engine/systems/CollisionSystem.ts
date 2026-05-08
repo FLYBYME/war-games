@@ -37,7 +37,9 @@ export class CollisionSystem implements ISystem {
             let isDestroyed = false;
 
             // 1. Entity-Entity Collisions
-            const nearbyIds = this.spatialGrid.getNearbyEntities(transform.position, collision.radiusMeters * 5);
+            const isMissile = collision.layer === 'missile';
+            const searchRadius = isMissile ? 30 : collision.radiusMeters * 5;
+            const nearbyIds = this.spatialGrid.getNearbyEntities(transform.position, searchRadius);
 
             for (const otherId of nearbyIds) {
                 if (entity.id === otherId) continue;
@@ -90,7 +92,7 @@ export class CollisionSystem implements ISystem {
                     hasCollided = this.calculateBurstCollision(burst, transform.position, otherTransform.position, otherCollision.radiusMeters, _dt);
                 } else if (entity.getComponent(SalvoComponent)) {
                     const salvo = entity.getComponent(SalvoComponent)!;
-                    const hits = this.calculateSalvoHits(salvo, transform.position, otherTransform.position, otherCollision.radiusMeters);
+                    const hits = this.calculateSalvoHits(salvo, transform.position, otherTransform.position, otherCollision.radiusMeters, world);
                     if (hits > 0) {
                         logger.info(`Salvo hit: ${entity.id} -> ${otherId} | Hits: ${hits}/${salvo.quantity}`);
                         // Apply damage for all hits
@@ -159,9 +161,13 @@ export class CollisionSystem implements ISystem {
                     const isLanding = logistics && logistics.state === TurnaroundState.Landing;
 
                     if (!isLanding && !isHosted) {
-                        logger.debug(`Surface impact check: ${entity.id} z=${transform.position.z.toFixed(2)} alt=${surfaceAlt.toFixed(2)} isHosted=${isHosted} baseId=${logistics?.currentBaseId} state=${logistics?.state}`);
-                        commands.push(new DestroyEntityCommand(entity.id));
-                        world.recordEvent({
+                       const logData: Record<string, unknown> = { z: transform.position.z.toFixed(2), alt: surfaceAlt.toFixed(2) };
+                       if (logistics) {
+                           logData.isHosted = isHosted;
+                           logData.baseId = logistics.currentBaseId;
+                           logData.state = logistics.state;
+                       }
+                       logger.debug(`Surface impact check: ${entity.id}`, logData);                       commands.push(new DestroyEntityCommand(entity.id));                        world.recordEvent({
                             type: 'Impact',
                             tick: world.currentTick,
                             entityId: entity.id,
@@ -180,7 +186,7 @@ export class CollisionSystem implements ISystem {
         return commands;
     }
 
-    private calculateSalvoHits(salvo: SalvoComponent, salvoPos: Vector3, targetPos: Vector3, targetRadius: number): number {
+    private calculateSalvoHits(salvo: SalvoComponent, salvoPos: Vector3, targetPos: Vector3, targetRadius: number, world: IWorldView): number {
         const dist = VectorMath.distance(salvoPos, targetPos);
         if (dist > 5000) return 0; // Max effective range for burst
 
@@ -195,15 +201,15 @@ export class CollisionSystem implements ISystem {
         const n = salvo.quantity;
         if (n < 20) {
             for (let i = 0; i < n; i++) {
-                if (Math.random() < hitProb) hits++;
+                if (world.random.next() < hitProb) hits++;
             }
         } else {
             // Normal approximation for large N: mean = np, std = sqrt(np(1-p))
             const mean = n * hitProb;
             const std = Math.sqrt(n * hitProb * (1 - hitProb));
             // Box-Muller transform for normal distribution
-            const u1 = Math.random();
-            const u2 = Math.random();
+            const u1 = world.random.next();
+            const u2 = world.random.next();
             const z0 = Math.sqrt(-2.0 * Math.log(u1)) * Math.cos(2.0 * Math.PI * u2);
             hits = Math.max(0, Math.min(n, Math.round(mean + z0 * std)));
         }

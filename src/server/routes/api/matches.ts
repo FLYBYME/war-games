@@ -4,6 +4,7 @@ import { EngineCommandPayloadSchema, EngineCommandPayload } from '../../../sdk/s
 import { CommandFactory } from '../../../engine/core/CommandFactory.js';
 import { Side } from '../../../sdk/schemas/domain.js';
 import { ZodError } from 'zod';
+import { SimulationEvent } from 'war-games/sdk';
 
 interface MatchParams { matchId: string }
 interface ProfileParams { id: string }
@@ -39,13 +40,25 @@ export async function registerMatchRoutes(app: FastifyInstance) {
         const { count } = request.query;
         return app.matchService.getRecentEvents(matchId, count ? parseInt(count) : 50);
     });
- 
+
     app.get<{ Params: ProfileParams }>('/profiles/:id', async (request, reply) => {
         const { id } = request.params;
         const profile = app.matchService.getProfile(id);
         if (profile) return profile;
         reply.status(404).send({ error: 'Profile not found' });
         return;
+    });
+
+    app.post<{ Params: MatchParams }>('/:matchId/load', async (request, reply) => {
+        const { matchId } = request.params;
+        const scenario = request.body as any;
+        const world = await app.matchService.createMatch(matchId, scenario);
+        if (!world) {
+            reply.status(404).send({ error: 'Match not found' });
+            return;
+        }
+
+        return { success: true, matchId };
     });
 
     app.get<{ Params: MatchParams }>('/:matchId/telemetry', async (request, reply) => {
@@ -59,7 +72,7 @@ export async function registerMatchRoutes(app: FastifyInstance) {
         const debug: Record<string, unknown[]> = {};
         for (const entity of world.getEntities()) {
             const comps = entity.getAllComponents();
-            debug[entity.id] = comps.map(c => ({ type: c.type, ...c }));
+            debug[entity.id] = comps.map(c => ({ ...c }));
         }
         return { debug };
     });
@@ -74,7 +87,7 @@ export async function registerMatchRoutes(app: FastifyInstance) {
         const world = app.matchService.getMatch(matchId);
         if (world) {
             app.matchService.deleteMatch(matchId);
-            
+
             const sessions = app.sessionManager.getSessionsByMatch(matchId);
             for (const session of sessions) {
                 session.send({ type: 'ERROR', payload: { message: 'Match has been deleted' } });
@@ -102,7 +115,7 @@ export async function registerMatchRoutes(app: FastifyInstance) {
         try {
             const parsedCommand = EngineCommandPayloadSchema.parse(command) as EngineCommandPayload;
             const cmd = CommandFactory.create(parsedCommand, side || Side.Blue);
-            
+
             if (!cmd) {
                 reply.status(400).send({ error: 'Invalid or unauthorized command' });
                 return;
@@ -136,6 +149,7 @@ export async function registerMatchRoutes(app: FastifyInstance) {
     app.post<{ Params: MatchParams, Body: StepBody }>('/:matchId/step', async (request, reply) => {
         const { matchId } = request.params;
         const { durationMinutes } = request.body;
+        const minimumTime = 30;//30 sec
 
         const world = app.matchService.getMatch(matchId);
         if (!world) {
@@ -151,16 +165,21 @@ export async function registerMatchRoutes(app: FastifyInstance) {
         const startTick = world.currentTick;
         const targetTicks = durationMinutes * 60 * 10;
         let interrupted = false;
-        
+
         // Ensure events array gets populated during ticks
         const events: unknown[] = [];
-        const eventHandler = (event: unknown) => events.push(event);
-        
+        const ignore = ['ViewStateUpdated', 'metrics:performance'];
+        const eventHandler = (event: SimulationEvent) => {
+            if (!ignore.includes(event.type)) {
+                events.push(event);
+            }
+        }
+
         world.events.onAny(eventHandler);
 
-        for(let i=0; i<targetTicks; i++) {
-            await world.tick(0.1, true);
-            if (events.length > 0) {
+        for (let i = 0; i < targetTicks; i++) {
+            await world.tick(0.1);
+            if (events.length > 0 && (world.currentTick - startTick) >= minimumTime * 10) {
                 interrupted = true;
                 break;
             }
@@ -169,11 +188,11 @@ export async function registerMatchRoutes(app: FastifyInstance) {
                 await new Promise(resolve => setImmediate(resolve));
             }
         }
-        
+
         world.events.offAny(eventHandler);
 
-        return { 
-            success: true, 
+        return {
+            success: true,
             elapsedSeconds: (world.currentTick - startTick) / 10,
             interruptedByEvent: interrupted,
             events,
@@ -197,7 +216,7 @@ export async function registerMatchRoutes(app: FastifyInstance) {
 
     app.post<{ Body: ScenarioSaveBody }>('/scenarios', async (request, reply) => {
         const { filename, manifest } = request.body;
-        const ok = await app.scenarioService.save(filename, manifest);
+        const ok = await app.scenarioService.save(filename, manifest as any);
         if (ok) return { success: true };
         reply.status(500).send({ error: 'Failed to save scenario' });
         return;
@@ -221,10 +240,10 @@ export async function registerMatchRoutes(app: FastifyInstance) {
 
         const targetMatchId = matchId || `session-${Date.now()}`;
         const world = await app.matchService.createMatch(targetMatchId, manifest);
-        
-        return { 
-            success: true, 
-            matchId: targetMatchId, 
+
+        return {
+            success: true,
+            matchId: targetMatchId,
             tick: world.currentTick
         };
     });

@@ -13,7 +13,7 @@ import { Physics } from '../PhysicsConstants.js';
 export class EnvironmentSystem implements ISystem {
     readonly name = 'EnvironmentSystem';
     readonly phase = SystemPhase.Environment;
-    readonly dependencies = [];
+    readonly dependencies: string[] = [];
 
     public globalWeather = {
         precipitationRateMMhr: 0,

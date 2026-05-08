@@ -1,5 +1,5 @@
-import { MatchService } from '../../sdk/services/MatchService.js';
-import { ILogger } from '../../sdk/services/types.js';
+import { MatchService } from '../services/MatchService.js';
+import { ILogger } from '../services/types.js';
 
 /**
  * TickManager: Orchestrates independent simulation loops for multiple matches.

@@ -16,12 +16,14 @@ export class GuidanceComponent implements IComponent {
     readonly type = 'GuidanceComponent';
     public lastLOS: Vector3 | null = null;
 
-    constructor(
-        public guidanceType: GuidanceType,
-        public targetId: EntityId,
-        public illuminatorId?: EntityId, // Entity providing the SARH lock
-        public hasLock: boolean = false,
-        public lastLockTick: number = 0,
-        public maneuverabilityG: number = 30
-    ) {}
+    public guidanceType: GuidanceType = GuidanceType.INS;
+    public targetId: EntityId = '';
+    public illuminatorId?: EntityId;
+    public hasLock: boolean = false;
+    public lastLockTick: number = 0;
+    public maneuverabilityG: number = 30;
+
+    constructor(init?: Partial<GuidanceComponent>) {
+        if (init) Object.assign(this, init);
+    }
 }

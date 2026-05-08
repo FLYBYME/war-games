@@ -36,13 +36,14 @@ import { MapDataService } from '../../engine/environment/MapDataService.js';
 import { ScenarioAutomationSystem } from '../../engine/systems/ScenarioAutomationSystem.js';
 import { MissileHomingSystem } from '../../engine/systems/MissileHomingSystem.js';
 import * as demoData from '../../data/index.js';
+import { EntityProfileSchema } from '../../sdk/schemas/index.js';
 
 import { TerrainService } from './TerrainService.js';
+import { MatchRecorder } from '../core/MatchRecorder.js';
 import { ServiceConfig, IStorageProvider, ILogger } from './types.js';
 
 /**
  * MatchService: Orchestrates Engine V3 instances.
- * In V3, we start with a single-process model for stability, then scale to workers.
  */
 export class MatchService {
     private readonly matches = new Map<string, World>();
@@ -51,6 +52,7 @@ export class MatchService {
     private readonly mapData = new MapDataService();
     public readonly terrainService: TerrainService;
     public globalWorld: World;
+    private readonly recorder: MatchRecorder;
     private broadcastCallback?: (matchId: string, snapshot: ViewStateSnapshot) => void;
     private eventCallback?: (matchId: string, event: SimulationEvent) => void;
     private onMatchTimeChanged?: (matchId: string, rate: number, paused: boolean) => void;
@@ -67,26 +69,30 @@ export class MatchService {
         this.baseDir = config.baseDir || '';
 
         this.terrainService = new TerrainService(config);
+        this.recorder = new MatchRecorder(this.storage, this.logger, this.baseDir);
 
         bootstrapComponents();
 
-        // 1. Load Type-Safe Demo Profiles
         for (const [id, profile] of Object.entries(demoData.profiles)) {
-            this.profiles.register(id, profile as EntityProfile);
+            try {
+                this.profiles.register(id, EntityProfileSchema.parse(profile));
+            } catch (err: unknown) {
+                const message = err instanceof Error ? err.message : String(err);
+                this.logger.error(`Failed to parse demo profile ${id}: ${message}`);
+            }
         }
 
-        this.mapData.loadAll();
         this.globalWorld = new World(undefined, undefined, this.profiles, this.weaponProfiles);
         this.matches.set('default', this.globalWorld);
 
         this.initializeWorldSystems(this.globalWorld);
         this.setupEventBus('default', this.globalWorld);
 
-        // Register Core Weapons from Demo Data
         this.registerWeaponProfiles();
     }
 
     public async init() {
+        await this.mapData.loadAll();
         await this.terrainService.init();
         await this.loadDatabase();
         this.logger.info(`MatchService initialized with ${Object.keys(demoData.profiles).length} platform and ${demoData.weaponProfiles.length} weapon profiles.`);
@@ -106,7 +112,6 @@ export class MatchService {
     public setOnMatchTimeChanged(cb: (matchId: string, rate: number, paused: boolean) => void) {
         this.onMatchTimeChanged = cb;
     }
-
 
     public setBroadcastCallback(cb: (matchId: string, snapshot: ViewStateSnapshot) => void) {
         this.broadcastCallback = cb;
@@ -134,21 +139,29 @@ export class MatchService {
 
     public registerProfile(id: string, profile: EntityProfile) {
         this.profiles.register(id, profile);
-        // Also update global world for immediate effect if needed
         this.globalWorld.profileRegistry.register(id, profile);
     }
 
     public setupEventBus(matchId: string, world: World): void {
         world.events.onAny((event: SimulationEvent) => {
             if (this.eventCallback) this.eventCallback(matchId, event);
+            void this.recorder.recordEvent(matchId, event);
+
+            if (event.type === 'SimulationSpeedChanged') {
+                const data = event.data as { timeCompression: number; isPaused: boolean };
+                if (this.onMatchTimeChanged) {
+                    this.onMatchTimeChanged(matchId, data.timeCompression, data.isPaused);
+                }
+            }
         });
 
         const vss = world.getSystem(ViewStateSystem);
         if (vss) {
             world.events.on('ViewStateUpdated', (evt: unknown) => {
                 if (this.broadcastCallback) {
-                    const vsEvt = evt as { data: ViewStateSnapshot };
-                    this.broadcastCallback(matchId, vsEvt.data);
+                    if (evt && typeof evt === 'object' && 'data' in evt) {
+                        this.broadcastCallback(matchId, (evt as { data: ViewStateSnapshot }).data);
+                    }
                 }
             });
         }
@@ -183,7 +196,7 @@ export class MatchService {
         world.addSystem(new ControlSystem());
         world.addSystem(new ScenarioAutomationSystem());
         world.addSystem(new CollisionSystem(world.grid));
-        world.addSystem(new ViewStateSystem(projection, terrain, this.weaponProfiles, this.mapData));
+        world.addSystem(new ViewStateSystem(projection, terrain, this.profiles, this.weaponProfiles, this.mapData));
     }
 
     private registerWeaponProfiles(): void {
@@ -206,7 +219,6 @@ export class MatchService {
             const entityMgr = new EntityManager(world, this.profiles);
             const loader = new ScenarioLoader(entityMgr);
 
-            // Set Origin
             if (manifest.origin) {
                 const env = world.getSystem(EnvironmentSystem);
                 const vs = world.getSystem(ViewStateSystem);
@@ -244,7 +256,6 @@ export class MatchService {
         const redUnits = entities.filter(e => e.side === Side.Red && e.hasComponent(HealthComponent));
         const blueUnits = entities.filter(e => e.side === Side.Blue && e.hasComponent(HealthComponent));
 
-        // Filter out projectiles/munitions and other non-platform entities
         const redCombatants = redUnits.filter(e => {
             const pid = e.profileId?.toLowerCase() || '';
             return !pid.includes('projectile') && !pid.includes('missile') && !pid.includes('torpedo') && !pid.includes('sonobuoy');
@@ -254,11 +265,6 @@ export class MatchService {
             return !pid.includes('projectile') && !pid.includes('missile') && !pid.includes('torpedo') && !pid.includes('sonobuoy');
         });
 
-        // Debug log if we see 0 combatants but we have entities
-        if (redCombatants.length === 0 && blueCombatants.length === 0 && world.currentTick > 0) {
-            this.logger.warn(`WinState check: No combatants found for match ${matchId} at tick ${world.currentTick}. Total entities: ${entities.length}`);
-        }
-
         if (world.currentTick > 0) {
             if (redCombatants.length === 0 && blueCombatants.length > 0) {
                 return { over: true, winner: 'Blue', reason: 'All Red units destroyed' };
@@ -267,7 +273,6 @@ export class MatchService {
                 return { over: true, winner: 'Red', reason: 'All Blue units destroyed' };
             }
             if (redCombatants.length === 0 && blueCombatants.length === 0) {
-                // Only declare mutual destruction if the match has actually run for a bit
                 return { over: true, winner: 'None', reason: 'Mutual destruction' };
             }
         }
@@ -297,6 +302,7 @@ export class MatchService {
     }
 
     public deleteMatch(matchId: string): void {
+        void this.recorder.finalize(matchId);
         this.matches.delete(matchId);
         if (this.onMatchDeleted) this.onMatchDeleted(matchId);
     }
@@ -308,9 +314,6 @@ export class MatchService {
         return tel ? { events: tel.getRecentEvents(1000) } : {};
     }
 
-    /**
-     * tickAll: Global heartbeat for all active matches.
-     */
     public async tickAll(dt: number): Promise<void> {
         const tickPromises: Promise<void>[] = [];
         this.matches.forEach(world => {
@@ -319,9 +322,6 @@ export class MatchService {
         await Promise.all(tickPromises);
     }
 
-    /**
-     * getInitialState: Generates a hydration snapshot for a new session.
-     */
     public async getInitialState(matchId: string, side: Side): Promise<ViewStateSnapshot | null> {
         const world = this.getMatch(matchId);
         if (!world) return null;
@@ -346,11 +346,12 @@ export class MatchService {
                     const filePath = this.storage.join(unitsDir, file);
                     try {
                         const content = await this.storage.readFile(filePath, 'utf8') as string;
-                        this.profiles.register(id, JSON.parse(content) as EntityProfile);
+                        const profile = EntityProfileSchema.parse(JSON.parse(content));
+                        this.profiles.register(id, profile);
                         this.logger.info(`Registered Unit Profile: ${id}`);
                     } catch (err: unknown) {
-                        const error = err as Error;
-                        this.logger.error(`Failed to register unit profile: ${id}`, { error: error.message });
+                        const message = err instanceof Error ? err.message : String(err);
+                        this.logger.error(`Failed to register unit profile: ${id}`, { error: message });
                     }
                 }
             }

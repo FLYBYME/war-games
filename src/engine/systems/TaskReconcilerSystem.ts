@@ -1,7 +1,7 @@
 import { ISystem, IWorldView, SystemPhase } from '../core/ISystem.js';
 import { Command } from '../core/Command.js';
 import { TaskGraphComponent } from '../components/TaskGraph.js';
-import { TaskType, TaskStatus, TaskNode, TaskPayload, TaskResult } from '../core/TaskGraph.js';
+import { TaskGraphManager, TaskType, TaskStatus, TaskNode, TaskPayload, TaskResult } from '../core/TaskGraph.js';
 import { Entity } from '../core/Entity.js';
 import { NavigationWorker } from './workers/NavigationWorker.js';
 import { InterceptWorker } from './workers/InterceptWorker.js';
@@ -48,7 +48,7 @@ export class TaskReconcilerSystem implements ISystem {
             const taskComp = entity.getComponent(TaskGraphComponent);
             if (!taskComp) continue;
 
-            const activeTasks = taskComp.graph.getActiveTasks();
+            const activeTasks = TaskGraphManager.getActiveTasks(taskComp.graph);
 
             for (const taskNode of activeTasks) {
                 const worker = this.workers.get(taskNode.task.type);
@@ -58,7 +58,7 @@ export class TaskReconcilerSystem implements ISystem {
                     commands.push(...taskCommands);
                 } else {
                     console.warn(`No worker found for task type: ${taskNode.task.type}`);
-                    taskComp.graph.markFailed(taskNode.id, `No worker for type ${taskNode.task.type}`);
+                    TaskGraphManager.markFailed(taskComp.graph, taskNode.id, `No worker for type ${taskNode.task.type}`);
                 }
             }
         }

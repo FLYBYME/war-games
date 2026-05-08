@@ -1,5 +1,5 @@
 import { ISystem, IWorldView, SystemPhase } from '../core/ISystem.js';
-import { Command, SetPositionCommand, UpdateKinematicsCommand } from '../core/Command.js';
+import { Command, SetPositionCommand, UpdateKinematicsCommand, SetHeadingCommand } from '../core/Command.js';
 import { TransformComponent, KinematicsComponent } from '../components/Physics.js';
 import { AeroComponent } from '../components/Aero.js';
 import { VectorMath } from '../math/VectorMath.js';
@@ -58,7 +58,7 @@ export class PhysicsSystem implements ISystem {
                         commands.push(new UpdateKinematicsCommand(entity.id, nextVel, { x: 0, y: 0, z: 0 }));
                         
                         // Sync rotation
-                        transform.rotation = carrierTransform.rotation;
+                        commands.push(new SetHeadingCommand(entity.id, carrierTransform.rotation));
                         
                         continue; // Skip normal force integration!
                     }
@@ -67,9 +67,6 @@ export class PhysicsSystem implements ISystem {
                 // 1. Reset and Accumulate Forces
                 let netForce = { ...kinematics.netForce };
                 
-                // Clear netForce for next tick
-                kinematics.netForce = { x: 0, y: 0, z: 0 };
-
                 const weightForceZ = -kinematics.massKg * Physics.GRAVITY_G;
                 netForce.z += weightForceZ;
 
@@ -125,7 +122,7 @@ export class PhysicsSystem implements ISystem {
                 // Air units (Aircraft, Helos, Weapons) should NOT be clamped, allowing them to pass 
                 // through the floor and be destroyed by the CollisionSystem.
                 const profileRegistry = world.profileRegistry as ProfileRegistry;
-                const profile = profileRegistry.get(entity.profileId) as EntityProfile | undefined;
+                const profile = profileRegistry.get(entity.profileId || '') as EntityProfile | undefined;
                 const isSurfaceEntity = profile?.type === 'Ship' || profile?.type === 'Facility';
                 const isSubsurfaceCapable = profile?.type === 'Submarine' || entity.id.includes('torpedo');
 

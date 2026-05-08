@@ -1,7 +1,7 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { TrackManagementSystem } from '../../engine/systems/TrackManagementSystem';
 import { DatalinkSystem } from '../../engine/systems/DatalinkSystem';
-import { TrackComponent } from '../../engine/components/TMS';
+import { TrackComponent } from '../../engine/components/Track';
 import { DetectionComponent } from '../../engine/components/Sensors';
 import { TransformComponent, KinematicsComponent } from '../../engine/components/Physics';
 import { CombatComponent } from '../../engine/components/Combat';
@@ -45,7 +45,7 @@ describe('Tracking & Fusion Unit Tests', () => {
             detection.detectedEntityIds.add('tgt-1');
 
             const target = new Entity('tgt-1', Side.Red);
-            target.addComponent(new TransformComponent({ x: 1000, y: 1000, z: 0 }));
+            target.addComponent(new TransformComponent({ position: { x: 1000, y: 1000, z: 0 } }));
             
             mockWorld.getEntities.mockReturnValue([observer]);
             mockWorld.getEntity.mockReturnValue(target);
@@ -63,7 +63,7 @@ describe('Tracking & Fusion Unit Tests', () => {
             detection.detectedEntityIds.add('tgt-1');
 
             const target = new Entity('tgt-1', Side.Red);
-            target.addComponent(new TransformComponent({ x: 1000, y: 1000, z: 0 }));
+            target.addComponent(new TransformComponent({ position: { x: 1000, y: 1000, z: 0 } }));
             mockWorld.getEntities.mockReturnValue([observer]);
             mockWorld.getEntity.mockReturnValue(target);
 
@@ -94,7 +94,7 @@ describe('Tracking & Fusion Unit Tests', () => {
             detection.detectedEntityIds.add('tgt-1');
 
             const target = new Entity('tgt-1', Side.Red);
-            target.addComponent(new TransformComponent({ x: 1000, y: 1000, z: 0 }));
+            target.addComponent(new TransformComponent({ position: { x: 1000, y: 1000, z: 0 } }));
             mockWorld.getEntities.mockReturnValue([observer]);
             mockWorld.getEntity.mockReturnValue(target);
 
@@ -117,7 +117,7 @@ describe('Tracking & Fusion Unit Tests', () => {
             detection.detectedEntityIds.add('tgt-1');
 
             const target = new Entity('tgt-1', Side.Red);
-            target.addComponent(new TransformComponent({ x: 1000, y: 1000, z: 0 }));
+            target.addComponent(new TransformComponent({ position: { x: 1000, y: 1000, z: 0 } }));
             mockWorld.getEntities.mockReturnValue([observer]);
             mockWorld.getEntity.mockReturnValue(target);
 
@@ -146,7 +146,7 @@ describe('Tracking & Fusion Unit Tests', () => {
             detection.detectedEntityIds.add('tgt-1');
 
             const target = new Entity('tgt-1', Side.Red);
-            target.addComponent(new TransformComponent({ x: 5000, y: 5000, z: 0 }));
+            target.addComponent(new TransformComponent({ position: { x: 5000, y: 5000, z: 0 } }));
             
             mockWorld.getEntities.mockReturnValue([observer]);
             mockWorld.getEntity.mockReturnValue(target);
@@ -163,12 +163,12 @@ describe('Tracking & Fusion Unit Tests', () => {
             detection.detectedEntityIds.add('tgt-2');
 
             const target1 = new Entity('tgt-1', Side.Red);
-            target1.addComponent(new TransformComponent({ x: 5000, y: 5000, z: 0 }));
+            target1.addComponent(new TransformComponent({ position: { x: 5000, y: 5000, z: 0 } }));
             const target2 = new Entity('tgt-2', Side.Red);
-            target2.addComponent(new TransformComponent({ x: 6000, y: 6000, z: 0 }));
+            target2.addComponent(new TransformComponent({ position: { x: 6000, y: 6000, z: 0 } }));
             
             mockWorld.getEntities.mockReturnValue([observer]);
-            mockWorld.getEntity.mockImplementation((id) => id === 'tgt-1' ? target1 : target2);
+            mockWorld.getEntity.mockImplementation((id: string) => id === 'tgt-1' ? target1 : target2);
 
             await tms.process(mockWorld, 0.1);
 
@@ -177,11 +177,11 @@ describe('Tracking & Fusion Unit Tests', () => {
 
         it('should share tracks between friendly units via Datalink (Test 48, 53)', async () => {
             const ship1 = setupObserver('ship-1', Side.Blue);
-            const dl1 = new DatalinkComponent('NET-1', true, true, true, 0); 
+            const dl1 = new DatalinkComponent({ networkId: 'NET-1', canTransmit: true, canReceive: true, isActive: true, latencyTicks: 0 }); 
             ship1.addComponent(dl1);
 
             const ship2 = setupObserver('ship-2', Side.Blue);
-            const dl2 = new DatalinkComponent('NET-1', true, true, true, 0); 
+            const dl2 = new DatalinkComponent({ networkId: 'NET-1', canTransmit: true, canReceive: true, isActive: true, latencyTicks: 0 }); 
             ship2.addComponent(dl2);
 
             const track: Track = {
@@ -189,6 +189,7 @@ describe('Tracking & Fusion Unit Tests', () => {
                 trueEntityId: 'tgt-red',
                 position: { x: 10000, y: 10000, z: 0 },
                 velocity: { x: 0, y: 0, z: 0 },
+                firstSeenTick: 0,
                 lastSeenTick: 0,
                 cepM: 10,
                 status: TrackStatus.Active,
@@ -220,6 +221,7 @@ describe('Tracking & Fusion Unit Tests', () => {
                 trueEntityId: 'tgt-1',
                 position: { x: 0, y: 0, z: 0 },
                 velocity: { x: 100, y: 0, z: 0 },
+                firstSeenTick: 0,
                 lastSeenTick: 10,
                 cepM: 10,
                 status: TrackStatus.Coasting,
@@ -244,7 +246,7 @@ describe('Tracking & Fusion Unit Tests', () => {
             detection.detectedEntityIds.add('tgt-1');
 
             const target = new Entity('tgt-1', Side.Red);
-            target.addComponent(new TransformComponent({ x: 0, y: 0, z: 0 }));
+            target.addComponent(new TransformComponent({ position: { x: 0, y: 0, z: 0 } }));
             
             mockWorld.getEntities.mockReturnValue([observer]);
             mockWorld.getEntity.mockReturnValue(target);
@@ -268,7 +270,7 @@ describe('Tracking & Fusion Unit Tests', () => {
             detection.detectedEntityIds.add('tgt-1');
 
             const target = new Entity('tgt-1', Side.Red);
-            target.addComponent(new TransformComponent({ x: 0, y: 0, z: 10000 }));
+            target.addComponent(new TransformComponent({ position: { x: 0, y: 0, z: 10000 } }));
             
             mockWorld.getEntities.mockReturnValue([observer]);
             mockWorld.getEntity.mockReturnValue(target);
@@ -343,7 +345,7 @@ describe('Tracking & Fusion Unit Tests', () => {
             });
 
             const target = new Entity('tgt-1', Side.Red);
-            target.addComponent(new TransformComponent({ x: 10000, y: 10000, z: 0 }));
+            target.addComponent(new TransformComponent({ position: { x: 10000, y: 10000, z: 0 } }));
             
             mockWorld.getEntities.mockReturnValue([observer]);
             mockWorld.getEntity.mockReturnValue(target);
@@ -377,6 +379,44 @@ describe('Tracking & Fusion Unit Tests', () => {
 
             expect(trackId2).not.toBe(trackId1);
             expect(trackId2).toBeDefined();
+        });
+
+        it('should resolve a track position via triangulation of multiple ESM bearings (Test 55)', async () => {
+            const ship1 = setupObserver('ship-1', Side.Blue);
+            ship1.getComponent(TransformComponent)!.position = { x: 0, y: 0, z: 0 };
+            
+            // Ship 1 sees target at 45 degrees
+            const detection = ship1.getComponent(DetectionComponent)!;
+            detection.esmBearings.push({
+                observerId: 'ship-1',
+                observerPos: { x: 0, y: 0, z: 0 },
+                bearingDeg: 45,
+                confidencePct: 100,
+                targetId: 'tgt-1'
+            });
+
+            // Ship 1 also receives bearing from Ship 2 (at 10km east) seeing target at 315 degrees
+            detection.esmBearings.push({
+                observerId: 'ship-2',
+                observerPos: { x: 10000, y: 0, z: 0 },
+                bearingDeg: 315,
+                confidencePct: 100,
+                targetId: 'tgt-1'
+            });
+
+            const target = new Entity('tgt-1', Side.Red);
+            target.addComponent(new TransformComponent({ position: { x: 5000, y: 5000, z: 0 } }));
+            
+            mockWorld.getEntities.mockReturnValue([ship1]);
+            mockWorld.getEntity.mockReturnValue(target);
+
+            await tms.process(mockWorld, 0.1);
+
+            // Verify ship1 has a fused track for tgt-1 at the intersected position
+            const track1 = Array.from(ship1.getComponent(TrackComponent)!.tracks.values())[0];
+            expect(track1.position.x).toBeCloseTo(5000, -2);
+            expect(track1.position.y).toBeCloseTo(5000, -2);
+            expect(track1.cepM).toBeLessThan(1000);
         });
     });
 });

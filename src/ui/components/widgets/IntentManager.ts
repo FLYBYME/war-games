@@ -1,6 +1,6 @@
 import { Component } from '../../framework/Component';
 import { sdkClient } from '../../framework/Client';
-import { ScenarioIntent, MissionType } from '../../../sdk/schemas';
+import { ScenarioIntent, MissionType, EMCONState } from '../../../sdk/schemas';
 
 /**
  * IntentManager: UI for higher-level scenario scripting and unit AI intent.
@@ -39,7 +39,7 @@ export class IntentManager extends Component {
         this.listen(this.element.querySelector('#btn-intent-silent')!, 'click', () => {
             void this.issueIntent({
                 type: 'Doctrine',
-                emcon: 'Charlie'
+                emcon: EMCONState.Charlie
             });
         });
     }

@@ -1,5 +1,5 @@
 import * as demoData from '../../data/index.js';
-import { ScenarioManifest } from '../schemas/index.js';
+import { ScenarioManifest } from '../../sdk/schemas/index.js';
 import { ServiceConfig, ILogger } from './types.js';
 
 export interface ScenarioSummary {
@@ -88,8 +88,9 @@ export class ScenarioService {
             this.inMemoryScenarios.set(name, manifest);
             this.logger.info(`Scenario saved to memory: ${name}`);
             return true;
-        } catch (err) {
-            this.logger.error(`Failed to save scenario: ${filename}`, { error: err });
+        } catch (err: unknown) {
+            const message = err instanceof Error ? err.message : String(err);
+            this.logger.error(`Failed to save scenario: ${filename}`, { error: message });
             return false;
         }
     }

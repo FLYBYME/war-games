@@ -25,7 +25,10 @@ export class OrbitalPhysicsSystem implements ISystem {
             if (orbital && transform) {
                 // 1. Calculate Mean Anomaly at current time
                 const elapsedSec = (currentTick - orbital.epochTick) / tickRate;
-                const meanMotionRadPerSec = (2 * Math.PI) / orbital.periodSec;
+                
+                // Kepler's Third Law: T = 2 * PI * sqrt(a^3 / mu)
+                const periodSec = 2 * Math.PI * Math.sqrt(Math.pow(orbital.semiMajorAxisM, 3) / Physics.EARTH_MU);
+                const meanMotionRadPerSec = (2 * Math.PI) / periodSec;
                 
                 const currentMeanAnomalyRad = (orbital.meanAnomalyAtEpochDeg * Physics.DEG_TO_RAD) + 
                                             (meanMotionRadPerSec * elapsedSec);

@@ -1,5 +1,5 @@
 import { ISystem, IWorldView, SystemPhase } from '../core/ISystem.js';
-import { Command, SetThrustCommand } from '../core/Command.js';
+import { Command, SetThrottleCommand, SetPitchCommand } from '../core/Command.js';
 import { NavigationComponent } from '../components/Navigation.js';
 import { TransformComponent, KinematicsComponent } from '../components/Physics.js';
 import { PropulsionComponent } from '../components/Propulsion.js';
@@ -29,7 +29,7 @@ export class ControlSystem implements ISystem {
             if (!nav || !transform || !kinematics || !propulsion) continue;
 
             const profileRegistry = world.profileRegistry as ProfileRegistry;
-            const profile = profileRegistry.get(entity.profileId) as EntityProfile | undefined;
+            const profile = profileRegistry.get(entity.profileId || '') as EntityProfile | undefined;
 
             // 1. Heading Control (Simple immediate rotation for now, ideally bank-to-turn)
             if (nav.desiredHeadingDeg !== undefined) {
@@ -51,7 +51,7 @@ export class ControlSystem implements ISystem {
                 }
 
                 if (Math.abs(throttle - propulsion.throttle) > 0.01) {
-                    commands.push(new SetThrustCommand(entity.id, throttle));
+                    commands.push(new SetThrottleCommand(entity.id, throttle));
                 }
             }
 
@@ -67,8 +67,7 @@ export class ControlSystem implements ISystem {
                 targetPitch = Math.max(-maxPitch, Math.min(maxPitch, targetPitch));
 
                 if (Math.abs(targetPitch - transform.pitch) > 0.5) {
-                    // commands.push(new SetPitchCommand(entity.id, targetPitch));
-                    transform.pitch = targetPitch;
+                    commands.push(new SetPitchCommand(entity.id, targetPitch));
                 }
             }
         }

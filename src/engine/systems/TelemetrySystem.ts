@@ -43,12 +43,17 @@ export class TelemetrySystem implements ISystem {
 
             if (tel && transform) {
                 const speed = kin ? (VectorMath.magnitude(kin.velocity) * 1.94384) : 0; // m/s to knots
-                tel.record({
+                
+                tel.history.push({
                     tick: world.currentTick,
                     pos: { ...transform.position },
                     speedKts: speed,
                     altM: transform.position.z
                 });
+
+                if (tel.history.length > tel.maxHistory) {
+                    tel.history.shift();
+                }
             }
         }
 

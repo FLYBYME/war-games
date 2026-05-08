@@ -1,6 +1,7 @@
 export interface IStorageProvider {
     readFile(path: string, encoding?: 'utf8'): Promise<string | ArrayBuffer>;
     writeFile(path: string, content: string | ArrayBuffer): Promise<void>;
+    appendFile(path: string, content: string): Promise<void>;
     readdir(path: string): Promise<string[]>;
     exists(path: string): Promise<boolean>;
     unlink(path: string): Promise<void>;

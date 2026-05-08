@@ -9,6 +9,12 @@ export abstract class Command {
     ) {}
 }
 
+export class SetSimulationSpeedCommand extends Command {
+    constructor(public readonly timeCompression: number, public readonly isPaused?: boolean) {
+        super('GLOBAL', 100);
+    }
+}
+
 /** Physics & Transform */
 export class SetPositionCommand extends Command {
     constructor(entityId: EntityId, public readonly x: number, public readonly y: number, public readonly z: number) {
@@ -52,8 +58,8 @@ export class ApplyForceCommand extends Command {
     }
 }
 
-export class SetThrustCommand extends Command {
-    constructor(entityId: EntityId, public readonly thrustN: number) {
+export class SetThrottleCommand extends Command {
+    constructor(entityId: EntityId, public readonly throttle: number) {
         super(entityId, 5);
     }
 }

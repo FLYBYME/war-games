@@ -1,7 +1,8 @@
 import { ISystem, IWorldView, SystemPhase } from '../core/ISystem.js';
 import { Command, SyncTracksCommand } from '../core/Command.js';
 import { DatalinkComponent } from '../components/Datalink.js';
-import { TrackComponent } from '../components/TMS.js';
+import { TrackComponent } from '../components/Track.js';
+import { DetectionComponent, ESMBearing } from '../components/Sensors.js';
 import { Track } from '../core/Types.js';
 import { Entity } from '../core/Entity.js';
 
@@ -20,7 +21,7 @@ export class DatalinkSystem implements ISystem {
     public async process(world: IWorldView, _dt: number): Promise<Command[]> {
         const commands: Command[] = [];
         
-        // Reset graph for this tick
+        // 1. Identify networks and members
         const nodes = new Set<string>();
         const edges: { a: string, b: string, latencyMs: number }[] = [];
         const networks = new Map<string, Entity[]>();
@@ -37,46 +38,49 @@ export class DatalinkSystem implements ISystem {
 
         // 2. For each network, build the Common Tactical Picture (CTP)
         for (const [, members] of networks.entries()) {
-            // trueEntityId -> Best available track for that entity in this network
             const ctp = new Map<string, Track>(); 
+            const jointBearings: ESMBearing[] = [];
 
             for (const member of members) {
                 const dl = member.getComponent(DatalinkComponent);
-                if (!dl?.canTransmit) continue;
+                if (!dl?.canTransmit || !dl.isActive) continue;
 
                 const localTracks = member.getComponent(TrackComponent);
                 if (localTracks) {
                     for (const track of localTracks.tracks.values()) {
-                        // Skip internal dropped tracks
                         if (track.status === 'Dropped') continue;
-
                         const existing = ctp.get(track.trueEntityId);
-                        // Rule: Pick the track with the lowest uncertainty (smallest CEP)
                         if (!existing || track.cepM < existing.cepM) {
                             ctp.set(track.trueEntityId, { ...track });
                         }
                     }
                 }
+
+                const detections = member.getComponent(DetectionComponent);
+                if (detections) {
+                    jointBearings.push(...detections.esmBearings);
+                }
             }
 
             // 3. Queue the fused picture for all members capable of receiving
             const sharedTracks = Array.from(ctp.values());
-            if (sharedTracks.length === 0) continue;
+            if (sharedTracks.length === 0 && jointBearings.length === 0) continue;
 
             for (const member of members) {
                 const dl = member.getComponent(DatalinkComponent);
                 if (dl && dl.canReceive && dl.isActive) {
-                    // Only update periodically (e.g. every 5 ticks) to avoid flooding
+                    // Update periodically to avoid flooding
                     if (world.currentTick % 5 === 0) {
                         dl.incomingQueue.push({
                             arrivalTick: world.currentTick + dl.latencyTicks,
-                            tracks: JSON.parse(JSON.stringify(sharedTracks)) // Snapshot
+                            tracks: JSON.parse(JSON.stringify(sharedTracks)),
+                            bearings: JSON.parse(JSON.stringify(jointBearings))
                         });
                     }
                 }
             }
 
-            // Build edges for this network (clique model for now, or based on proximity/latency)
+            // Build graph edges
             for (let i = 0; i < members.length; i++) {
                 for (let j = i + 1; j < members.length; j++) {
                     const dlA = members[i].getComponent(DatalinkComponent)!;
@@ -85,7 +89,7 @@ export class DatalinkSystem implements ISystem {
                         edges.push({
                             a: members[i].id,
                             b: members[j].id,
-                            latencyMs: (dlA.latencyTicks + dlB.latencyTicks) * 100 // 10Hz tick
+                            latencyMs: (dlA.latencyTicks + dlB.latencyTicks) * 100 
                         });
                     }
                 }
@@ -98,19 +102,26 @@ export class DatalinkSystem implements ISystem {
         for (const entity of world.getEntities()) {
             const dl = entity.getComponent(DatalinkComponent);
             if (dl && dl.incomingQueue.length > 0) {
-                // Find all messages that have arrived
                 const arrivedIndices = dl.incomingQueue
                     .map((m, i) => m.arrivalTick <= world.currentTick ? i : -1)
                     .filter(i => i !== -1);
                 
                 if (arrivedIndices.length > 0) {
-                    // Use the latest arrived message
                     const latestIdx = arrivedIndices[arrivedIndices.length - 1];
                     const msg = dl.incomingQueue[latestIdx];
                     
                     commands.push(new SyncTracksCommand(entity.id, msg.tracks));
                     
-                    // Clear out processed and stale messages
+                    // Also merge bearings into local DetectionComponent for triangulation
+                    const det = entity.getComponent(DetectionComponent);
+                    if (det && msg.bearings) {
+                        // Avoid duplicates from self
+                        const externalBearings = msg.bearings.filter(b => b.observerId !== entity.id);
+                        // Simple policy: replace previous external bearings with new ones
+                        det.esmBearings = det.esmBearings.filter(b => b.observerId === entity.id);
+                        det.esmBearings.push(...externalBearings);
+                    }
+                    
                     dl.incomingQueue = dl.incomingQueue.filter((_, i) => i > latestIdx);
                 }
             }

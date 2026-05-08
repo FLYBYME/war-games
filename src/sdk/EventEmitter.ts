@@ -20,7 +20,7 @@ export class EventEmitter {
         }
         
         // Safety: We use unknown internally to store diverse handlers
-        const internalHandler = handler as unknown as EventHandler<unknown>;
+        const internalHandler = handler as EventHandler<unknown>;
         this.handlers.get(event)?.add(internalHandler);
         return () => this.off(event, internalHandler);
     }
@@ -36,8 +36,8 @@ export class EventEmitter {
     }
 
     /** Unsubscribe from a specific event */
-    off(event: string, handler: EventHandler<unknown>): void {
-        this.handlers.get(event)?.delete(handler);
+    off<T = unknown>(event: string, handler: EventHandler<T>): void {
+        this.handlers.get(event)?.delete(handler as EventHandler<unknown>);
     }
 
     /** Subscribe to ALL events (useful for logging / debugging) */
@@ -76,12 +76,12 @@ export class EventEmitter {
         this.anyHandlers.forEach(h => this.safeInvoke(h, { type: event, payload }));
     }
 
-    private safeInvoke(handler: EventHandler<unknown>, payload: unknown): void {
+    private safeInvoke<T>(handler: EventHandler<T>, payload: T): void {
         try {
             handler(payload);
         } catch (err: unknown) {
-            const error = err as Error;
-            console.error('EventEmitter handler error:', error.message);
+            const message = err instanceof Error ? err.message : String(err);
+            console.error('EventEmitter handler error:', message);
         }
     }
 

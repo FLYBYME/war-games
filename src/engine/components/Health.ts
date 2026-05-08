@@ -24,14 +24,15 @@ export interface Subsystem {
  */
 export class HealthComponent implements IComponent {
     readonly type = 'HealthComponent';
+    public hp: number = 100;
+    public maxHp: number = 100;
+    public isDestroyed: boolean = false;
+    public subsystems: Subsystem[] = [];
+    public fires: number = 0;
+    public flooding: number = 0;
+    public structuralIntegrity: number = 1.0;
 
-    constructor(
-        public hp: number = 100,
-        public maxHp: number = 100,
-        public isDestroyed: boolean = false,
-        public subsystems: Subsystem[] = [],
-        public fires: number = 0,           // Number of active fire locations
-        public flooding: number = 0,        // Flooding severity (0.0 to 1.0)
-        public structuralIntegrity: number = 1.0
-    ) {}
+    constructor(init?: Partial<HealthComponent>) {
+        if (init) Object.assign(this, init);
+    }
 }

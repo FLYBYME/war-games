@@ -15,6 +15,10 @@ import { BugReport } from "./schemas/bugs.js";
 import { EventEmitter } from "./EventEmitter.js";
 import { ToolDispatcher } from "./ToolDispatcher.js";
 import { NotJoinedError, ConnectionTimeoutError } from "./errors.js";
+import { BugModule } from "./BugModule.js";
+import { ScenarioModule } from "./ScenarioModule.js";
+import { TerrainModule } from "./TerrainModule.js";
+import { DeltaDecoder } from "./DeltaDecoder.js";
 
 // ─── SDK Types ───────────────────────────────────────────────
 
@@ -58,6 +62,7 @@ export class WarGamesClient {
     public readonly bugs: BugModule;
     public readonly tools: ToolDispatcher;
     public readonly events: EventEmitter;
+    private readonly decoder = new DeltaDecoder();
 
     private ws: WebSocket | null = null;
     private config: Required<ClientConfig>;
@@ -113,9 +118,10 @@ export class WarGamesClient {
                 const errJson = await response.json();
                 errorText = JSON.stringify(errJson);
             } catch (e: unknown) {
-                try { errorText = await response.text(); } catch (e2: unknown) {
-                    const error = e as Error;
-                    errorText = error.message;
+                try {
+                    errorText = await response.text();
+                } catch (e2: unknown) {
+                    errorText = e instanceof Error ? e.message : String(e);
                 }
             }
             throw new Error(`API Request failed (${response.status}) on ${path}: ${errorText}`);
@@ -123,12 +129,15 @@ export class WarGamesClient {
 
         const contentType = response.headers.get('content-type');
         if (contentType && contentType.includes('application/json')) {
-            return (await response.json()) as T;
+            const data: unknown = await response.json();
+            return data as T;
         } else if (contentType && contentType.includes('application/octet-stream')) {
-            return (await response.arrayBuffer()) as unknown as T;
+            const data: unknown = await response.arrayBuffer();
+            return data as T;
         }
 
-        return (await response.text()) as unknown as T;
+        const data: unknown = await response.text();
+        return data as T;
     }
 
     // ─── Connection Lifecycle ────────────────────────────────
@@ -150,6 +159,7 @@ export class WarGamesClient {
 
             try {
                 this.ws = new WebSocket(this.config.url);
+                this.ws.binaryType = 'arraybuffer';
                 this.ws.onopen = () => {
                     clearTimeout(timeout);
                     this.onConnected();
@@ -165,9 +175,9 @@ export class WarGamesClient {
                         reject(err);
                     }
                 };
-            } catch (err) {
+            } catch (err: unknown) {
                 clearTimeout(timeout);
-                reject(err);
+                reject(err instanceof Error ? err : new Error(String(err)));
             }
         });
     }
@@ -211,7 +221,7 @@ export class WarGamesClient {
             }, this.config.commandTimeoutMs);
 
             this.pendingCommands.set(sequence, { resolve, reject, timeout });
-            this.send({ type: 'ISSUE_COMMAND', matchId: this.matchId!, command });
+            this.send({ type: 'ISSUE_COMMAND', matchId: this.matchId!, command, sequence });
         });
     }
 
@@ -247,14 +257,21 @@ export class WarGamesClient {
     }
 
     // ─── Time Compression ────────────────────────────────────
-
-    setTimeCompression(rate: number): void {
+    /**
+     * setTimeCompression: Sets simulation speed.
+     * Use 0 to pause, 1 for realtime, >1 for fast-forward.
+     */
+    async setTimeCompression(rate: number): Promise<void> {
         if (!this.matchId) throw new NotJoinedError();
-        this.send({ type: 'SET_TIME_COMPRESSION', matchId: this.matchId, rate });
+        await this.dispatch({
+            type: 'SetSimulationSpeed',
+            timeCompression: rate,
+            isPaused: rate === 0
+        });
     }
 
-    pause(): void { this.setTimeCompression(0); }
-    resume(rate = 1): void { this.setTimeCompression(rate); }
+    async pause(): Promise<void> { await this.setTimeCompression(0); }
+    async resume(rate = 1): Promise<void> { await this.setTimeCompression(rate); }
 
     // ─── Data Access ─────────────────────────────────────────
 
@@ -353,7 +370,20 @@ export class WarGamesClient {
 
     private onMessage(event: MessageEvent): void {
         try {
-            const msg = JSON.parse(event.data as string) as ServerMessage;
+            // Handle Binary ViewState Snapshots
+            if (event.data instanceof ArrayBuffer || (typeof Buffer !== 'undefined' && Buffer.isBuffer(event.data))) {
+                const ab = (event.data instanceof ArrayBuffer ? event.data : 
+                    event.data.buffer.slice(event.data.byteOffset, event.data.byteOffset + event.data.byteLength)) as ArrayBuffer;
+                
+                const snapshot = this.decoder.decode(ab);
+                this.lastViewState = snapshot;
+                this.currentTick = snapshot.tick;
+                this.events.emit('state:viewState', snapshot);
+                return;
+            }
+
+            if (typeof event.data !== 'string') return;
+            const msg = JSON.parse(event.data) as ServerMessage;
             switch (msg.type) {
                 case 'VIEW_STATE': {
                     this.lastViewState = msg.payload;
@@ -364,10 +394,13 @@ export class WarGamesClient {
 
                 case 'COMMAND_ACK': {
                     const payload = msg.payload;
-                    const pending = this.pendingCommands.get(payload.commandType);
+                    const seq = payload.sequence;
+                    const pending = seq ? this.pendingCommands.get(seq) : this.pendingCommands.get(payload.commandType);
+                    
                     if (pending) {
                         clearTimeout(pending.timeout);
-                        this.pendingCommands.delete(payload.commandType);
+                        if (seq) this.pendingCommands.delete(seq);
+                        else this.pendingCommands.delete(payload.commandType);
                         if (payload.success) {
                             pending.resolve({ commandType: payload.commandType, success: true });
                         } else {
@@ -415,96 +448,5 @@ export class WarGamesClient {
     }
 }
 
-// ─── SDK Modules ─────────────────────────────────────────────
 
-export class BugModule {
-    constructor(private client: WarGamesClient) { }
-    async list() {
-        return await this.client.apiFetch<BugReport[]>('/api/bugs');
-    }
-    async get(id: string) {
-        return await this.client.apiFetch<BugReport>(`/api/bugs/${id}`);
-    }
-    async report(data: unknown) {
-        return await this.client.apiFetch<BugReport>('/api/bugs', { method: 'POST', body: JSON.stringify(data) });
-    }
-    async update(id: string, updates: unknown) {
-        return await this.client.apiFetch<BugReport>(`/api/bugs/${id}`, { method: 'PATCH', body: JSON.stringify(updates) });
-    }
-    async comment(id: string, data: unknown) {
-        return await this.client.apiFetch<unknown>(`/api/bugs/${id}/comments`, { method: 'POST', body: JSON.stringify(data) });
-    }
-}
-
-export class ScenarioModule {
-    constructor(private client: WarGamesClient) { }
-    async getCurrentState(): Promise<ViewState | null> {
-        return await this.client.getLatestViewState();
-    }
-    async listMatches(): Promise<MatchInfo[]> {
-        return await this.client.listMatches();
-    }
-    async deleteMatch(matchId: string): Promise<{ success: boolean }> {
-        return await this.client.deleteMatch(matchId);
-    }
-    async queryWinState(matchId: string): Promise<{ over: boolean, winner?: string }> {
-        return await this.client.queryWinState(matchId);
-    }
-    async getRecentEvents(matchId: string, count: number = 50): Promise<TacticalEvent[]> {
-        return await this.client.getRecentEvents(matchId, count);
-    }
-    async getProfile(profileId: string): Promise<EntityProfile | null> {
-        return await this.client.getProfile(profileId);
-    }
-    exportScenario(): Promise<unknown> { return new Promise((resolve) => { this.client.events.once('scenario:exported', (payload: unknown) => { resolve(payload); }); this.client.dispatchImmediate({ type: 'EXPORT_SCENARIO', matchId: this.client.currentMatchId || 'default' } as unknown as ClientMessage); }); }
-    importScenario(payload: unknown, options: { matchId?: string; side?: Side } = {}): Promise<{ success: boolean }> {
-        if (options.side) { this.client.side = options.side; }
-        return new Promise((resolve) => {
-            this.client.events.once('scenario:imported', (result: { success: boolean }) => { resolve(result); });
-            this.client.dispatchImmediate({
-                type: 'IMPORT_SCENARIO',
-                matchId: options.matchId || this.client.currentMatchId || 'default',
-                payload: payload as unknown as Record<string, unknown>
-            });
-        });
-    }
-    async fetchProfiles(): Promise<{ units: [string, EntityProfile][], weapons: [string, unknown][] }> {
-        return await this.client.apiFetch('/api/database/profiles');
-    }
-    async saveProfile(id: string, profile: EntityProfile): Promise<{ success: boolean }> {
-        return await this.client.apiFetch('/api/database/profiles', { method: 'POST', body: JSON.stringify({ id, profile }) });
-    }
-    async listScenarios(): Promise<{ filename: string; name: string; description: string; entityCount: number }[]> {
-        return await this.client.apiFetch('/api/scenarios');
-    }
-    async getScenario(filename: string): Promise<unknown> {
-        return await this.client.apiFetch(`/api/scenarios/${encodeURIComponent(filename)}`);
-    }
-    async saveScenario(filename: string, manifest: unknown): Promise<{ success: boolean }> {
-        return await this.client.apiFetch('/api/scenarios', { method: 'POST', body: JSON.stringify({ filename, manifest }) });
-    }
-    async deleteScenario(filename: string): Promise<{ success: boolean }> {
-        return await this.client.apiFetch(`/api/scenarios/${encodeURIComponent(filename)}`, { method: 'DELETE' });
-    }
-    async loadScenarioIntoEngine(filename: string): Promise<{ success: boolean; name?: string; entityCount?: number; matchId?: string }> { return await this.client.apiFetch('/api/scenarios/load', { method: 'POST', body: JSON.stringify({ filename }) }); }
-    async getTelemetry(matchId: string): Promise<Record<string, unknown[]>> { return await this.client.apiFetch(`/api/matches/${encodeURIComponent(matchId)}/telemetry`); }
-}
-
-export class TerrainModule {
-    constructor(private client: WarGamesClient) { }
-    async fetchManifest(): Promise<{ regions: unknown[] }> {
-        return await this.client.apiFetch('/api/terrain/manifest');
-    }
-    async fetchStats(): Promise<{ regions: number; cachedEngineTiles: number; cachedUITiles: number; engineSizeMb: number; uiSizeMb: number; memoryCacheSize: number; pendingJobs: string[]; }> {
-        return await this.client.apiFetch('/api/terrain/stats');
-    }
-    async clearCache(): Promise<{ success: boolean }> {
-        return await this.client.apiFetch('/api/terrain/clear-cache', { method: 'POST' });
-    }
-    async fetchTile(lat: number, lon: number): Promise<ArrayBuffer> {
-        return await this.client.apiFetch(`/api/terrain/tiles/${lat}/${lon}`);
-    }
-    async fetchUITile(lat: number, lon: number): Promise<ArrayBuffer> {
-        return await this.client.apiFetch(`/api/terrain/ui-tiles/${lat}/${lon}`);
-    }
-}
+// ─── SDK Modules (Moved to separate files) ───────────────────

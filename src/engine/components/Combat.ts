@@ -34,27 +34,29 @@ export interface Mount {
     currentTargetId?: EntityId;
 }
 
-/**
- * CombatComponent: Data for weapons systems on a platform.
- */
 export class CombatComponent implements IComponent {
     readonly type = 'CombatComponent';
 
-    constructor(
-        public mounts: Mount[] = [],
-        public magazines: Magazine[] = [],
-        public currentTargetId: EntityId | undefined = undefined
-    ) {}
+    public mounts: Mount[] = [];
+    public magazines: Magazine[] = [];
+    public currentTargetId: EntityId | undefined = undefined;
+
+    constructor(init?: Partial<CombatComponent>) {
+        if (init) Object.assign(this, init);
+    }
 }
+
 /**
  * SalvoComponent: Attached to a munition entity that represents a cluster of rounds.
  */
 export class SalvoComponent implements IComponent {
     readonly type = 'SalvoComponent';
 
-    constructor(
-        public quantity: number,
-        public initialQuantity: number,
-        public dispersionDeg: number = 0.1
-    ) {}
+    public quantity: number = 1;
+    public initialQuantity: number = 1;
+    public dispersionDeg: number = 0.1;
+
+    constructor(init?: Partial<SalvoComponent>) {
+        if (init) Object.assign(this, init);
+    }
 }

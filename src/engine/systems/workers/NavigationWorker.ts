@@ -1,5 +1,5 @@
 import { Entity } from '../../core/Entity.js';
-import { TaskNode, NavigatePayload, TaskResult } from '../../core/TaskGraph.js';
+import { TaskNode, NavigatePayload, TaskResult, TaskGraphManager } from '../../core/TaskGraph.js';
 import { IWorldView } from '../../core/ISystem.js';
 import { Command, SetHeadingCommand, SetSpeedCommand, SetAltitudeCommand } from '../../core/Command.js';
 import { TaskWorker } from '../TaskReconcilerSystem.js';
@@ -24,7 +24,7 @@ export class NavigationWorker implements TaskWorker {
 
         // 1. Check Arrival
         if (dist < tolerance) {
-            taskComp.graph.markCompleted(taskNode.id, { arrivalTick: world.currentTick });
+            TaskGraphManager.markCompleted(taskComp.graph, taskNode.id, { arrivalTick: world.currentTick });
             return [new SetSpeedCommand(entity.id, 0)];
         }
 

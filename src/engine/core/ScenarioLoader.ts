@@ -2,7 +2,8 @@ import { World } from './World.js';
 import { EntityManager, SpawnParams } from './EntityManager.js';
 import { ScenarioAutomationSystem } from '../systems/ScenarioAutomationSystem.js';
 import { MissionComponent, MissionType } from '../components/Missions.js';
-import { DoctrineComponent, ROE, EMCONState } from '../components/Doctrine.js';
+import { DoctrineComponent } from '../components/Doctrine.js';
+import { ROE, EMCONState } from './Types.js';
 import { GroupComponent, GroupFormation } from '../components/Group.js';
 import { FacilityComponent, LogisticsComponent, TurnaroundState } from '../components/Logistics.js';
 import { PropulsionComponent, EngineState } from '../components/Propulsion.js';
@@ -84,7 +85,10 @@ export class ScenarioLoader {
                 const entity = world.getEntity(intent.actorId);
                 if (entity) {
                     entity.removeComponent(MissionComponent);
-                    const newMission = new MissionComponent(intent.missionType as MissionType, intent.params);
+                    const newMission = new MissionComponent({
+                        missionType: intent.missionType,
+                        params: intent.params
+                    });
                     entity.addComponent(newMission);
                 } else {
                     console.warn(`  Actor ${intent.actorId} not found for Mission intent`);
@@ -98,8 +102,8 @@ export class ScenarioLoader {
                     if (entity) {
                         const doctrine = entity.getComponent(DoctrineComponent);
                         if (doctrine) {
-                            if (intent.roe) doctrine.roe = intent.roe as ROE;
-                            if (intent.emcon) doctrine.emcon = intent.emcon as EMCONState;
+                            if (intent.roe) doctrine.roe = intent.roe;
+                            if (intent.emcon) doctrine.emcon = intent.emcon;
                             if (intent.wra) {
                                 doctrine.wraRules = intent.wra.map(r => ({
                                     targetType: r.targetType,
@@ -123,8 +127,8 @@ export class ScenarioLoader {
                             const doctrine = entity.getComponent(DoctrineComponent);
                             if (doctrine) {
                                 count++;
-                                if (intent.roe) doctrine.roe = intent.roe as ROE;
-                                if (intent.emcon) doctrine.emcon = intent.emcon as EMCONState;
+                                if (intent.roe) doctrine.roe = intent.roe;
+                                if (intent.emcon) doctrine.emcon = intent.emcon;
                                 if (intent.wra) {
                                     doctrine.wraRules = intent.wra.map(r => ({
                                         targetType: r.targetType,
@@ -143,14 +147,19 @@ export class ScenarioLoader {
             }
             case 'Group': {
                 const membersSet = new Set(intent.members);
-                const formation = (intent.formationType || GroupFormation.None) as GroupFormation;
+                const formation = intent.formationType || GroupFormation.None;
 
                 for (const memberId of intent.members) {
                     const entity = world.getEntity(memberId);
                     if (entity) {
                         let groupComp = entity.getComponent(GroupComponent);
                         if (!groupComp) {
-                            groupComp = new GroupComponent(intent.groupId, intent.leaderId, membersSet, formation);
+                            groupComp = new GroupComponent({
+                                groupId: intent.groupId,
+                                leaderId: intent.leaderId,
+                                memberIds: membersSet,
+                                formation: formation
+                            });
                             entity.addComponent(groupComp);
                         } else {
                             groupComp.groupId = intent.groupId;
@@ -180,7 +189,7 @@ export class ScenarioLoader {
 
                             // 2. Tell the aircraft it is parked here
                             logComp.currentBaseId = intent.baseId;
-                            logComp.state = (intent.initialState || TurnaroundState.Ready) as TurnaroundState;
+                            logComp.state = intent.initialState || TurnaroundState.Ready;
                             logComp.stateStartTick = world.currentTick;
 
                             // 3. Ensure aircraft engines are off to start

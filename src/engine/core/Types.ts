@@ -4,6 +4,7 @@
  */
 
 export * from '../../sdk/schemas/domain.js';
+export type { ESMBearing } from '../../sdk/schemas/domain.js';
 export * from '../../sdk/schemas/protocol.js';
 export * from '../../sdk/schemas/events.js';
 export * from '../../sdk/schemas/profiles.js';

@@ -16,17 +16,19 @@ export enum JammerType {
 export class JammerComponent implements IComponent {
     readonly type = 'JammerComponent';
 
-    constructor(
-        public jammerType: JammerType = JammerType.SPJ,
-        public powerWatts: number = 1000,
-        public frequencyHz: number = 3e9,      // Default S-band
-        public bandwidthHz: number = 500e6,    // 500 MHz wide
-        public isActive: boolean = false,
-        public mode: JammerMode = JammerMode.Noise,
-        public directionalGainDb: number = 0,  // For SOJ antennas
-        public beamWidthDeg: number = 30,      // For directional jamming
-        public targetId?: EntityId             // Optional: specific threat to counter
-    ) {}
+    public jammerType: JammerType = JammerType.SPJ;
+    public powerWatts: number = 1000;
+    public frequencyHz: number = 3e9;
+    public bandwidthHz: number = 500e6;
+    public isActive: boolean = false;
+    public mode: JammerMode = JammerMode.Noise;
+    public directionalGainDb: number = 0;
+    public beamWidthDeg: number = 30;
+    public targetId?: EntityId;
+
+    constructor(init?: Partial<JammerComponent>) {
+        if (init) Object.assign(this, init);
+    }
 }
 
 /**
@@ -34,8 +36,9 @@ export class JammerComponent implements IComponent {
  */
 export class SIGINTComponent implements IComponent {
     readonly type = 'SIGINTComponent';
+    public sensitivityDBm: number = -120;
 
-    constructor(
-        public sensitivityDBm: number = -120
-    ) {}
+    constructor(init?: Partial<SIGINTComponent>) {
+        if (init) Object.assign(this, init);
+    }
 }

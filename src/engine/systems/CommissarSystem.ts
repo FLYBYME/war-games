@@ -2,7 +2,7 @@ import { ISystem, IWorldView, SystemPhase } from '../core/ISystem.js';
 import { Command } from '../core/Command.js';
 import { GroupComponent, GroupFormation } from '../components/Group.js';
 import { TaskGraphComponent } from '../components/TaskGraph.js';
-import { TaskType, TaskStatus } from '../core/TaskGraph.js';
+import { TaskType, TaskStatus, TaskGraphManager } from '../core/TaskGraph.js';
 import { MissionComponent, MissionType, MissionStatus } from '../components/Missions.js';
 import { Vector3 } from '../core/Types.js';
 
@@ -53,7 +53,7 @@ export class CommissarSystem implements ISystem {
                 return; // Not a valid patrol
             }
 
-            leaderTasks.graph.addNode({
+            TaskGraphManager.addNode(leaderTasks.graph, {
                 id: `patrol-${leaderId}-${world.currentTick}`,
                 task: { type: TaskType.Patrol, payload: patrolParams },
                 dependencies: [],
@@ -72,7 +72,7 @@ export class CommissarSystem implements ISystem {
                 // Calculate Offset based on formation
                 const offset = this.calculateFormationOffset(group.formation, index, group.spacingM);
                 
-                memberTasks.graph.addNode({
+                TaskGraphManager.addNode(memberTasks.graph, {
                     id: `stay-in-form-${memberId}`,
                     task: { 
                         type: TaskType.Navigate, 

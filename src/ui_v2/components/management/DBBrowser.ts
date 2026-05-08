@@ -159,7 +159,7 @@ export class DBBrowser extends Component {
                 <div class="spec-label" style="margin-bottom: 10px;">Combat Capabilities</div>
                 ${p.combat ? `
                     <div style="font-size: 12px; color: #888;">
-                        Mounts: ${p.combat.mounts.length} | Magazines: ${p.combat.magazines.length}
+                        Mounts: ${p.combat?.mounts?.length || 0} | Magazines: ${p.combat?.magazines?.length || 0}
                     </div>
                 ` : '<div style="font-size: 12px; color: #444;">Non-combatant</div>'}
             </div>

@@ -19,19 +19,24 @@ import {
  */
 export function generateCommandTools(client: WarGamesClient) {
     return EngineCommandPayloadSchema.options.map(schema => {
+        if (!(schema instanceof z.ZodObject)) {
+            throw new Error(`Unexpected schema type in EngineCommandPayload: ${typeof schema}`);
+        }
+
+        const objSchema = schema as z.AnyZodObject;
         // Extract the literal command type (e.g. 'SetCourse')
-        const commandType = (schema.shape.type as z.ZodLiteral<string>)._def.value;
+        const commandType = (objSchema.shape.type as z.ZodLiteral<string>)._def.value;
         
         // The LLM doesn't need to pass the 'type' field, we re-inject it.
-        const inputSchema = (schema as unknown as z.ZodObject<z.ZodRawShape>).omit({ type: true });
+        const inputSchema = objSchema.omit({ type: true });
 
         return defineTool({
             name: `engine_${commandType.replace(/([a-z])([A-Z])/g, '$1_$2').toLowerCase()}`,
-            description: (schema._def as any).description || `Execute ${commandType} command on the engine.`,
+            description: schema.description || `Execute ${commandType} command on the engine.`,
             inputSchema,
             outputSchema: z.object({ success: z.boolean(), commandType: z.string() }),
             async call(_matchId, _side, args) {
-                const payload = { type: commandType, ...args } as EngineCommandPayload;
+                const payload = EngineCommandPayloadSchema.parse({ type: commandType, ...args });
                 const result = await client.dispatchRest(payload);
                 return { success: result.success, commandType: result.commandType };
             }
@@ -69,8 +74,9 @@ export function createTacticalTools(client: WarGamesClient) {
             const suggestions: string[] = [];
 
             vs.units.forEach(u => {
-                if (u.hp < 40) alerts.push(`URGENT: ${u.profileId || u.id} heavily damaged (${u.hp}%). Consider RTB.`);
-                if (u.fuelPct < 0.2) suggestions.push(`Refuel required for ${u.id}. Current fuel: ${Math.round(u.fuelPct * 100)}%`);
+                const isOrdnance = u.category === 'Weapon' || u.category === 'Mine';
+                if (!isOrdnance && u.hp < 40) alerts.push(`URGENT: ${u.profileId || u.id} heavily damaged (${u.hp}%). Consider RTB.`);
+                if (!isOrdnance && u.fuelPct < 0.2) suggestions.push(`Refuel required for ${u.id}. Current fuel: ${Math.round(u.fuelPct * 100)}%`);
             });
 
             const hostileCount = vs.tracks.filter(t => t.identification === 'Hostile').length;
@@ -91,35 +97,6 @@ export function createTacticalTools(client: WarGamesClient) {
                     suggestedActions: suggestions
                 }
             };
-        }
-    });
-
-    /**
-     * set_paused: Simulation flow control.
-     */
-    const set_paused = defineTool({
-        name: "set_paused",
-        description: "Pauses or resumes the simulation.",
-        inputSchema: z.object({ paused: z.boolean() }),
-        outputSchema: z.object({ success: z.boolean() }),
-        async call(_matchId, _side, args) {
-            if (args.paused) client.pause();
-            else client.resume(1);
-            return { success: true };
-        }
-    });
-
-    /**
-     * set_time_compression: Simulation speed control.
-     */
-    const set_time_compression = defineTool({
-        name: "set_time_compression",
-        description: "Sets the simulation time compression rate (0-30). 0 is paused.",
-        inputSchema: z.object({ rate: z.number().min(0).max(30) }),
-        outputSchema: z.object({ success: z.boolean() }),
-        async call(_matchId, _side, args) {
-            client.setTimeCompression(args.rate);
-            return { success: true };
         }
     });
 
@@ -181,14 +158,14 @@ export function createTacticalTools(client: WarGamesClient) {
         }),
         outputSchema: EntityProfileSchema,
         async call(_matchId, _side, args) {
-            return await client.scenario.getProfile(args.profileId);
+            const profile = await client.scenario.getProfile(args.profileId);
+            if (!profile) throw new Error(`Profile ${args.profileId} not found.`);
+            return profile;
         }
     });
 
     return [
         get_tactical_status,
-        set_paused,
-        set_time_compression,
         get_unit_details,
         list_matches,
         query_profile_data,

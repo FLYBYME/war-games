@@ -5,6 +5,7 @@ import { Vector3 } from '../core/Types.js';
  */
 export interface ITileProvider {
     getTile(lat: number, lon: number): Promise<Float32Array | undefined>;
+    getCachedTile(lat: number, lon: number): Float32Array | undefined;
 }
 
 /**
@@ -20,9 +21,27 @@ export class TerrainOracle {
     public async getElevation(lat: number, lon: number): Promise<number> {
         if (!this.provider) return 0;
 
+        // Try synchronous path first
+        const cached = this.provider.getCachedTile(lat, lon);
+        if (cached) return this.interpolateElevation(cached, lat, lon);
+
         const tile = await this.provider.getTile(lat, lon);
         if (!tile) return 0;
 
+        return this.interpolateElevation(tile, lat, lon);
+    }
+
+    /**
+     * getElevationSync: Synchronous version for hot loops, returns 0 if tile not cached.
+     */
+    public getElevationSync(lat: number, lon: number): number {
+        if (!this.provider) return 0;
+        const tile = this.provider.getCachedTile(lat, lon);
+        if (!tile) return 0;
+        return this.interpolateElevation(tile, lat, lon);
+    }
+
+    private interpolateElevation(tile: Float32Array, lat: number, lon: number): number {
         const resolution = Math.sqrt(tile.length);
         if (Math.floor(resolution) !== resolution) {
             return tile[0] || 0;

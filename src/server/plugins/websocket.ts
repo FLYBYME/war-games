@@ -134,14 +134,14 @@ async function handleMessage(app: FastifyInstance, session: ClientSession, msg: 
         case 'ISSUE_COMMAND': {
             const cmd = CommandFactory.create(msg.command, session.side || Side.Blue);
             if (!cmd) {
-                session.send({ type: 'COMMAND_ACK', payload: { commandType: msg.command.type, success: false, error: 'Invalid or unauthorized command' } });
+                session.send({ type: 'COMMAND_ACK', payload: { commandType: msg.command.type, success: false, error: 'Invalid or unauthorized command', sequence: msg.sequence } });
                 return;
             }
 
             const world = app.matchService.getMatch(matchId);
 
             if (!world) {
-                session.send({ type: 'COMMAND_ACK', payload: { commandType: msg.command.type, success: false, error: 'Match session not found' } });
+                session.send({ type: 'COMMAND_ACK', payload: { commandType: msg.command.type, success: false, error: 'Match session not found', sequence: msg.sequence } });
                 return;
             }
 
@@ -149,7 +149,7 @@ async function handleMessage(app: FastifyInstance, session: ClientSession, msg: 
             const entityId = (msg.command as { entityId?: string }).entityId;
             const entity = entityId ? world.getEntity(entityId) : undefined;
             if (entity && entity.side !== session.side) {
-                session.send({ type: 'COMMAND_ACK', payload: { commandType: msg.command.type, success: false, error: 'Side Isolation Violation' } });
+                session.send({ type: 'COMMAND_ACK', payload: { commandType: msg.command.type, success: false, error: 'Side Isolation Violation', sequence: msg.sequence } });
                 return;
             }
 
@@ -158,7 +158,7 @@ async function handleMessage(app: FastifyInstance, session: ClientSession, msg: 
                 await world.tick(0);
             }
 
-            session.send({ type: 'COMMAND_ACK', payload: { commandType: msg.command.type, success: true } });
+            session.send({ type: 'COMMAND_ACK', payload: { commandType: msg.command.type, success: true, sequence: msg.sequence } });
             break;
         }
 

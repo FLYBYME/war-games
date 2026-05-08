@@ -7,7 +7,7 @@ import {
     SetSpeedCommand, 
     UpdateKinematicsCommand,
     UpdateThrustCommand,
-    SetThrustCommand,
+    SetThrottleCommand,
     ApplyForceCommand,
     SetPitchCommand 
 } from '../Command.js';
@@ -16,7 +16,7 @@ import { NavigationComponent, NavState } from '../../components/Navigation.js';
 import { PropulsionComponent } from '../../components/Propulsion.js';
 import { TaskGraphComponent } from '../../components/TaskGraph.js';
 import { MissionComponent, MissionType, MissionStatus } from '../../components/Missions.js';
-import { TaskStatus } from '../TaskGraph.js';
+import { TaskStatus, TaskGraphManager } from '../TaskGraph.js';
  
 export class SetPositionHandler implements CommandHandler<SetPositionCommand> {
     execute(cmd: SetPositionCommand, world: World): void {
@@ -56,7 +56,7 @@ export class SetHeadingHandler implements CommandHandler<SetHeadingCommand> {
                     node.status = TaskStatus.Suspended;
                 }
             }
-            taskComp.graph.updateActiveNodes();
+            TaskGraphManager.updateActiveNodes(taskComp.graph);
         }
 
         // Abort high-level mission only on external override
@@ -108,7 +108,7 @@ export class SetAltitudeHandler implements CommandHandler<SetAltitudeCommand> {
                     node.status = TaskStatus.Suspended;
                 }
             }
-            taskComp.graph.updateActiveNodes();
+            TaskGraphManager.updateActiveNodes(taskComp.graph);
         }
 
         // Abort mission only on external override
@@ -149,7 +149,7 @@ export class SetSpeedHandler implements CommandHandler<SetSpeedCommand> {
                     node.status = TaskStatus.Suspended;
                 }
             }
-            taskComp.graph.updateActiveNodes();
+            TaskGraphManager.updateActiveNodes(taskComp.graph);
         }
 
         // Abort mission only on external override
@@ -171,11 +171,13 @@ export class UpdateKinematicsHandler implements CommandHandler<UpdateKinematicsC
     }
 }
 
-export class SetThrustHandler implements CommandHandler<SetThrustCommand> {
-    execute(cmd: SetThrustCommand, world: World): void {
+export class SetThrottleHandler implements CommandHandler<SetThrottleCommand> {
+    execute(cmd: SetThrottleCommand, world: World): void {
         const entity = world.getEntity(cmd.entityId);
-        const kinematics = entity?.getComponent(KinematicsComponent);
-        if (kinematics) kinematics.thrustN = cmd.thrustN;
+        const prop = entity?.getComponent(PropulsionComponent);
+        if (prop) {
+            prop.throttle = Math.max(0, Math.min(1.0, cmd.throttle));
+        }
     }
 }
 

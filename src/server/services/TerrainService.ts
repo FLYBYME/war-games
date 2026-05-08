@@ -62,11 +62,16 @@ export class TerrainService implements ITileProvider {
 
         // Start worker
         const workerPath = path.resolve(__dirname, '../../server/workers/terrain.worker.ts');
+        this.logger.info(`Starting Terrain Worker with path: ${workerPath} and execArgv: ${JSON.stringify(process.execArgv)}`);
         this.worker = new Worker(workerPath, {
             execArgv: [...process.execArgv, '--no-warnings']
         });
         this.worker.on('message', (msg: unknown) => {
-            void this.handleWorkerMessage(msg as WorkerMessage);
+            if (this.isWorkerMessage(msg)) {
+                void this.handleWorkerMessage(msg);
+            } else {
+                this.logger.error('Received malformed message from Terrain Worker', { msg });
+            }
         });
         this.worker.on('error', (err) => {
             this.logger.error('Terrain Worker Startup Error', {
@@ -152,15 +157,25 @@ export class TerrainService implements ITileProvider {
         const filePath = this.storage.join(this.engineDir, fileName);
 
         if (await this.storage.exists(filePath)) {
-            const buffer = await this.storage.readFile(filePath) as ArrayBuffer;
-            const decoded = WgtFormat.decode(buffer);
-            this.tileCache.set(key, decoded.data);
-            return decoded.data;
+            const data = await this.storage.readFile(filePath);
+            if (data instanceof ArrayBuffer || Buffer.isBuffer(data)) {
+                const buffer = Buffer.isBuffer(data) ? data.buffer : data;
+                const decoded = WgtFormat.decode(buffer as ArrayBuffer);
+                this.tileCache.set(key, decoded.data);
+                return decoded.data;
+            }
         }
 
         // Dispatch to worker
         const result = await this.dispatchToWorker(floorLat, floorLon);
         return result.engineData;
+    }
+
+    public getCachedTile(lat: number, lon: number): Float32Array | undefined {
+        const floorLat = Math.floor(lat);
+        const floorLon = Math.floor(lon);
+        const key = `${floorLat},${floorLon}`;
+        return this.tileCache.get(key);
     }
 
     public async getTileEncoded(lat: number, lon: number): Promise<Uint8Array | undefined> {
@@ -170,8 +185,11 @@ export class TerrainService implements ITileProvider {
         const filePath = this.storage.join(this.uiDir, fileName);
 
         if (await this.storage.exists(filePath)) {
-            const buffer = await this.storage.readFile(filePath) as ArrayBuffer;
-            return new Uint8Array(buffer);
+            const data = await this.storage.readFile(filePath);
+            if (data instanceof ArrayBuffer || Buffer.isBuffer(data)) {
+                const buffer = Buffer.isBuffer(data) ? data.buffer : data;
+                return new Uint8Array(buffer);
+            }
         }
 
         // Dispatch to worker
@@ -197,6 +215,10 @@ export class TerrainService implements ITileProvider {
         });
     }
 
+    private isWorkerMessage(msg: unknown): msg is WorkerMessage {
+        return typeof msg === 'object' && msg !== null && 'success' in msg;
+    }
+
     private async handleWorkerMessage(msg: WorkerMessage) {
         const { success, lat, lon, engineEncoded, uiEncoded, error } = msg;
         const key = `${lat},${lon}`;
@@ -204,16 +226,22 @@ export class TerrainService implements ITileProvider {
         this.pendingJobs.delete(key);
 
         if (!success) {
-            waiters.forEach(w => w.reject(new Error(error || 'Worker failed without error message')));
+            const message = error || 'Worker failed without error message';
+            waiters.forEach(w => w.reject(new Error(message)));
             return;
         }
 
         // Write to disk cache
         const fileName = `${this.coordToName(lat, lon)}.wgt`;
-        await this.storage.writeFile(this.storage.join(this.engineDir, fileName), engineEncoded.buffer as ArrayBuffer);
-        await this.storage.writeFile(this.storage.join(this.uiDir, fileName), uiEncoded.buffer as ArrayBuffer);
+        
+        // Ensure we pass ArrayBuffer to writeFile
+        const engineBuf = engineEncoded.buffer instanceof ArrayBuffer ? engineEncoded.buffer : new Uint8Array(engineEncoded).buffer;
+        const uiBuf = uiEncoded.buffer instanceof ArrayBuffer ? uiEncoded.buffer : new Uint8Array(uiEncoded).buffer;
 
-        const decoded = WgtFormat.decode(engineEncoded.buffer);
+        await this.storage.writeFile(this.storage.join(this.engineDir, fileName), engineBuf);
+        await this.storage.writeFile(this.storage.join(this.uiDir, fileName), uiBuf);
+
+        const decoded = WgtFormat.decode(engineBuf);
         this.tileCache.set(key, decoded.data);
 
         waiters.forEach(w => w.resolve({ engineData: decoded.data, uiEncoded }));

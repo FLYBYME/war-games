@@ -14,7 +14,7 @@ export class CommandDispatcher {
     /**
      * Register a handler for a specific command class.
      */
-    public register<T extends Command>(commandClass: new (...args: unknown[]) => T, handler: CommandHandler<T>): void {
+    public register<T extends Command>(commandClass: Function, handler: CommandHandler<T>): void {
         this.handlers.set(commandClass.name, handler as unknown as CommandHandler<Command>);
     }
 

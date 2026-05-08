@@ -31,7 +31,7 @@ export class UnitLabelsLayer implements MapLayer {
                 this.labelMap.set(unit.id, label);
             }
 
-            const altK = (unit.lla.alt / 1000).toFixed(1);
+            const altK = (unit.lla?.alt || 0 / 1000).toFixed(1);
             const speedKts = unit.desiredSpeedKts || 0;
             
             label.text = `${unit.id.substring(0, 10)}\n${altK}k ft | ${speedKts}kts`;

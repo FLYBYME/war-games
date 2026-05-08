@@ -2,11 +2,13 @@ import { Entity } from './Entity.js';
 import { Command } from './Command.js';
 import { Vector3, TacticalEvent } from './Types.js';
 import { EventBus } from './EventBus.js';
+import { DeterministicRandom } from '../math/DeterministicRandom.js';
 
 export interface IWorldView {
     readonly currentTick: number;
     readonly timestamp: number;
     readonly isPaused: boolean;
+    readonly random: DeterministicRandom;
     readonly profileRegistry: unknown;
     readonly weaponProfiles: unknown;
     readonly events: EventBus;

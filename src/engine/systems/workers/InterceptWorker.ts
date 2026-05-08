@@ -1,5 +1,5 @@
 import { Entity } from '../../core/Entity.js';
-import { TaskNode, InterceptPayload, TaskResult } from '../../core/TaskGraph.js';
+import { TaskNode, InterceptPayload, TaskResult, TaskGraphManager } from '../../core/TaskGraph.js';
 import { IWorldView } from '../../core/ISystem.js';
 import { Command, SetHeadingCommand, SetSpeedCommand, SetAltitudeCommand } from '../../core/Command.js';
 import { TaskWorker } from '../TaskReconcilerSystem.js';
@@ -25,7 +25,7 @@ export class InterceptWorker implements TaskWorker {
         // 1. Resolve Target
         const target = this.resolveTarget(entity, payload.targetId, world);
         if (!target) {
-            taskComp.graph.markFailed(taskNode.id, `Target ${payload.targetId} lost`);
+            TaskGraphManager.markFailed(taskComp.graph, taskNode.id, `Target ${payload.targetId} lost`);
             return [];
         }
 
@@ -49,7 +49,7 @@ export class InterceptWorker implements TaskWorker {
             // or the next task (Boarding) starts.
             const currentSpeed = VectorMath.magnitude(entity.getComponent(KinematicsComponent)?.velocity || {x:0,y:0,z:0}) * Physics.MPS_TO_KTS;
             if (Math.abs(currentSpeed - targetSpeedKts) < 5.0) {
-                taskComp.graph.markCompleted(taskNode.id, { stationKeeping: true });
+                TaskGraphManager.markCompleted(taskComp.graph, taskNode.id, { stationKeeping: true });
                 logger.info(`Intercept completed: ${entity.id} now station-keeping with ${payload.targetId}`, { dist: Math.round(dist) });
             }
         } else {

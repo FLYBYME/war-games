@@ -24,21 +24,21 @@ export class StartServerCommand extends BaseCommand {
 
     protected async execute(port?: number, logLevel?: string): Promise<void> {
         console.log(`${C.blue}${C.bold}Starting War-Games Server...${C.reset}`);
-        
+
         try {
             const { port: finalPort } = await startServer(port, logLevel);
             console.log(`${C.green}${C.bold}✔ Server is up and running on port ${finalPort}${C.reset}`);
             console.log(`${C.dim}Press Ctrl+C to stop the server${C.reset}\n`);
-            
+
             // Keep the process alive
             process.on('SIGINT', () => {
                 console.log(`\n${C.yellow}Stopping server...${C.reset}`);
                 process.exit(0);
             });
-            
+
         } catch (err: unknown) {
             const error = err as Error;
-            console.error(`\n${C.red}${C.bold}✖ Failed to start server:${C.reset} ${error.message}`);
+            console.error(`\n${C.red}${C.bold}✖ Failed to start server:${C.reset} ${error.message}\n${C.red}${error.stack}${C.reset}`);
             process.exit(1);
         }
     }

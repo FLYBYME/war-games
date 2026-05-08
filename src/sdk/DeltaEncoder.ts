@@ -26,13 +26,32 @@ interface SessionStateEntry {
 export class DeltaEncoder {
     // Stores the last state sent to each session to calculate deltas
     private lastStates = new Map<string, Map<string, SessionStateEntry>>();
+    private lastAccess = new Map<string, number>();
+    private readonly MAX_SESSIONS = 50;
 
     public encode(snapshot: ViewState, sessionId: string): Uint8Array {
         const units = snapshot.units;
         const tracks = snapshot.tracks;
         
+        this.lastAccess.set(sessionId, Date.now());
         let sessionState = this.lastStates.get(sessionId);
         if (!sessionState) {
+            // Evict oldest if full
+            if (this.lastStates.size >= this.MAX_SESSIONS) {
+                let oldestId = '';
+                let oldestTime = Infinity;
+                for (const [sid, time] of this.lastAccess.entries()) {
+                    if (time < oldestTime) {
+                        oldestTime = time;
+                        oldestId = sid;
+                    }
+                }
+                if (oldestId) {
+                    this.lastStates.delete(oldestId);
+                    this.lastAccess.delete(oldestId);
+                }
+            }
+
             sessionState = new Map<string, SessionStateEntry>();
             this.lastStates.set(sessionId, sessionState);
         }

@@ -60,7 +60,7 @@ export class SpeedAltitudeSlider extends Component {
         if (!entity || !('speedKts' in entity)) return;
         
         const unit = entity as ViewUnitPayload;
-        this.speedValueEl.textContent = `${Math.round(unit.speedKts)} KTS`;
+        this.speedValueEl.textContent = `${Math.round(unit.speedKts!)} KTS`;
         this.altValueEl.textContent = `${Math.round(unit.pos.z)} M`;
         
         this.speedSlider.value = String(unit.speedKts);

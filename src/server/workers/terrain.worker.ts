@@ -1,5 +1,5 @@
 import { parentPort } from 'worker_threads';
-import { WgtFormat } from '../../engine/environment/utils/WgtFormat.js';
+import { WgtFormat } from '../../engine/environment/utils/WgtFormat.ts';
 
 interface WorkerJob {
     lat: number;

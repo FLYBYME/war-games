@@ -1,5 +1,6 @@
 import { z } from 'zod';
-import { EntityIdSchema, Vector3Schema, LlaSchema, SideSchema, MissionTypeSchema, MissionSchema, MissionParamsSchema, GeoJSONSchema, WRARuleSchema } from './domain.js';
+import { EntityIdSchema, Vector3Schema, LlaSchema, SideSchema, MissionTypeSchema, MissionSchema, MissionParamsSchema, GeoJSONSchema, WRARuleSchema, ROESchema, EMCONStateSchema, GroupFormationSchema, TurnaroundStateSchema, TurnaroundState } from './domain.js';
+import { SimulationEventSchema } from './events.js';
 
 // ─── Scenario Intents ─────────────────────────────────────────
 
@@ -14,8 +15,8 @@ export const ScenarioIntentSchema = z.discriminatedUnion('type', [
         type: z.literal('Doctrine'),
         actorId: z.string().optional().describe('Optional Entity/Group ID. If null, applies to side.'),
         side: SideSchema.optional(),
-        roe: z.enum(['Free', 'Tight', 'Hold']).optional(),
-        emcon: z.enum(['Alpha', 'Bravo', 'Charlie']).optional(),
+        roe: ROESchema.optional(),
+        emcon: EMCONStateSchema.optional(),
         wra: z.array(z.object({
             targetType: z.string().describe("Target category, e.g. 'Fighter', 'SmallBoat'"),
             weaponType: z.string().describe("Weapon profile ID to use"),
@@ -29,13 +30,13 @@ export const ScenarioIntentSchema = z.discriminatedUnion('type', [
         groupId: z.string(),
         leaderId: z.string(),
         members: z.array(z.string()),
-        formationType: z.string().optional()
+        formationType: GroupFormationSchema.optional()
     }),
     z.object({
         type: z.literal('Logistics'),
         baseId: z.string(),
         hostedEntities: z.array(z.string()),
-        initialState: z.string().optional().default('Ready')
+        initialState: TurnaroundStateSchema.optional().default(TurnaroundState.Ready)
     })
 ]);
 export type ScenarioIntent = z.infer<typeof ScenarioIntentSchema>;
@@ -45,6 +46,7 @@ export type ScenarioIntent = z.infer<typeof ScenarioIntentSchema>;
 export const ViewUnitPayloadSchema = z.object({
     id: EntityIdSchema,
     side: SideSchema,
+    category: z.enum(['Aircraft', 'Helicopter', 'Ship', 'Submarine', 'Facility', 'Weapon', 'Mine']).optional().describe("The platform category"),
     parentId: EntityIdSchema.optional(),
     pos: Vector3Schema,
     vel: Vector3Schema.optional(),
@@ -106,6 +108,7 @@ export const ViewTrackPayloadSchema = z.object({
     vel: Vector3Schema,
     classification: z.string(),
     identification: z.string().optional(),
+    firstSeen: z.number().describe("Server tick when this track was first detected"),
     lastSeen: z.number().describe("Server tick when this track was last updated"),
     cep: z.number().describe("Circular Error Probable radius in meters"),
     heading: z.number().optional().describe("Heading in degrees [0-360]"),
@@ -145,6 +148,7 @@ export const ViewStatePayloadSchema = z.object({
     })),
     esmBearings: z.array(z.object({
         observerId: z.string(),
+        observerPos: Vector3Schema.optional(),
         bearingDeg: z.number(),
         confidencePct: z.number(),
         targetId: z.string().optional()
@@ -233,52 +237,65 @@ export const SetMissionROESchema = z.object({
 });
 
 export const InterceptMissionSchema = z.object({
-    missionType: z.literal('Intercept').describe("Assign intercept mission"),
-    targetId: z.string().describe("Hostile track ID to intercept"),
-    speedKts: z.number().describe("Intercept velocity")
+    type: z.literal('Intercept').describe("Assign intercept mission (Combat Air Patrol/CAP against specific target)"),
+    params: z.object({
+        targetId: z.string().describe("Hostile track ID to intercept"),
+        speedKts: z.number().describe("Intercept velocity")
+    })
 });
 
 export const PatrolMissionSchema = z.object({
-    missionType: z.literal('Patrol').describe("Assign patrol mission"),
-    center: Vector3Schema.describe("Center of patrol area"),
-    radiusM: z.number().describe("Radius of patrol area"),
-    searchPattern: z.string().optional().describe("Pattern type for searches"),
-    speedKts: z.number().optional().describe("Patrol speed")
+    type: z.literal('Patrol').describe("Assign patrol mission (Combat Air Patrol/CAP in an area)"),
+    params: z.object({
+        center: Vector3Schema.describe("Center of patrol area"),
+        radiusM: z.number().describe("Radius of patrol area"),
+        searchPattern: z.string().optional().describe("Pattern type for searches"),
+        speedKts: z.number().optional().describe("Patrol speed")
+    })
 });
 
 export const StrikeMissionSchema = z.object({
-    missionType: z.literal('Strike').describe("Assign strike mission"),
-    targetId: z.string().describe("Target ID to strike"),
-    speedKts: z.number().optional().describe("Strike speed")
+    type: z.literal('Strike').describe("Assign strike mission"),
+    params: z.object({
+        targetId: z.string().describe("Target ID to strike"),
+        speedKts: z.number().optional().describe("Strike speed")
+    })
 });
 
 export const EscortMissionSchema = z.object({
-    missionType: z.literal('Escort').describe("Assign escort mission"),
-    targetId: z.string().describe("Friendly unit ID to escort"),
-    speedKts: z.number().optional().describe("Escort speed")
+    type: z.literal('Escort').describe("Assign escort mission"),
+    params: z.object({
+        targetId: z.string().describe("Friendly unit ID to escort"),
+        speedKts: z.number().optional().describe("Escort speed")
+    })
 });
 
 export const VBSSMissionSchema = z.object({
-    missionType: z.literal('VBSS').describe("Assign VBSS mission"),
-    targetId: z.string(),
-    boardingDurationTicks: z.number().optional(),
-    allowedArea: z.unknown().optional()
+    type: z.literal('VBSS').describe("Assign VBSS mission"),
+    params: z.object({
+        targetId: z.string(),
+        boardingDurationTicks: z.number().optional(),
+        allowedArea: z.unknown().optional()
+    })
 });
 
 export const MCMMissionSchema = z.object({
-    missionType: z.literal('MCM').describe("Assign MCM mission"),
-    method: z.string().optional(),
-    area: z.unknown().optional()
+    type: z.literal('MCM').describe("Assign MCM mission"),
+    params: z.object({
+        method: z.string().optional(),
+        area: z.unknown().optional()
+    })
 });
 
 export const IdleMissionSchema = z.object({
-    missionType: z.literal('Idle').describe("Assign idle mission")
+    type: z.literal('Idle').describe("Assign idle mission")
 });
 
 export const SetMissionSchema = z.object({
     type: z.literal('SetMission').describe("Assigns a new mission to a unit"),
     entityId: EntityIdSchema.describe("ID of the executing unit"),
-    mission: z.discriminatedUnion('missionType', [InterceptMissionSchema, PatrolMissionSchema, StrikeMissionSchema, EscortMissionSchema, IdleMissionSchema, VBSSMissionSchema, MCMMissionSchema])
+    mission: z.discriminatedUnion('type', [InterceptMissionSchema, PatrolMissionSchema, StrikeMissionSchema, EscortMissionSchema, IdleMissionSchema, VBSSMissionSchema, MCMMissionSchema])
+        .describe("The mission configuration object. Must contain 'type' and mission-specific parameters.")
 });
 
 export const AssignWeaponSchema = z.object({
@@ -357,6 +374,12 @@ export const UpdateWRARulesSchema = z.object({
     rules: z.array(WRARuleSchema).describe("The list of WRA rule objects")
 });
 
+export const SetSimulationSpeedSchema = z.object({
+    type: z.literal('SetSimulationSpeed').describe("Set the simulation speed and pause state"),
+    timeCompression: z.number().min(0).max(100).describe("Time compression factor (1 = realtime, 0 = paused)"),
+    isPaused: z.boolean().optional().describe("Explicitly set pause state. If omitted, speed 0 implies pause.")
+});
+
 export const LaunchAircraftSchema = z.object({
     type: z.literal('LaunchAircraft').describe("Order a ready aircraft to launch from its host facility"),
     entityId: EntityIdSchema.describe("The unique ID of the aircraft to launch")
@@ -388,19 +411,14 @@ export const EngineCommandPayloadSchema = z.discriminatedUnion('type', [
     SpawnEntitySchema,
     SetIntentSchema,
     UpdateWRARulesSchema,
-    LaunchAircraftSchema
+    LaunchAircraftSchema,
+    SetSimulationSpeedSchema
 ]);
 export type EngineCommandPayload = z.infer<typeof EngineCommandPayloadSchema>;
 
 // ─── Network Message Envelopes ───────────────────────────────
 
-export const EngineEventSchema = z.object({
-    tick: z.number(),
-    type: z.string(),
-    entityId: EntityIdSchema.optional(),
-    targetId: EntityIdSchema.optional(),
-    data: z.record(z.string(), z.any()).optional()
-});
+export const EngineEventSchema = SimulationEventSchema;
 export type EngineEvent = z.infer<typeof EngineEventSchema>;
 
 export const PlatformProfileSummarySchema = z.object({
@@ -423,7 +441,7 @@ export type MatchInfo = z.infer<typeof MatchInfoSchema>;
 
 export const ServerMessageSchema = z.discriminatedUnion('type', [
     z.object({ type: z.literal('VIEW_STATE'), payload: ViewStatePayloadSchema }),
-    z.object({ type: z.literal('COMMAND_ACK'), payload: z.object({ commandType: z.string(), success: z.boolean(), error: z.string().optional() }) }),
+    z.object({ type: z.literal('COMMAND_ACK'), payload: z.object({ commandType: z.string(), success: z.boolean(), error: z.string().optional(), sequence: z.string().optional() }) }),
     z.object({ type: z.literal('EVENT'), payload: EngineEventSchema }),
     z.object({ type: z.literal('PROFILE_LIST'), payload: z.array(PlatformProfileSummarySchema) }),
     z.object({ type: z.literal('ERROR'), payload: z.object({ message: z.string() }) }),
@@ -440,7 +458,7 @@ export const ClientMessageSchema = z.discriminatedUnion('type', [
         syncRateHz: z.number().optional(),
         fullSyncIntervalMs: z.number().optional()
     }),
-    z.object({ type: z.literal('ISSUE_COMMAND'), matchId: z.string(), command: EngineCommandPayloadSchema }),
+    z.object({ type: z.literal('ISSUE_COMMAND'), matchId: z.string(), command: EngineCommandPayloadSchema, sequence: z.string().optional() }),
     z.object({ type: z.literal('SET_TIME_COMPRESSION'), matchId: z.string(), rate: z.number() }),
     z.object({ type: z.literal('GET_TELEMETRY'), matchId: z.string() }),
     z.object({ type: z.literal('GET_PROFILES'), matchId: z.string(), category: z.string().optional() }),

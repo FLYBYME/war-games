@@ -2,7 +2,8 @@ import { CommandHandler } from '../CommandDispatcher.js';
 import { CreateTrackCommand, UpdateTrackCommand, DropTrackCommand, SyncTracksCommand, SyncESMBearingsCommand } from '../Command.js';
 import { World } from '../World.js';
 import { TrackComponent } from '../../components/Track.js';
-import { DetectionComponent, ESMBearing } from '../../components/Sensors.js';
+import { DetectionComponent } from '../../components/Sensors.js';
+import type { ESMBearing } from '../Types.js';
 
 export class CreateTrackHandler implements CommandHandler<CreateTrackCommand> {
     execute(cmd: CreateTrackCommand, _world: World): void {

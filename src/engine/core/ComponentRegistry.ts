@@ -20,9 +20,17 @@ export class ComponentRegistry {
         const ctor = this.get(name);
         if (!ctor) return undefined;
 
-        // Create instance and hydrate with data
-        const instance = Object.create(ctor.prototype) as IComponent;
-        Object.assign(instance, data as object);
-        return instance;
+        // V3 Professional Hydration: Prefer constructor for logic preservation
+        try {
+            // Most V3 components accept a Partial<T> in constructor
+            return new ctor(data);
+        } catch (err: unknown) {
+            // Fallback to prototype-based creation for legacy or simple components
+            const instance = Object.create(ctor.prototype) as IComponent;
+            if (data && typeof data === 'object') {
+                Object.assign(instance, data);
+            }
+            return instance;
+        }
     }
 }

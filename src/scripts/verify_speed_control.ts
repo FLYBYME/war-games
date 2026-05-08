@@ -11,6 +11,7 @@ async function main() {
 
     // Initial State
     const vs1 = await client.getLatestViewState();
+    if (!vs1) throw new Error("No view state");
     const startTick = vs1.tick;
 
     console.log("Start Tick:", startTick);
@@ -20,6 +21,7 @@ async function main() {
     await new Promise(r => setTimeout(r, 2000));
 
     const vs2 = await client.getLatestViewState();
+    if (!vs2) throw new Error("No view state");
     const unit = vs2.units.find((u) => u.side === Side.Blue);
 
     if (unit) {
@@ -32,6 +34,7 @@ async function main() {
         await new Promise(r => setTimeout(r, 5000));
 
         const vs3 = await client.getLatestViewState();
+        if (!vs3) throw new Error("No view state");
         const unitUpdated = vs3.units.find(u => u.id === unit.id);
         console.log(`Unit ${unit.id} updated speed: ${unitUpdated?.speedKts} kts`);
     }

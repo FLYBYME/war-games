@@ -1,8 +1,8 @@
 import { ISystem, IWorldView, SystemPhase } from '../core/ISystem.js';
 import { Command } from '../core/Command.js';
-import { DoctrineComponent, EMCONState } from '../components/Doctrine.js';
+import { DoctrineComponent } from '../components/Doctrine.js';
 import { SensorComponent } from '../components/Sensors.js';
-import { SensorType } from '../core/Types.js';
+import { SensorType, EMCONState } from '../core/Types.js';
 
 /**
  * DoctrineSystem: Enforces EMCON and high-level behavioral rules.
@@ -28,7 +28,7 @@ export class DoctrineSystem implements ISystem {
                             sensor.isActive = false;
                         }
                     }
-                } else if (doctrine.emcon === EMCONState.Active) {
+                } else if (doctrine.emcon === EMCONState.Alpha) {
                     // Turn on active emitters (unless manually disabled elsewhere)
                     for (const sensor of sensors) {
                         sensor.isActive = true;

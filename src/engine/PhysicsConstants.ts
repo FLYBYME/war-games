@@ -32,5 +32,8 @@ export const Physics = {
     SONAR_DT_DB: 10.0,
     WATER_SPEED_SOUND: 1500, // m/s
     SURFACE_LAYER_DEPTH_M: 100,
-    AMBIENT_OCEAN_NOISE_DB: 60.0
+    AMBIENT_OCEAN_NOISE_DB: 60.0,
+    
+    // Orbital
+    EARTH_MU: 3.986004418e14, // m^3/s^2
 };

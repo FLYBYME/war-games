@@ -11,6 +11,50 @@ export interface PathNode {
 }
 
 /**
+ * PriorityQueue: Simple binary heap for A* nodes.
+ */
+class PriorityQueue<T> {
+    private heap: { priority: number, item: T }[] = [];
+    push(item: T, priority: number) {
+        this.heap.push({ priority, item });
+        this.bubbleUp();
+    }
+    pop(): T | undefined {
+        if (this.size() === 0) return undefined;
+        const top = this.heap[0].item;
+        const bottom = this.heap.pop()!;
+        if (this.size() > 0) {
+            this.heap[0] = bottom;
+            this.bubbleDown();
+        }
+        return top;
+    }
+    size() { return this.heap.length; }
+    private bubbleUp() {
+        let index = this.heap.length - 1;
+        while (index > 0) {
+            let parentIndex = (index - 1) >> 1;
+            if (this.heap[index].priority >= this.heap[parentIndex].priority) break;
+            [this.heap[index], this.heap[parentIndex]] = [this.heap[parentIndex], this.heap[index]];
+            index = parentIndex;
+        }
+    }
+    private bubbleDown() {
+        let index = 0;
+        while (true) {
+            let left = (index << 1) + 1;
+            let right = (index << 1) + 2;
+            let smallest = index;
+            if (left < this.heap.length && this.heap[left].priority < this.heap[smallest].priority) smallest = left;
+            if (right < this.heap.length && this.heap[right].priority < this.heap[smallest].priority) smallest = right;
+            if (smallest === index) break;
+            [this.heap[index], this.heap[smallest]] = [this.heap[smallest], this.heap[index]];
+            index = smallest;
+        }
+    }
+}
+
+/**
  * Pathfinder: Implements A* for tactical navigation.
  */
 export class Pathfinder {
@@ -19,18 +63,12 @@ export class Pathfinder {
         private projection: GeoProjection
     ) {}
 
-    /**
-     * findPath: Finds a path between two points using A* search.
-     * @param start Starting position (meters)
-     * @param end Target position (meters)
-     * @param minAltitude Minimum altitude above terrain (negative for depth)
-     */
     public async findPath(start: Vector3, end: Vector3, minAltitude: number = 100): Promise<Vector3[]> {
         const stepSize = 5000; 
-        const maxNodes = 200;
+        const maxNodes = 500;
         
-        const openList: PathNode[] = [];
-        const closedList = new Set<string>();
+        const openList = new PriorityQueue<PathNode>();
+        const closedList = new Map<string, number>();
 
         const startNode: PathNode = {
             pos: { ...start },
@@ -39,20 +77,17 @@ export class Pathfinder {
             f: 0
         };
         startNode.f = startNode.h;
-        openList.push(startNode);
+        openList.push(startNode, startNode.f);
 
         let bestNode = startNode;
 
-        while (openList.length > 0 && closedList.size < maxNodes) {
-            // 1. Get node with lowest f
-            openList.sort((a, b) => a.f - b.f);
-            const current = openList.shift()!;
+        while (openList.size() > 0 && closedList.size < maxNodes) {
+            const current = openList.pop()!;
             
             const key = this.posKey(current.pos);
-            if (closedList.has(key)) continue;
-            closedList.add(key);
+            if (closedList.has(key) && closedList.get(key)! <= current.g) continue;
+            closedList.set(key, current.g);
 
-            // 2. Check if we reached target
             if (this.distance(current.pos, end) < stepSize * 1.5) {
                 bestNode = current;
                 break;
@@ -60,17 +95,16 @@ export class Pathfinder {
 
             if (current.f < bestNode.f) bestNode = current;
 
-            // 3. Generate neighbors
+            // Generate neighbors
             const neighbors = await this.getNeighbors(current, end, stepSize, minAltitude);
             for (const neighbor of neighbors) {
                 const neighborKey = this.posKey(neighbor.pos);
-                if (closedList.has(neighborKey)) continue;
+                if (closedList.has(neighborKey) && closedList.get(neighborKey)! <= neighbor.g) continue;
                 
-                openList.push(neighbor);
+                openList.push(neighbor, neighbor.f);
             }
         }
 
-        // 4. Reconstruct path
         const path: Vector3[] = [];
         let curr: PathNode | undefined = bestNode;
         while (curr) {
@@ -95,8 +129,8 @@ export class Pathfinder {
         const neighbors: PathNode[] = [];
         const angles = [0, 45, -45, 90, -90, 135, -135, 180];
         
-        const dirToTarget = this.normalize(this.subtract(target, parent.pos));
-        const baseAngle = Math.atan2(dirToTarget.y, dirToTarget.x);
+        const vToTarget = this.subtract(target, parent.pos);
+        const baseAngle = Math.atan2(vToTarget.y, vToTarget.x);
 
         for (const angle of angles) {
             const rad = baseAngle + angle * (Math.PI / 180);
@@ -107,6 +141,7 @@ export class Pathfinder {
             };
 
             const geo = this.projection.project(candidate);
+            // V3 Optimized: Use getElevation (which now handles caching internally)
             const elevation = await this.terrain.getElevation(geo.lat, geo.lon);
             const isBlocked = minAlt > 0 ? (candidate.z < elevation + minAlt) : (elevation > 0);
             

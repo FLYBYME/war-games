@@ -12,6 +12,7 @@ export class SimulationClock {
     public timeCompression: number = 1.0;
     public isPaused: boolean = false;
     public tickRateMs: number = 100;
+    public isHighFidelity: boolean = false;
 
     /**
      * getSchedule: Determines how many simulation steps to take and how long to wait

@@ -4,9 +4,11 @@ import {
     SetEMCONCommand, UpdateSensorScanCommand, UpdateMountSlewCommand, SyncESMBearingsCommand
 } from '../Command.js';
 import { World } from '../World.js';
-import { SensorComponent, DetectionComponent, ESMBearing } from '../../components/Sensors.js';
+import type { ESMBearing } from '../Types.js';
+import { SensorComponent, DetectionComponent } from '../../components/Sensors.js';
 import { CombatComponent } from '../../components/Combat.js';
-import { DoctrineComponent, EMCONState } from '../../components/Doctrine.js';
+import { EMCONState } from '../Types.js';
+import { DoctrineComponent } from '../../components/Doctrine.js';
 
 export class AddDetectionHandler implements CommandHandler<AddDetectionCommand> {
     execute(cmd: AddDetectionCommand, world: World): void {

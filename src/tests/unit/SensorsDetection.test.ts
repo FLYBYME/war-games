@@ -41,7 +41,7 @@ describe('Sensors & Detection Unit Tests', () => {
 
     describe('Radar Detection (Tests 21-22, 32, 35, 39, 40)', () => {
         it('should detect target within range and SNR threshold (Test 21)', () => {
-            const sensor = new SensorComponent(SensorType.Radar, 100000);
+            const sensor = new SensorComponent({ sensorType: SensorType.Radar, maxRangeM: 100000 });
             const env = new EnvironmentComponent();
             const dist = 10000;
             const rcs = 10; 
@@ -55,14 +55,14 @@ describe('Sensors & Detection Unit Tests', () => {
 
         it('should fail to detect target outside max range (Test 22)', async () => {
             const observer = new Entity('obs', Side.Blue);
-            const sensor = new SensorComponent(SensorType.Radar, 5000); 
+            const sensor = new SensorComponent({ sensorType: SensorType.Radar, maxRangeM: 5000 }); 
             observer.addComponent(sensor);
             observer.addComponent(new DetectionComponent());
-            observer.addComponent(new TransformComponent({ x: 0, y: 0, z: 1000 }));
+            observer.addComponent(new TransformComponent({ position: { x: 0, y: 0, z: 1000 } }));
 
             const target = new Entity('tgt', Side.Red);
-            target.addComponent(new TransformComponent({ x: 10000, y: 0, z: 1000 })); 
-            target.addComponent(new RCSComponent(10));
+            target.addComponent(new TransformComponent({ position: { x: 10000, y: 0, z: 1000 } })); 
+            target.addComponent(new RCSComponent({ baseRCS: 10 }));
 
             mockWorld.getEntities.mockReturnValue([observer, target]);
             mockWorld.getNearbyEntities.mockReturnValue([target]);
@@ -73,7 +73,7 @@ describe('Sensors & Detection Unit Tests', () => {
         });
 
         it('should scale detection with RCS (Test 35, 39)', () => {
-            const sensor = new SensorComponent(SensorType.Radar, 100000);
+            const sensor = new SensorComponent({ sensorType: SensorType.Radar, maxRangeM: 100000 });
             const dist = 50000;
             const noiseWatts = 1e-12;
             
@@ -93,7 +93,7 @@ describe('Sensors & Detection Unit Tests', () => {
         });
 
         it('should degrade radar detection in high sea state (Test 32)', () => {
-            const sensor = new SensorComponent(SensorType.Radar, 100000);
+            const sensor = new SensorComponent({ sensorType: SensorType.Radar, maxRangeM: 100000 });
             const target = new Entity('tgt', Side.Red);
             const dist = 20000;
             const rcs = 1.0;
@@ -121,9 +121,9 @@ describe('Sensors & Detection Unit Tests', () => {
         });
 
         it('should reduce radar detection range when target is jamming (Test 40)', () => {
-            const sensor = new SensorComponent(SensorType.Radar, 100000);
+            const sensor = new SensorComponent({ sensorType: SensorType.Radar, maxRangeM: 100000 });
             const target = new Entity('tgt', Side.Red);
-            const jammer = new JammerComponent(JammerType.SPJ, 1000); // 1kW SPJ
+            const jammer = new JammerComponent({ jammerType: JammerType.SPJ, powerWatts: 1000 }); // 1kW SPJ
             jammer.isActive = true;
             target.addComponent(jammer);
 
@@ -176,9 +176,9 @@ describe('Sensors & Detection Unit Tests', () => {
 
     describe('ESM & Signatures (Tests 26, 29, 34)', () => {
         it('should detect active radar emissions at extended range (Test 26, 29)', () => {
-            const esm = new SensorComponent(SensorType.ESM, 200000);
+            const esm = new SensorComponent({ sensorType: SensorType.ESM, maxRangeM: 200000 });
             const target = new Entity('tgt', Side.Red);
-            const radar = new SensorComponent(SensorType.Radar, 50000);
+            const radar = new SensorComponent({ sensorType: SensorType.Radar, maxRangeM: 50000 });
             radar.isActive = true;
             target.addComponent(radar);
 
@@ -188,9 +188,9 @@ describe('Sensors & Detection Unit Tests', () => {
         });
 
         it('should stop detecting when sensor is turned off (Test 34)', () => {
-            const esm = new SensorComponent(SensorType.ESM, 200000);
+            const esm = new SensorComponent({ sensorType: SensorType.ESM, maxRangeM: 200000 });
             const target = new Entity('tgt', Side.Red);
-            const radar = new SensorComponent(SensorType.Radar, 50000);
+            const radar = new SensorComponent({ sensorType: SensorType.Radar, maxRangeM: 50000 });
             radar.isActive = false; 
             target.addComponent(radar);
 
@@ -202,7 +202,7 @@ describe('Sensors & Detection Unit Tests', () => {
 
     describe('IRST & Visual (Tests 27-28, 33)', () => {
         it('should detect within max range (Test 27, 28)', () => {
-            const visual = new SensorComponent(SensorType.Visual, 20000);
+            const visual = new SensorComponent({ sensorType: SensorType.Visual, maxRangeM: 20000 });
             const env = new EnvironmentComponent();
             const dist = 15000;
             
@@ -211,7 +211,7 @@ describe('Sensors & Detection Unit Tests', () => {
         });
 
         it('should reduce range based on cloud cover (Test 33)', () => {
-            const irst = new SensorComponent(SensorType.IRST, 50000);
+            const irst = new SensorComponent({ sensorType: SensorType.IRST, maxRangeM: 50000 });
             const dist = 30000;
             
             expect(dist <= (irst.maxRangeM * (1.0 - 0))).toBe(true);
@@ -221,7 +221,7 @@ describe('Sensors & Detection Unit Tests', () => {
 
     describe('Sensor Mechanics (Tests 30-31, 38)', () => {
         it('should not detect target outside sensor beam (Test 31)', () => {
-            const sensor = new SensorComponent(SensorType.Radar, 100000);
+            const sensor = new SensorComponent({ sensorType: SensorType.Radar, maxRangeM: 100000 });
             sensor.beamWidthDeg = 10;
             const currentAz = 0;
             const targetAz = 45; 
@@ -237,7 +237,7 @@ describe('Sensors & Detection Unit Tests', () => {
 
         it('should update current azimuth per tick (Test 30)', async () => {
             const observer = new Entity('obs', Side.Blue);
-            const sensor = new SensorComponent(SensorType.Radar, 100000);
+            const sensor = new SensorComponent({ sensorType: SensorType.Radar, maxRangeM: 100000 });
             sensor.scanPeriodS = 10; 
             observer.addComponent(sensor);
             observer.addComponent(new DetectionComponent());
@@ -253,16 +253,16 @@ describe('Sensors & Detection Unit Tests', () => {
 
         it('should combine multiple sensors for detection (Test 38)', async () => {
             const observer = new Entity('obs', Side.Blue);
-            const radar = new SensorComponent(SensorType.Radar, 100000);
-            const visual = new SensorComponent(SensorType.Visual, 20000);
+            const radar = new SensorComponent({ sensorType: SensorType.Radar, maxRangeM: 100000 });
+            const visual = new SensorComponent({ sensorType: SensorType.Visual, maxRangeM: 20000 });
             observer.addComponent(radar);
             observer.addComponent(visual);
             observer.addComponent(new DetectionComponent());
-            observer.addComponent(new TransformComponent({ x: 0, y: 0, z: 100 }));
+            observer.addComponent(new TransformComponent({ position: { x: 0, y: 0, z: 100 } }));
 
             const target = new Entity('tgt', Side.Red);
-            target.addComponent(new TransformComponent({ x: 15000, y: 0, z: 100 }));
-            target.addComponent(new RCSComponent(0.0001)); // Stealth, radar fails
+            target.addComponent(new TransformComponent({ position: { x: 15000, y: 0, z: 100 } }));
+            target.addComponent(new RCSComponent({ baseRCS: 0.0001 })); // Stealth, radar fails
 
             mockWorld.getEntities.mockReturnValue([observer, target]);
             mockWorld.getNearbyEntities.mockReturnValue([target]);

@@ -23,7 +23,8 @@ import {
     SetEnvironmentCommand,
     SpawnEntityCommand,
     SetIntentCommand,
-    LaunchAircraftCommand
+    LaunchAircraftCommand,
+    SetSimulationSpeedCommand
 } from './Command.js';
 import { Side, EngineCommandPayload, Vector3, MissionType } from './Types.js';
 
@@ -31,101 +32,37 @@ import { Side, EngineCommandPayload, Vector3, MissionType } from './Types.js';
  * CommandFactory: Instantiates Engine V3 Command classes from generic JSON payloads.
  */
 export class CommandFactory {
+    private static readonly registry: Record<string, (p: any, s?: Side) => Command> = {
+        'SetCourse': (p) => new AddWaypointCommand(p.entityId, p.position, p.speedKts || 300),
+        'AddWaypoint': (p) => new AddWaypointCommand(p.entityId, p.position, p.speedKts || 300),
+        'ClearWaypoints': (p) => new ClearWaypointsCommand(p.entityId),
+        'FireWeapon': (p) => new FireWeaponCommand(p.entityId, p.mountIndex, p.targetId),
+        'JoinFormation': (p) => new JoinFormationCommand(p.entityId, p.leaderId, p.offset),
+        'BreakFormation': (p) => new BreakFormationCommand(p.entityId),
+        'SetHeading': (p) => new SetHeadingCommand(p.entityId, p.heading),
+        'SetSpeed': (p) => new SetSpeedCommand(p.entityId, p.speedKts),
+        'ApplyDamage': (p) => new ApplyDamageCommand(p.entityId, p.damage),
+        'DestroyEntity': (p) => new DestroyEntityCommand(p.entityId),
+        'LandAtFacility': (p) => new LandAtFacilityCommand(p.entityId, p.facilityId),
+        'SetSensorState': (p) => new SetSensorStateCommand(p.entityId, p.sensor, p.active),
+        'SetEMCON': (p) => new SetEMCONCommand(p.entityId || 'GLOBAL', p.state),
+        'AssignWeapon': (p) => new AssignWeaponCommand(p.entityId, p.mount, p.targetId),
+        'SetUnitROE': (p) => new SetROECommand(p.entityId, p.roe),
+        'SetGlobalROE': (p, s) => new SetSideROECommand(s || Side.Blue, p.roe),
+        'SetMissionROE': (p) => new SetMissionROECommand('MISSION', p.roe),
+        'SetMission': (p) => new SetMissionCommand(p.entityId, p.mission.type, p.mission.params || {}),
+        'SetAltitude': (p) => new SetAltitudeCommand(p.entityId, p.altitudeM),
+        'UpdateWRARules': (p) => new UpdateWRARulesCommand(p.entityId, p.rules),
+        'SetLoadout': (p) => new SetLoadoutCommand(p.entityId, p.loadout),
+        'SetEnvironment': (p) => new SetEnvironmentCommand(p.key, p.value),
+        'SpawnEntity': (p) => new SpawnEntityCommand(p.id, p.profileId, p.side, p.position, p.heading || 0),
+        'SetIntent': (p) => new SetIntentCommand(p.intent),
+        'LaunchAircraft': (p) => new LaunchAircraftCommand(p.entityId),
+        'SetSimulationSpeed': (p) => new SetSimulationSpeedCommand(p.timeCompression, p.isPaused)
+    };
+
     public static create(payload: EngineCommandPayload, side?: Side): Command | undefined {
-        switch (payload.type) {
-            case 'SetCourse':
-            case 'AddWaypoint':
-                return new AddWaypointCommand(
-                    payload.entityId, 
-                    payload.position, 
-                    payload.speedKts || 300
-                );
-            
-            case 'ClearWaypoints':
-                return new ClearWaypointsCommand(payload.entityId);
-
-            case 'FireWeapon':
-                return new FireWeaponCommand(
-                    payload.entityId, 
-                    payload.mountIndex, 
-                    payload.targetId
-                );
-
-            case 'JoinFormation':
-                return new JoinFormationCommand(
-                    payload.entityId,
-                    payload.leaderId,
-                    payload.offset
-                );
-
-            case 'BreakFormation':
-                return new BreakFormationCommand(payload.entityId);
-
-            case 'SetHeading':
-                return new SetHeadingCommand(payload.entityId, payload.heading);
-
-            case 'SetSpeed':
-                return new SetSpeedCommand(payload.entityId, payload.speedKts);
-
-            case 'ApplyDamage':
-                return new ApplyDamageCommand(payload.entityId, payload.damage);
-
-            case 'DestroyEntity':
-                return new DestroyEntityCommand(payload.entityId);
-
-            case 'LandAtFacility':
-                return new LandAtFacilityCommand(payload.entityId, payload.facilityId);
-
-            case 'SetSensorState':
-                return new SetSensorStateCommand(payload.entityId, payload.sensor, payload.active);
-
-            case 'SetEMCON':
-                return new SetEMCONCommand(payload.entityId || 'GLOBAL', payload.state);
-
-            case 'AssignWeapon':
-                return new AssignWeaponCommand(payload.entityId, payload.mount, payload.targetId);
-
-            case 'SetUnitROE':
-                return new SetROECommand(payload.entityId, payload.roe);
-
-            case 'SetGlobalROE':
-                return new SetSideROECommand(side || Side.Blue, payload.roe);
-
-            case 'SetMissionROE':
-                return new SetMissionROECommand('MISSION', payload.roe);
-
-            case 'SetMission':
-                return new SetMissionCommand(payload.entityId, payload.mission.missionType as MissionType, payload.mission);
-
-            case 'SetAltitude':
-                return new SetAltitudeCommand(payload.entityId, payload.altitudeM);
-
-            case 'UpdateWRARules':
-                return new UpdateWRARulesCommand(payload.entityId, payload.rules);
-
-            case 'SetLoadout':
-                return new SetLoadoutCommand(payload.entityId, payload.loadout);
-            
-            case 'SetEnvironment':
-                return new SetEnvironmentCommand(payload.key, payload.value);
-
-            case 'SpawnEntity':
-                return new SpawnEntityCommand(
-                    payload.id,
-                    payload.profileId,
-                    payload.side,
-                    payload.position as Vector3,
-                    payload.heading || 0
-                );
-
-            case 'SetIntent':
-                return new SetIntentCommand(payload.intent);
-
-            case 'LaunchAircraft':
-                return new LaunchAircraftCommand(payload.entityId);
-
-            default:
-                return undefined;
-        }
+        const creator = this.registry[payload.type];
+        return creator ? creator(payload, side) : undefined;
     }
 }

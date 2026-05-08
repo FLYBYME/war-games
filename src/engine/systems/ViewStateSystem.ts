@@ -31,6 +31,7 @@ export class ViewStateSystem implements ISystem {
     constructor(
         private projection: GeoProjection,
         private terrain: TerrainOracle,
+        private profiles: ProfileRegistry,
         private weaponProfiles: WeaponProfileRegistry,
         private mapData: MapDataService
     ) { }
@@ -76,10 +77,12 @@ export class ViewStateSystem implements ISystem {
             if (isFriendly) {
                 const geo = this.projection.toGeographic(transform.position);
                 const speedKts = kin ? (VectorMath.magnitude(kin.velocity) * Physics.MPS_TO_KTS) : 0;
+                const profile = entity.profileId ? this.profiles.get(entity.profileId) : undefined;
 
                 const unitPayload: ViewUnitPayload = {
                     id: entity.id,
                     side: entity.side,
+                    category: profile?.type as any, // Cast to any to match the protocol enum
                     parentId: entity.parentEntityId,
                     pos: { x: transform.position.x, y: transform.position.y, z: transform.position.z },
                     vel: kin ? { x: kin.velocity.x, y: kin.velocity.y, z: kin.velocity.z } : undefined,
@@ -99,15 +102,15 @@ export class ViewStateSystem implements ISystem {
                         azimuthDeg: s.currentAzimuth,
                         halfArcDeg: s.beamWidthDeg / 2
                     })),
-                    mounts: combat?.mounts.map((m, idx) => ({ 
+                    mounts: combat?.mounts.map((m, idx) => ({
                         id: `mount-${idx}`,
                         type: m.name,
                         roundsRemaining: combat.magazines[m.magazineIndices[m.activeMagazineIndex]]?.currentCount || 0
                     })) || [],
-                    mission: mission ? { 
-                        type: mission.missionType, 
-                        status: mission.status, 
-                        params: mission.params as Record<string, unknown> 
+                    mission: mission ? {
+                        type: mission.missionType,
+                        status: mission.status,
+                        params: mission.params as Record<string, unknown>
                     } : undefined,
                     activeTasks: []
                 };
@@ -125,7 +128,7 @@ export class ViewStateSystem implements ISystem {
                         if (track.status === 'Dropped') continue;
 
                         const trackGeo = this.projection.toGeographic(track.position);
-                        
+
                         const existing = tracks.find(t => t.id === track.id);
                         if (!existing) {
                             tracks.push({
@@ -136,6 +139,7 @@ export class ViewStateSystem implements ISystem {
                                 cep: track.cepM,
                                 classification: track.classification,
                                 identification: track.identification,
+                                firstSeen: track.firstSeenTick,
                                 lastSeen: track.lastSeenTick,
                                 speedKts: VectorMath.magnitude(track.velocity) * Physics.MPS_TO_KTS
                             });
@@ -154,7 +158,7 @@ export class ViewStateSystem implements ISystem {
                 const entityB = world.getEntity(idB);
                 const dlA = entityA?.getComponent(DatalinkComponent);
                 const dlB = entityB?.getComponent(DatalinkComponent);
-                
+
                 if (dlA && dlB && dlA.networkId === dlB.networkId && dlA.isActive && dlB.isActive) {
                     datalinkEdges.push({ a: idA, b: idB, latencyMs: 100 });
                 }

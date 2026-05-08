@@ -13,8 +13,10 @@ export class DeltaDecoder {
         this.tracks.clear();
     }
 
-    public decode(buffer: ArrayBuffer): ViewStateSnapshot {
-        const view = new DataView(buffer);
+    public decode(input: ArrayBuffer | Uint8Array): ViewStateSnapshot {
+        const bytes = input instanceof Uint8Array ? input : new Uint8Array(input);
+        const buffer = bytes.buffer;
+        const view = new DataView(buffer, bytes.byteOffset, bytes.byteLength);
         let offset = 0;
         const decoder = new TextDecoder();
 
@@ -119,6 +121,7 @@ export class DeltaDecoder {
                     vel: { x: 0, y: 0, z: 0 },
                     classification: 'Unknown',
                     identification: 'Unknown',
+                    firstSeen: tick,
                     lastSeen: tick,
                     cep: 0,
                     speedKts: 0

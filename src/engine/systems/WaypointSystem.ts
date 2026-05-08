@@ -1,5 +1,5 @@
 import { ISystem, IWorldView, SystemPhase } from '../core/ISystem.js';
-import { Command, SetHeadingCommand, SetSpeedCommand } from '../core/Command.js';
+import { Command, SetHeadingCommand, SetSpeedCommand, SetPitchCommand } from '../core/Command.js';
 import { TransformComponent } from '../components/Physics.js';
 import { NavigationComponent, NavState } from '../components/Navigation.js';
 import { VectorMath } from '../math/VectorMath.js';
@@ -56,7 +56,7 @@ export class WaypointSystem implements ISystem {
             }
 
             commands.push(new SetHeadingCommand(entity.id, desiredHeading));
-            transform.pitch = desiredPitch; 
+            commands.push(new SetPitchCommand(entity.id, desiredPitch)); 
 
             // 3. Match Speed (TOT Logic)
             let desiredSpeedKts = target.speedKts;

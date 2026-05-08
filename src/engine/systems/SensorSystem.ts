@@ -1,10 +1,11 @@
 import { ISystem, IWorldView, SystemPhase } from '../core/ISystem.js';
 import { Command, AddDetectionCommand, RemoveDetectionCommand, UpdateSensorScanCommand, SyncESMBearingsCommand } from '../core/Command.js';
 import { TransformComponent, KinematicsComponent } from '../components/Physics.js';
-import { SensorComponent, DetectionComponent, ESMBearing } from '../components/Sensors.js';
-import { SensorType, Vector3 } from '../core/Types.js';
+import { SensorComponent, DetectionComponent } from '../components/Sensors.js';
+import type { ESMBearing } from '../components/Sensors.js';
+import { SensorType, Vector3, EMBand, EMCONState } from '../core/Types.js';
 import { RCSComponent } from '../components/Signatures.js';
-import { JammerComponent, JammerType } from '../components/ElectronicWarfare.js';
+import { JammerComponent, JammerType, JammerMode } from '../components/ElectronicWarfare.js';
 import { AcousticSignatureComponent } from '../components/Subsurface.js';
 import { EnvironmentComponent } from '../components/Environment.js';
 import { TerrainOracle } from '../environment/TerrainOracle.js';
@@ -14,7 +15,7 @@ import { Physics } from '../PhysicsConstants.js';
 import { EntityId } from '../core/Types.js';
 import { Entity } from '../core/Entity.js';
 import { HealthComponent, SubsystemType } from '../components/Health.js';
-import { DoctrineComponent, EMCONState } from '../components/Doctrine.js';
+import { DoctrineComponent } from '../components/Doctrine.js';
 import { logger } from '../core/Logger.js';
 import { ProfileRegistry } from '../core/ProfileRegistry.js';
 
@@ -102,6 +103,7 @@ export class SensorSystem implements ISystem {
                             isESMOnly = true;
                             currentESMBearings.push({
                                 observerId: observer.id,
+                                observerPos: { ...transform.position },
                                 bearingDeg: (transform.rotation + targetAzBody) % 360,
                                 confidencePct: 100, // For now
                                 targetId: target.id
@@ -120,16 +122,27 @@ export class SensorSystem implements ISystem {
                         if (hasLOS) {
                             if (isType(SensorType.Radar)) {
                                 const rcsComp = target.getComponent(RCSComponent);
-                                const rcs = rcsComp?.getEffectiveRCS(sensor.band, 0) || 1.0;
-                                isDetected = this.calculateRadarDetection(sensor, env, dist, rcs, observerNoiseWatts, target);
+                                const rcs = this.calculateEffectiveRCS(rcsComp, sensor.band);
+                                isDetected = this.calculateRadarDetection(sensor, env, dist, rcs, observerNoiseWatts, target, world);
 
                                 if (isDetected && kin && targetKin) {
                                     isDetected = !this.isDopplerNotched(transform.position, kin.velocity, targetTransform.position, targetKin.velocity);
                                 }
+
+                                // 2.5 Deceptive Jamming (Case 59): Ghost Tracks
+                                const targetJammer = target.getComponent(JammerComponent);
+                                if (isDetected && targetJammer?.isActive && targetJammer.mode === JammerMode.Deceptive) {
+                                    const numGhosts = 2 + world.random.integer(0, 2);
+                                    for (let g = 0; g < numGhosts; g++) {
+                                        const ghostId = `GHOST-${target.id}-${world.currentTick}-${g}`;
+                                        commands.push(new AddDetectionCommand(observer.id, ghostId));
+                                        newlyDetectedInTick.add(ghostId);
+                                    }
+                                }
                             } else if (isSonar) {
                                 const targetEnv = target.getComponent(EnvironmentComponent);
                                 const sl = target.getComponent(AcousticSignatureComponent)?.baseSL || 100;
-                                isDetected = this.calculateSonarDetection(transform.position.z, targetTransform.position.z, env, targetEnv, dist, sl);
+                                isDetected = this.calculateSonarDetection(transform.position.z, targetTransform.position.z, env, targetEnv, dist, sl, world);
                             } else {
                                 const cloudPenalty = env?.cloudCover || 0;
                                 isDetected = dist <= (sensor.maxRangeM * (1.0 - cloudPenalty));
@@ -183,8 +196,8 @@ export class SensorSystem implements ISystem {
                         if (hasLOS) {
                             if (isType(SensorType.Radar)) {
                                 const rcsComp = target.getComponent(RCSComponent);
-                                const rcs = rcsComp?.getEffectiveRCS(sensor.band, 0) || 1.0;
-                                stillDetectable = this.calculateRadarDetection(sensor, env, dist, rcs, observerNoiseWatts, target);
+                                const rcs = this.calculateEffectiveRCS(rcsComp, sensor.band);
+                                stillDetectable = this.calculateRadarDetection(sensor, env, dist, rcs, observerNoiseWatts, target, world);
                                 if (stillDetectable && kin) {
                                     const targetKin = target.getComponent(KinematicsComponent);
                                     if (targetKin) {
@@ -194,7 +207,7 @@ export class SensorSystem implements ISystem {
                             } else if (isType(SensorType.Sonar)) {
                                 const targetEnv = target.getComponent(EnvironmentComponent);
                                 const sl = target.getComponent(AcousticSignatureComponent)?.baseSL || 100;
-                                stillDetectable = this.calculateSonarDetection(transform.position.z, targetTransform.position.z, env, targetEnv, dist, sl);
+                                stillDetectable = this.calculateSonarDetection(transform.position.z, targetTransform.position.z, env, targetEnv, dist, sl, world);
                             } else {
                                 const cloudPenalty = env?.cloudCover || 0;
                                 stillDetectable = dist <= (sensor.maxRangeM * (1.0 - cloudPenalty));
@@ -261,7 +274,7 @@ export class SensorSystem implements ISystem {
         return dist <= horizonKm * 1000;
     }
 
-    private calculateRadarDetection(sensor: SensorComponent, env: EnvironmentComponent | undefined, dist: number, rcs: number, noiseWatts: number, target: Entity): boolean {
+    private calculateRadarDetection(sensor: SensorComponent, env: EnvironmentComponent | undefined, dist: number, rcs: number, noiseWatts: number, target: Entity, world: IWorldView): boolean {
         if (dist < 1) return true;
         const ptWatts = sensor.txPowerKw * 1000;
         const g = Math.pow(10, Physics.RADAR_GAIN_DBI / 10);
@@ -289,7 +302,7 @@ export class SensorSystem implements ISystem {
         const snrDb = 10 * Math.log10(prWatts / effectiveNoiseWatts);
         const threshold = Physics.RADAR_MIN_SNR_DB;
         const pd = 1 / (1 + Math.exp(-1.5 * (snrDb - threshold)));
-        return Math.random() < pd;
+        return world.random.next() < pd;
     }
 
     private calculateESMDetection(esm: SensorComponent, target: Entity, dist: number): boolean {
@@ -337,7 +350,7 @@ export class SensorSystem implements ISystem {
         return Math.abs(vRadial) < 2.0;
     }
 
-    private calculateSonarDetection(z1: number, z2: number, env: EnvironmentComponent | undefined, targetEnv: EnvironmentComponent | undefined, dist: number, sl: number): boolean {
+    private calculateSonarDetection(z1: number, z2: number, env: EnvironmentComponent | undefined, targetEnv: EnvironmentComponent | undefined, dist: number, sl: number, world: IWorldView): boolean {
         if (dist < 1) return true;
         let tl = 20 * Math.log10(dist); 
         tl += (dist / 1000) * 0.1; 
@@ -359,7 +372,7 @@ export class SensorSystem implements ISystem {
         const snrDb = sl - tl - ambientNoise;
         const threshold = Physics.SONAR_DT_DB;
         const pd = 1 / (1 + Math.exp(-0.8 * (snrDb - threshold))); 
-        return Math.random() < pd;
+        return world.random.next() < pd;
     }
 
     private dbmToWatts(dbm: number): number {
@@ -372,5 +385,11 @@ export class SensorSystem implements ISystem {
         const hasLOS = await this.terrain.isLineOfSightClear(pos1, pos2, this.projection);
         this.losCache.set(key, hasLOS);
         return hasLOS;
+    }
+
+    private calculateEffectiveRCS(rcsComp: RCSComponent | undefined, band: EMBand): number {
+        if (!rcsComp) return 1.0;
+        const bandMult = rcsComp.bandMultipliers.get(band) || 1.0;
+        return rcsComp.baseRCS * bandMult;
     }
 }

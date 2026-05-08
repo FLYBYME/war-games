@@ -1,4 +1,6 @@
-import { MatchService, ScenarioService, TerrainService } from '../sdk/index.js';
+import { MatchService } from './services/MatchService.js';
+import { ScenarioService } from './services/ScenarioService.js';
+import { TerrainService } from './services/TerrainService.js';
 import { SessionManager } from './core/SessionManager.js';
 import { WebSocket } from 'ws';
 import { Side, ViewStateSnapshot } from '../engine/core/Types.js';

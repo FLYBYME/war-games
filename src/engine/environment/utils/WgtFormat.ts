@@ -30,8 +30,9 @@ export class WgtFormat {
         return new Uint8Array(buffer);
     }
 
-    public static decode(buffer: ArrayBufferLike): { resolution: number, lat: number, lon: number, data: Float32Array } {
-        const view = new DataView(buffer);
+    public static decode(input: Uint8Array | ArrayBufferLike): { resolution: number, lat: number, lon: number, data: Float32Array } {
+        const bytes = input instanceof Uint8Array ? input : new Uint8Array(input);
+        const view = new DataView(bytes.buffer, bytes.byteOffset, bytes.byteLength);
         const magic = view.getUint32(0, true);
 
         if (magic !== this.MAGIC) {
@@ -42,7 +43,7 @@ export class WgtFormat {
             resolution: view.getUint32(4, true),
             lat: view.getInt32(8, true) / 1000,
             lon: view.getInt32(12, true) / 1000,
-            data: new Float32Array(buffer, 32)
+            data: new Float32Array(bytes.buffer, bytes.byteOffset + 32, (bytes.byteLength - 32) / 4)
         };
     }
 }

@@ -4,7 +4,7 @@ import { Command, SpawnEntityCommand } from '../../core/Command.js';
 import { TaskWorker } from '../TaskReconcilerSystem.js';
 import { TransformComponent } from '../../components/Physics.js';
 import { VectorMath } from '../../math/VectorMath.js';
-import { TaskNode, MinelayPayload, TaskResult } from '../../core/TaskGraph.js';
+import { TaskNode, MinelayPayload, TaskResult, TaskGraphManager } from '../../core/TaskGraph.js';
 import { TaskGraphComponent } from '../../components/TaskGraph.js';
 import { Vector3 } from '../../core/Types.js';
 
@@ -23,7 +23,7 @@ export class MinelayWorker implements TaskWorker {
         if (!transform || !taskComp) return [];
 
         if (this.droppedCount >= payload.quantity) {
-            taskComp.graph.markCompleted(taskNode.id, { dropped: this.droppedCount });
+            TaskGraphManager.markCompleted(taskComp.graph, taskNode.id, { dropped: this.droppedCount });
             return [];
         }
 

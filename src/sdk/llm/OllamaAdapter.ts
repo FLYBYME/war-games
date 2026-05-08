@@ -143,17 +143,21 @@ export class OllamaAdapter extends EventEmitter {
  * Helper to map WarGamesTool to Ollama's ToolDefinition format.
  */
 export function getToolDefinition(tool: WarGamesTool): ToolDefinition {
-    const shape = tool.inputSchema.shape as Record<string, Z.ZodTypeAny>;
+    if (!(tool.inputSchema instanceof Z.ZodObject)) {
+        throw new Error(`Tool ${tool.name} inputSchema must be a ZodObject`);
+    }
+
+    const shape = tool.inputSchema.shape;
     const properties: Record<string, { type: string; description: string }> = {};
     const required: string[] = [];
 
     for (const [key, value] of Object.entries(shape)) {
-        const zodValue = value;
+        const zodValue = value as Z.ZodTypeAny;
         properties[key] = {
             type: getJsonType(zodValue),
             description: zodValue.description || `The ${key}`
         };
-        if (!(zodValue instanceof Z.ZodOptional)) {
+        if (!(zodValue instanceof Z.ZodOptional) && !(zodValue instanceof Z.ZodDefault)) {
             required.push(key);
         }
     }
@@ -173,9 +177,15 @@ export function getToolDefinition(tool: WarGamesTool): ToolDefinition {
 }
 
 function getJsonType(zodType: Z.ZodTypeAny): string {
-    if (zodType instanceof Z.ZodString) return 'string';
-    if (zodType instanceof Z.ZodNumber) return 'number';
-    if (zodType instanceof Z.ZodBoolean) return 'boolean';
-    if (zodType instanceof Z.ZodEnum) return 'string';
+    const unwrapped = zodType instanceof Z.ZodOptional || zodType instanceof Z.ZodDefault 
+        ? zodType._def.innerType 
+        : zodType;
+
+    if (unwrapped instanceof Z.ZodString) return 'string';
+    if (unwrapped instanceof Z.ZodNumber) return 'number';
+    if (unwrapped instanceof Z.ZodBoolean) return 'boolean';
+    if (unwrapped instanceof Z.ZodEnum) return 'string';
+    if (unwrapped instanceof Z.ZodArray) return 'array';
+    if (unwrapped instanceof Z.ZodObject) return 'object';
     return 'string';
 }

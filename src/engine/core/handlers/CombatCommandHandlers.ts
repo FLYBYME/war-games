@@ -22,6 +22,8 @@ import { VectorMath } from '../../math/VectorMath.js';
 import { EnvironmentComponent } from '../../components/Environment.js';
 import { FireControl } from '../../math/FireControl.js';
 
+import { MunitionFactory } from '../MunitionFactory.js';
+
 export class FireWeaponHandler implements CommandHandler<FireWeaponCommand> {
     execute(cmd: FireWeaponCommand, world: World): void {
         const entity = world.getEntity(cmd.entityId);
@@ -91,118 +93,9 @@ export class FireWeaponHandler implements CommandHandler<FireWeaponCommand> {
                 // Update lastFireTick to reset reload timer
                 combat.mounts[cmd.mountIndex].lastFireTick = world.currentTick;
 
-                // Demo logic: We spawn a physical entity for the weapon if it's a missile or a shell
+                // Use MunitionFactory for spawning
                 if (weaponProfile && (weaponProfile.type === 'Missile' || weaponProfile.type === 'Gun')) {
-                    const targetEntitySpawn = world.getEntity(cmd.targetId);
-                    if (targetEntitySpawn) {
-                        const targetTransform = targetEntitySpawn.getComponent(TransformComponent);
-                        if (targetTransform) {
-                            const entityMgr = new EntityManager(world, world.profileRegistry);
-
-                            // Spawn the munition entity
-                            const munitionId = `${cmd.entityId}-${magazine.weaponProfileId}-${Date.now()}-${Math.floor(Math.random() * 1000)}`;
-                            const projectileProfileId = weaponProfile.entityProfileId || `${magazine.weaponProfileId}-projectile`;
-
-                            // Calculate initial orientation to target using FireControl
-                            const vToTarget = VectorMath.subtract(targetTransform.position, transform.position);
-                            const groundDist = Math.sqrt(vToTarget.x * vToTarget.x + vToTarget.y * vToTarget.y);
-
-                            const projectileProfile = weaponProfile.entityProfileId ? world.profileRegistry.get(weaponProfile.entityProfileId) : undefined;
-                            const shooterVel = entity.getComponent(KinematicsComponent)?.velocity || { x: 0, y: 0, z: 0 };
-                            const targetVel = targetEntitySpawn.getComponent(KinematicsComponent)?.velocity || { x: 0, y: 0, z: 0 };
-                            const env = entity.getComponent(EnvironmentComponent) as EnvironmentComponent;
-
-                            const solution = FireControl.calculateAdvancedBallisticSolution(
-                                transform.position,
-                                shooterVel,
-                                targetTransform.position,
-                                targetVel,
-                                (weaponProfile.maxSpeedKts || 0) * 0.514444,
-                                projectileProfile?.kinematics?.massKg || 10,
-                                projectileProfile?.kinematics?.dragCoeff || 0.05,
-                                weaponProfile.burst?.caliberMm || 127,
-                                env.windVelocity || { x: 0, y: 0, z: 0 },
-                                env.airDensity || 1.225
-                            ) || {
-                                azimuthDeg: (Math.atan2(vToTarget.y, vToTarget.x) * (180 / Math.PI) + 360) % 360,
-                                elevationDeg: Math.atan2(vToTarget.z, groundDist) * (180 / Math.PI)
-                            };
-
-                            const isVLS = mount.name?.toLowerCase().includes('vls') || magazine.weaponProfileId.toLowerCase().includes('vls');
-                            const launchPitch = isVLS ? 85 : solution.elevationDeg;
-                            const launchHdg = solution.azimuthDeg;
-
-
-                            const munition = entityMgr.spawn({
-                                id: munitionId,
-                                profileId: projectileProfileId, // Maintain original case for registry lookups
-                                pos: [
-                                    transform.position.x + (Math.random() - 0.5) * 5,
-                                    transform.position.y + (Math.random() - 0.5) * 5,
-                                    transform.position.z + 2
-                                ],
-                                heading: launchHdg,
-                                pitch: launchPitch,
-                                speedKts: weaponProfile.cruiseSpeedKts,
-                                side: entity?.side || Side.Neutral
-                            });
-
-                            const col = munition.getComponent(CollisionComponent);
-                            if (col) col.ownerId = cmd.entityId;
-
-                            // Set throttle and initial thrust for missiles, or just initial velocity for shells
-                            if (weaponProfile.type === 'Missile') {
-                                const prop = munition.getComponent(PropulsionComponent) as PropulsionComponent;
-                                if (prop) {
-                                    prop.throttle = 1.0;
-                                    prop.currentThrustN = prop.maxThrustDryN;
-                                }
-
-                                // Add Guidance brain
-                                let compGuidanceType = CompGuidanceType.INS;
-                                switch (weaponProfile.guidance) {
-                                    case ProfGuidanceType.Active: compGuidanceType = CompGuidanceType.ARH; break;
-                                    case ProfGuidanceType.SemiActive: compGuidanceType = CompGuidanceType.SARH; break;
-                                    case ProfGuidanceType.Passive: compGuidanceType = CompGuidanceType.IR; break;
-                                    case ProfGuidanceType.Command: compGuidanceType = CompGuidanceType.Command; break;
-                                }
-
-                                munition.addComponent(new GuidanceComponent(
-                                    compGuidanceType,
-                                    cmd.targetId,
-                                    compGuidanceType === CompGuidanceType.SARH ? cmd.entityId : undefined
-                                ));
-
-                                // Add Intercept mission as per directive
-                                munition.addComponent(new MissionComponent(
-                                    MissionType.Intercept,
-                                    { targetId: cmd.targetId },
-                                    MissionStatus.Active,
-                                    world.currentTick
-                                ));
-
-                                // If ARH, ensure it has a seeker sensor
-                                if (compGuidanceType === CompGuidanceType.ARH) {
-                                    if (!munition.getComponent(SensorComponent)) {
-                                        munition.addComponent(new SensorComponent(
-                                            SensorType.Radar,
-                                            20000,
-                                            true,
-                                            45, 10, -10, 50, EMBand.X, SensorMode.Search, MountingType.Fixed, 0, 0, 0, undefined, undefined, undefined,
-                                            'Seeker'
-                                        ));
-                                    }
-                                    if (!munition.getComponent(DetectionComponent)) {
-                                        munition.addComponent(new DetectionComponent());
-                                    }
-                                }
-                                logger.info(`Weapon entity spawned: ${munitionId}`, { target: cmd.targetId, guidance: compGuidanceType });
-                            } else {
-                                // Ballistic Shell: No guidance, just initial muzzle velocity
-                                logger.info(`Ballistic shell spawned: ${munitionId}`, { target: cmd.targetId });
-                            }
-                        }
-                    }
+                    MunitionFactory.spawnMunition(world, cmd.entityId, cmd.targetId, weaponProfile, mount.name || 'Default');
                 }
 
                 world.events.emit({
@@ -239,63 +132,7 @@ export class FireSalvoHandler implements CommandHandler<FireSalvoCommand> {
 
                 const weaponProfile = world.weaponProfiles.get(magazine.weaponProfileId);
                 if (weaponProfile) {
-                    const targetEntity = world.getEntity(cmd.targetId);
-                    if (targetEntity) {
-                        const targetTransform = targetEntity.getComponent(TransformComponent);
-                        if (targetTransform) {
-                            const entityMgr = new EntityManager(world, world.profileRegistry);
-                            // Unique but deterministic ID for the salvo in this tick
-                            const munitionId = `${cmd.entityId}-${magazine.weaponProfileId}-salvo-${world.currentTick}-${cmd.mountIndex}`;
-                            const projectileProfileId = weaponProfile.entityProfileId || `${magazine.weaponProfileId}-projectile`;
-
-                            // Calculate initial orientation to target using FireControl
-                            const vToTarget = VectorMath.subtract(targetTransform.position, transform.position);
-                            const groundDist = Math.sqrt(vToTarget.x * vToTarget.x + vToTarget.y * vToTarget.y);
-
-                            const projectileProfile = weaponProfile.entityProfileId ? world.profileRegistry.get(weaponProfile.entityProfileId) : undefined;
-                            const shooterVel = entity.getComponent(KinematicsComponent)?.velocity || { x: 0, y: 0, z: 0 };
-                            const targetVel = targetEntity.getComponent(KinematicsComponent)?.velocity || { x: 0, y: 0, z: 0 };
-                            const env = entity.getComponent(EnvironmentComponent) as EnvironmentComponent;
-
-                            const solution = FireControl.calculateAdvancedBallisticSolution(
-                                transform.position,
-                                shooterVel,
-                                targetTransform.position,
-                                targetVel,
-                                (weaponProfile.maxSpeedKts || 0) * 0.514444,
-                                projectileProfile?.kinematics?.massKg || 10,
-                                projectileProfile?.kinematics?.dragCoeff || 0.05,
-                                weaponProfile.burst?.caliberMm || 127,
-                                env?.windVelocity || { x: 0, y: 0, z: 0 },
-                                env?.airDensity || 1.225
-                            ) || {
-                                azimuthDeg: (Math.atan2(vToTarget.y, vToTarget.x) * (180 / Math.PI) + 360) % 360,
-                                elevationDeg: Math.atan2(vToTarget.z, groundDist) * (180 / Math.PI)
-                            };
-
-                            const munition = entityMgr.spawn({
-                                id: munitionId,
-                                profileId: projectileProfileId,
-                                pos: [
-                                    transform.position.x,
-                                    transform.position.y,
-                                    transform.position.z + 2
-                                ],
-                                heading: solution.azimuthDeg,
-                                pitch: solution.elevationDeg,
-                                speedKts: weaponProfile.cruiseSpeedKts,
-                                side: entity?.side || Side.Neutral
-                            });
-
-                            // Add SalvoComponent to track quantity
-                            munition.addComponent(new SalvoComponent(quantity, quantity, weaponProfile.burst?.dispersionDeg || 0.1));
-
-                            const col = munition.getComponent(CollisionComponent);
-                            if (col) col.ownerId = cmd.entityId;
-
-                            logger.info(`Salvo entity spawned: ${munitionId}`, { target: cmd.targetId, qty: quantity });
-                        }
-                    }
+                    MunitionFactory.spawnSalvo(world, cmd.entityId, cmd.targetId, weaponProfile, mount.name || 'Default', quantity);
                 }
 
                 world.events.emit({
@@ -346,7 +183,7 @@ export class ApplyDamageHandler implements CommandHandler<ApplyDamageCommand> {
                 });
 
                 // Also immediately remove if it's a munition, otherwise let the world reaper handle it
-                const profile = world.profileRegistry.get(entity.profileId);
+                const profile = world.profileRegistry.get(entity!.profileId || '');
                 if (profile?.type === 'Weapon') {
                     world.removeEntity(cmd.entityId);
                 }

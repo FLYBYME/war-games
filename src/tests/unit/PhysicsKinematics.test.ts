@@ -145,16 +145,14 @@ describe('Physics & Kinematics Unit Tests', () => {
         it('should update entity mass correctly based on fuel (Test 15)', () => {
             const emptyMass = 10000;
             const initialFuel = 5000;
-            const kinematics = new KinematicsComponent(
-                { x: 0, y: 0, z: 0 },
-                { x: 0, y: 0, z: 0 },
-                { x: 0, y: 0, z: 0 },
-                emptyMass + initialFuel,
-                0.05,
-                0,
-                emptyMass
-            );
-            const fuel = new FuelComponent(initialFuel, initialFuel);
+            const kinematics = new KinematicsComponent({
+                velocity: { x: 0, y: 0, z: 0 },
+                massKg: emptyMass + initialFuel,
+                dragCoeff: 0.05,
+                thrustN: 0,
+                massEmptyKg: emptyMass
+            });
+            const fuel = new FuelComponent({ currentKg: initialFuel, maxKg: initialFuel });
             
             // Simulating fuel consumption
             const consumption = 1000;

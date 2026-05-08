@@ -14,7 +14,7 @@ import { ProfileRegistry } from '../core/ProfileRegistry.js';
  */
 export class AeroSystem implements ISystem {
     readonly name = 'AeroSystem';
-    readonly phase = SystemPhase.Physics;
+    readonly phase = SystemPhase.Forces;
     readonly dependencies = ['EnvironmentSystem', 'KinematicsSystem'];
 
     public async process(world: IWorldView, _dt: number): Promise<Command[]> {
@@ -29,7 +29,7 @@ export class AeroSystem implements ISystem {
             if (transform && kinematics && env && aero) {
                 // 0. Check Type
                 const profileRegistry = world.profileRegistry as ProfileRegistry;
-                const profile = profileRegistry.get(entity.profileId) as EntityProfile | undefined;
+                const profile = profileRegistry.get(entity.profileId || '') as EntityProfile | undefined;
                 const isHelo = profile?.type === 'Helicopter';
 
                 // 1. Calculate Airspeed (Ground Velocity - Wind Velocity)
@@ -54,6 +54,7 @@ export class AeroSystem implements ISystem {
                 aero.machNumber = airspeedMag / speedOfSound;
 
                 // 4. Calculate Aerodynamic Angles
+                // Alpha (AoA) is angle between body X and velocity in X-Z plane
                 const aoa = Math.atan2(-vBody.z, vBody.x);
 
                 // 5. Calculate Coefficients
@@ -66,8 +67,12 @@ export class AeroSystem implements ISystem {
                 }
                 
                 // Lift: Simplified AoA-dependent lift curve
+                // Cl = Cl_0 + Cl_alpha * alpha
+                // We assume Cl_0 is enough to maintain level flight at cruise speed 
+                // but for simplicity we'll just use a small offset so 0 AoA still has some lift.
+                const cl0 = 0.1; 
                 const clSlope = 2 * Math.PI;
-                let cl = clSlope * aoa;
+                let cl = cl0 + clSlope * aoa;
 
                 if (isHelo && airspeedMag < 10.0) {
                     // Helicopter Hover Lift: Provide enough lift to counter gravity

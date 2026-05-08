@@ -7,10 +7,12 @@ import { IComponent } from '../core/Types.js';
 export class AcousticSignatureComponent implements IComponent {
     readonly type = 'AcousticSignatureComponent';
 
-    constructor(
-        public baseSL: number = 120, // Source Level in dB (ref 1uPa)
-        public cavitationSpeed: number = 15 // Speed in m/s where cavitation starts
-    ) {}
+    public baseSL: number = 120; // Source Level in dB (ref 1uPa)
+    public cavitationSpeed: number = 15; // Speed in m/s where cavitation starts
+
+    constructor(init?: Partial<AcousticSignatureComponent>) {
+        if (init) Object.assign(this, init);
+    }
 }
 
 /**
@@ -19,9 +21,11 @@ export class AcousticSignatureComponent implements IComponent {
 export class OceanComponent implements IComponent {
     readonly type = 'OceanComponent';
 
-    constructor(
-        public depthM: number = 2000,
-        public layerDepthM: number = 100,
-        public bottomType: 'Soft' | 'Hard' = 'Soft'
-    ) {}
+    public depthM: number = 2000;
+    public layerDepthM: number = 100;
+    public bottomType: 'Soft' | 'Hard' = 'Soft';
+
+    constructor(init?: Partial<OceanComponent>) {
+        if (init) Object.assign(this, init);
+    }
 }

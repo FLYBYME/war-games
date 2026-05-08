@@ -104,6 +104,7 @@ export class DuelCommand extends BaseCommand {
         } catch (err: unknown) {
             const error = err as Error;
             this.logLine(`\n${C.red}${C.bold}✖ Duel Failed:${C.reset} ${error.message}`);
+            this.logLine(`${C.red}${C.bold}${error.stack}${C.reset}`);
         } finally {
             if (this.logStream) {
                 this.logStream.end();
@@ -205,79 +206,7 @@ Report any bugs you find using the report_bug tool. Use report_bug to report any
         const debugTools = DebugTools(client);
         const baseReportBug = debugTools.find(t => t.name === 'report_bug')!;
 
-        let reportBugTool = baseReportBug;
-
-        if (enableDebugAgent) {
-            reportBugTool = {
-                ...baseReportBug,
-                async call(mId: string | undefined, sId: Side | undefined, args: unknown) {
-                    const result = await baseReportBug.call(mId, sId, args as Record<string, unknown>) as { reportId: string, details: unknown };
-
-                    self.logLine(`\n${C.yellow}${C.bold}🔍 Debug Agent activated for ${result.reportId}${C.reset}`);
-
-                    const debugAdapter = new OllamaAdapter({
-                        ollama,
-                        model,
-                        tools: DebugTools(client),
-                        system: `You are an expert Software Debugging Agent.
-You have been summoned because the QA Military Analyst reported a bug during a simulation.
-Your objective is to investigate the reported bug by reading the source code, logs, or bug reports.
-You have access to 'list_files' and 'read_file' tools. Use them to understand the codebase and confirm if the bug is valid, and identify the root cause in the code.
-Once you finish your analysis, present a concise technical summary of the problem and the files involved.`
-                    });
-
-                    let debugThinking = false;
-                    let debugAtNewRow = true;
-                    const printDebug = (text: string, colorCode: string) => {
-                        const lines = text.split('\n');
-                        for (let i = 0; i < lines.length; i++) {
-                            if (debugAtNewRow) {
-                                self.log(`${C.yellow}[DEBUG] ${C.reset}`);
-                                debugAtNewRow = false;
-                            }
-                            self.log(colorCode + lines[i] + C.reset);
-                            if (i < lines.length - 1) {
-                                self.log('\n');
-                                debugAtNewRow = true;
-                            }
-                        }
-                    };
-
-                    debugAdapter.on("chat:content", (c: string) => {
-                        if (debugThinking) { debugThinking = false; self.log("\n"); debugAtNewRow = true; }
-                        printDebug(c, C.green);
-                    });
-                    debugAdapter.on("chat:thinking", (c: string) => {
-                        if (!debugThinking) { debugThinking = true; printDebug("Thinking: ", C.yellow); }
-                        printDebug(c, C.yellow);
-                    });
-                    debugAdapter.on("chat:finished", () => {
-                        if (debugThinking) { debugThinking = false; self.log("\n"); debugAtNewRow = true; }
-                    });
-                    debugAdapter.on("tool:executing", (c: { name: string, args: unknown }) => {
-                        if (debugThinking) { debugThinking = false; self.log("\n"); debugAtNewRow = true; }
-                        printDebug(`Tool executing: ${c.name} ${JSON.stringify(c.args, null, 2)}\n`, C.magenta);
-                    });
-                    debugAdapter.on("tool:result", (c: unknown) => {
-                        printDebug(`Tool result: ${JSON.stringify(c, null, 2)}\n`, C.dim);
-                    });
-                    debugAdapter.on("tool:error", (c: { name: string, error: string }) => {
-                        printDebug(`Tool error: ${JSON.stringify(c, null, 2)}\n`, C.red);
-                    });
-
-                    const debugOutput = await debugAdapter.chat(
-                        'debug',
-                        Side.Neutral,
-                        `Investigate bug report ${result.reportId}. Here is the bug information: ${JSON.stringify(result.details, null, 2)}`
-                    );
-                    self.logLine(`\n${C.yellow}${C.bold}✅ Debug Agent analysis complete.${C.reset}\n`);
-
-                    return { ...result, debugAnalysis: debugOutput };
-                }
-            };
-        }
-
-        const tools = [...client.tools.getTools(), reportBugTool];
+        const tools = [...client.tools.getTools(), baseReportBug];
         const systemPrompt = `You are an Action-Oriented QA Military Analyst assigned to the War Games Evaluation Group. 
 Your objective is to command units, test simulation boundaries, and report anomalies. You must prioritize ACTION over analysis paralysis.
 
@@ -292,13 +221,24 @@ BUG REPORTING RULES:
 
 INTERACTION & COGNITIVE RULES:
 - OBEY USER DIRECTIVES IMMEDIATELY. If the user tells you to pass time, execute the 'wait' tool in your very next response. 
-- Keep your internal reasoning brief. Do not write paragraphs of theoretical calculations. Identify the goal, calculate the parameters, and execute the tool.
+- Identify the goal, calculate the parameters, and execute the tool.
 
 War-Games Match Context:
 - Current match id: ${matchId}
 - Current side: ${side}
 
-Execute your duties with precision. Stop overthinking and push the simulation forward.`
+Do not fire weapon yourself, use the missions system to coordinate attacks.
+
+ALLWAYS REPORT ANY ANOMALIES, BUGS, ISSUES, OR UNEXPECTED BEHAVIOR WITH 'report_bug' TOOL.
+
+Execute your duties with precision. Stop overthinking and push the simulation forward.
+
+Its 10 ticks per second.
+
+`
+
+        console.log("TOOLS : ", tools.map(tool => tool.name))
+
         const adapter = new OllamaAdapter({
             ollama,
             model,

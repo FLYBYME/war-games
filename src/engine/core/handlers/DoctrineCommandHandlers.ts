@@ -10,8 +10,10 @@ import {
     AssignWeaponCommand,
     SetIntentCommand
 } from '../Command.js';
-import { DoctrineComponent, ROE, EMCONState, WRARule } from '../../components/Doctrine.js';
-import { MissionComponent, MissionType, MissionStatus } from '../../components/Missions.js';
+import { ROE, EMCONState, WRARule } from '../Types.js';
+import { DoctrineComponent } from '../../components/Doctrine.js';
+import { MissionType, MissionStatus } from '../Types.js';
+import { MissionComponent } from '../../components/Missions.js';
 import { GroupComponent, GroupFormation } from '../../components/Group.js';
 import { LogisticsComponent } from '../../components/Logistics.js';
 import { CombatComponent } from '../../components/Combat.js';
@@ -24,7 +26,10 @@ export class SetIntentHandler implements CommandHandler<SetIntentCommand> {
                 const entity = world.getEntity(intent.actorId);
                 if (entity) {
                     entity.removeComponent(MissionComponent);
-                    const newMission = new MissionComponent(intent.missionType as MissionType, intent.params);
+                    const newMission = new MissionComponent({
+                        missionType: intent.missionType as MissionType,
+                        params: intent.params as any
+                    });
                     entity.addComponent(newMission);
                 }
                 break;
@@ -68,14 +73,19 @@ export class SetIntentHandler implements CommandHandler<SetIntentCommand> {
             }
             case 'Group': {
                 const membersSet = new Set(intent.members);
-                const formation = (intent.formationType || GroupFormation.None) as GroupFormation;
+                const formation = (intent.formationType as GroupFormation) || GroupFormation.None;
 
                 for (const memberId of intent.members) {
                     const entity = world.getEntity(memberId);
                     if (entity) {
                         let groupComp = entity.getComponent(GroupComponent);
                         if (!groupComp) {
-                            groupComp = new GroupComponent(intent.groupId, intent.leaderId, membersSet, formation);
+                            groupComp = new GroupComponent({
+                                groupId: intent.groupId,
+                                leaderId: intent.leaderId,
+                                memberIds: membersSet,
+                                formation: formation as any
+                            });
                             entity.addComponent(groupComp);
                         } else {
                             groupComp.groupId = intent.groupId;
@@ -198,8 +208,11 @@ export class SetMissionHandler implements CommandHandler<SetMissionCommand> {
         const entity = world.getEntity(cmd.entityId);
         if (entity) {
             entity.removeComponent(MissionComponent);
-            const newMission = new MissionComponent(cmd.missionType as MissionType, cmd.params);
-            newMission.status = MissionStatus.Pending;
+            const newMission = new MissionComponent({
+                missionType: cmd.missionType as MissionType,
+                params: cmd.params as any,
+                status: MissionStatus.Pending
+            });
             entity.addComponent(newMission);
         }
     }

@@ -1,4 +1,4 @@
-import { GuidanceType, ScenarioManifest, SensorType, Side, WarheadType, MissionType } from "../sdk/index.js"
+import { GuidanceType, ScenarioManifest, SensorType, Side, WarheadType, MissionType, ROE, EMCONState, TurnaroundState } from "../sdk/index.js"
 
 export const scenarios: ScenarioManifest[] = [
     {
@@ -89,7 +89,7 @@ export const scenarios: ScenarioManifest[] = [
             {
                 type: 'Doctrine',
                 actorId: 'ship-1',
-                roe: 'Free',
+                roe: ROE.FREE,
                 wra: [
                     { targetType: 'Air', weaponType: 'sm-6', quantity: 2, maxRangePct: 1.0 },
                     { targetType: 'Air', weaponType: '20mm-phalanx', quantity: 50, maxRangePct: 1.0 },
@@ -100,7 +100,7 @@ export const scenarios: ScenarioManifest[] = [
             {
                 type: 'Doctrine',
                 actorId: 'plane-1',
-                roe: 'Free',
+                roe: ROE.FREE,
                 wra: [
                     { targetType: 'Surface', weaponType: '25mm-shell', quantity: 30, maxRangePct: 1.0 }
                 ]
@@ -221,7 +221,7 @@ export const scenarios: ScenarioManifest[] = [
                 id: "swarm-1",
                 profileId: "target-drone",
                 side: Side.Red,
-                pos: { x: 20000, y: 0, z: 500 },
+                pos: { x: 20000, y: 0, z: 5000 },
                 heading: 270,
                 speedKts: 300
             },
@@ -229,7 +229,7 @@ export const scenarios: ScenarioManifest[] = [
                 id: "swarm-2",
                 profileId: "target-drone",
                 side: Side.Red,
-                pos: { x: 22000, y: 500, z: 450 },
+                pos: { x: 22000, y: 500, z: 5000 },
                 heading: 270,
                 speedKts: 300
             }
@@ -261,8 +261,8 @@ export const scenarios: ScenarioManifest[] = [
             {
                 type: 'Doctrine',
                 side: Side.Blue,
-                roe: 'Free',
-                emcon: 'Charlie',
+                roe: ROE.FREE,
+                emcon: EMCONState.Charlie,
                 wra: [
                     { targetType: 'Air', weaponType: 'sm-6', quantity: 2 },
                     { targetType: 'Air', weaponType: 'aim-120', quantity: 1 },
@@ -274,8 +274,8 @@ export const scenarios: ScenarioManifest[] = [
             {
                 type: 'Doctrine',
                 side: Side.Red,
-                roe: 'Free',
-                emcon: 'Charlie',
+                roe: ROE.FREE,
+                emcon: EMCONState.Charlie,
                 wra: [
                     { targetType: 'Surface', weaponType: 'c-802', quantity: 2 },
                     { targetType: 'Air', weaponType: 'hq-16', quantity: 1 },
@@ -326,8 +326,8 @@ export const scenarios: ScenarioManifest[] = [
             {
                 type: 'Doctrine',
                 side: Side.Blue,
-                roe: 'Free',
-                emcon: 'Charlie',
+                roe: ROE.FREE,
+                emcon: EMCONState.Charlie,
                 wra: [
                     { targetType: 'Surface', weaponType: 'harpoon', quantity: 2, maxRangePct: 1.0 },
                     { targetType: 'Surface', weaponType: '127mm-shell', quantity: 1, maxRangePct: 0.95 }
@@ -336,8 +336,8 @@ export const scenarios: ScenarioManifest[] = [
             {
                 type: 'Doctrine',
                 side: Side.Red,
-                roe: 'Free',
-                emcon: 'Charlie',
+                roe: ROE.FREE,
+                emcon: EMCONState.Charlie,
                 wra: [
                     { targetType: 'Surface', weaponType: 'c-802', quantity: 2, maxRangePct: 1.0 },
                     { targetType: 'Surface', weaponType: '76mm-shell', quantity: 1, maxRangePct: 0.95 }
@@ -381,7 +381,7 @@ export const scenarios: ScenarioManifest[] = [
                 command: {
                     type: "SetMission",
                     entityId: "hornet-1",
-                    mission: { missionType: "Patrol", center: { x: 5000, y: 5000, z: 5000 }, radiusM: 2000, speedKts: 400 }
+                    mission: { type: "Patrol", params: { center: { x: 5000, y: 5000, z: 5000 }, radiusM: 2000, speedKts: 400 } }
                 }
             },
             {
@@ -393,7 +393,7 @@ export const scenarios: ScenarioManifest[] = [
                 command: {
                     type: "SetMission",
                     entityId: "hornet-2",
-                    mission: { missionType: "Patrol", center: { x: -5000, y: 5000, z: 5000 }, radiusM: 2000, speedKts: 400 }
+                    mission: { type: "Patrol", params: { center: { x: -5000, y: 5000, z: 5000 }, radiusM: 2000, speedKts: 400 } }
                 }
             }
         ],
@@ -406,7 +406,7 @@ export const scenarios: ScenarioManifest[] = [
                 type: "Logistics",
                 baseId: "cvn-78",
                 hostedEntities: ["hornet-1", "hornet-2"],
-                initialState: "Ready"
+                initialState: TurnaroundState.Ready
             },
             {
                 type: "Mission",

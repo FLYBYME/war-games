@@ -64,7 +64,7 @@ export class MapDataPipeline {
             const manifest = await UIStore.client.terrain.fetchManifest();
             
             this.data.set({
-                regions: manifest?.regions || [],
+                regions: (manifest?.regions as any) || [],
                 borders: [], // Future: Fetch from /api/terrain/borders
                 eez: []
             });

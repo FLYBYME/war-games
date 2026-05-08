@@ -1,7 +1,8 @@
 import { createApp } from './app.js';
 import { logger } from './core/Logger.js';
 import { config as serverConfig } from './core/Config.js';
-import { MatchService, ScenarioService } from '../sdk/index.js';
+import { MatchService } from './services/MatchService.js';
+import { ScenarioService } from './services/ScenarioService.js';
 import { NodeStorageProvider, NodeImageProvider } from './core/NodeProviders.js';
 import { SessionManager } from './core/SessionManager.js';
 import { registerRoutes } from './routes/root.js';

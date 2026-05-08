@@ -3,7 +3,7 @@ import { Command } from '../core/Command.js';
 import { MissionType } from '../core/Types.js';
 import { MissionComponent, MissionStatus, isMission } from '../components/Missions.js';
 import { DesiredState } from './ministries/IMinistry.js';
-import { TaskType, TaskStatus, isNavigateTask } from '../core/TaskGraph.js';
+import { TaskType, TaskStatus, isNavigateTask, TaskGraphManager } from '../core/TaskGraph.js';
 import { MinistryOfPatrol } from './ministries/MinistryOfPatrol.js';
 import { MinistryOfStrike } from './ministries/MinistryOfStrike.js';
 import { MinistryOfVBSS, VBSSDesiredState } from './ministries/MinistryOfVBSS.js';
@@ -88,7 +88,7 @@ export class MissionSystem implements ISystem {
             // Reconcile Desired State with Task Graph (General Navigation for targetPosition)
             const taskComp = entity.getComponent(TaskGraphComponent);
             if (taskComp && desired.targetPosition) {
-                const activeTasks = taskComp.graph.getActiveTasks();
+                const activeTasks = TaskGraphManager.getActiveTasks(taskComp.graph);
                 // Safe generic task retrieval via type guard
                 const navTask = activeTasks.find(isNavigateTask);
 
@@ -99,7 +99,7 @@ export class MissionSystem implements ISystem {
                         timeOverTargetTick = mission.params.timeOverTargetTick;
                     }
 
-                    taskComp.graph.addNode({
+                    TaskGraphManager.addNode(taskComp.graph, {
                         id: desired.objectiveId,
                         task: {
                             type: TaskType.Navigate,
@@ -130,7 +130,7 @@ export class MissionSystem implements ISystem {
         const taskId = `minelay-${mission.startTimeTick}`;
 
         if (!taskComp.graph.nodes.has(taskId)) {
-            taskComp.graph.addNode({
+            TaskGraphManager.addNode(taskComp.graph, {
                 id: taskId,
                 task: {
                     type: TaskType.Minelay,
@@ -152,7 +152,7 @@ export class MissionSystem implements ISystem {
 
         // 1. Intercept Task
         if (!taskComp.graph.nodes.has(interceptId)) {
-            taskComp.graph.addNode({
+            TaskGraphManager.addNode(taskComp.graph, {
                 id: interceptId,
                 task: {
                     type: TaskType.Intercept,
@@ -165,7 +165,7 @@ export class MissionSystem implements ISystem {
 
         // 2. Boarding Task
         if (!taskComp.graph.nodes.has(boardingId)) {
-            taskComp.graph.addNode({
+            TaskGraphManager.addNode(taskComp.graph, {
                 id: boardingId,
                 task: {
                     type: TaskType.Boarding,

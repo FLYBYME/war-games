@@ -1,7 +1,7 @@
 import { ISystem, IWorldView, SystemPhase } from '../core/ISystem.js';
 import { Command, FireWeaponCommand, FireSalvoCommand } from '../core/Command.js';
-import { DoctrineComponent, ROE } from '../components/Doctrine.js';
-import { IdentificationStatus } from '../core/Types.js';
+import { DoctrineComponent } from '../components/Doctrine.js';
+import { IdentificationStatus, ROE } from '../core/Types.js';
 import { CombatComponent } from '../components/Combat.js';
 import { TrackComponent } from '../components/Track.js';
 import { TransformComponent } from '../components/Physics.js';
@@ -36,7 +36,29 @@ export class WRAExecutorSystem implements ISystem {
 
             const usedMounts = new Set<number>();
 
-            for (const track of tracks.tracks.values()) {
+            // 1.5 Prioritize Tracks (Test 79)
+            const sortedTracks = Array.from(tracks.tracks.values()).sort((a, b) => {
+                const isWpnA = a.classification === 'Weapon';
+                const isWpnB = b.classification === 'Weapon';
+                
+                if (isWpnA && !isWpnB) return -1;
+                if (!isWpnA && isWpnB) return 1;
+
+                if (isWpnA && isWpnB) {
+                    const distA = VectorMath.distance(transform.position, a.position);
+                    const distB = VectorMath.distance(transform.position, b.position);
+                    const uA = VectorMath.normalize(VectorMath.subtract(a.position, transform.position));
+                    const vRelA = VectorMath.dot(a.velocity, uA);
+                    const uB = VectorMath.normalize(VectorMath.subtract(b.position, transform.position));
+                    const vRelB = VectorMath.dot(b.velocity, uB);
+                    const ttiA = vRelA < -1 ? distA / Math.abs(vRelA) : 9999;
+                    const ttiB = vRelB < -1 ? distB / Math.abs(vRelB) : 9999;
+                    return ttiA - ttiB;
+                }
+                return VectorMath.distance(transform.position, a.position) - VectorMath.distance(transform.position, b.position);
+            });
+
+            for (const track of sortedTracks) {
                 // Identification Check
                 let isHostile = false;
                 if (doctrine.roe === ROE.FREE) {
@@ -53,9 +75,12 @@ export class WRAExecutorSystem implements ISystem {
 
                 let rulesToEvaluate = doctrine.wraRules.filter(r => r.targetType === 'Any' || r.targetType === targetType);
 
-                // Fallback to a default rule if no specific rules are defined
+                // Fallback to a default rule if no specific rules are defined (Test 78)
                 if (rulesToEvaluate.length === 0 && doctrine.wraRules.length === 0) {
-                    rulesToEvaluate = [{ targetType: 'Any', weaponType: 'Any', quantity: 1, maxRangePct: 0.75 }];
+                    const defaultRule = targetType === 'Weapon' ? 
+                        { targetType: 'Any', weaponType: 'Any', quantity: 1, maxRangePct: 0.2 } : // CIWS range
+                        { targetType: 'Any', weaponType: 'Any', quantity: 1, maxRangePct: 0.75 };
+                    rulesToEvaluate = [defaultRule];
                 }
 
                 for (const rule of rulesToEvaluate) {

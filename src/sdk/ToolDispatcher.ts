@@ -27,6 +27,7 @@ export class ToolDispatcher {
     }
 
     public getTools(): WarGamesTool[] {
-        return Array.from(this.tools.values());
+        const tools = Array.from(this.tools.values());
+        return tools;
     }
 }

@@ -18,7 +18,7 @@ export class MineTriggerSystem implements ISystem {
 
         for (const mine of world.getEntities()) {
             const profileRegistry = world.profileRegistry as ProfileRegistry;
-            const profile = profileRegistry.get(mine.profileId) as EntityProfile | undefined;
+            const profile = profileRegistry.get(mine.profileId || '') as EntityProfile | undefined;
             if (profile?.type !== 'Mine') continue;
 
             const transform = mine.getComponent(TransformComponent);

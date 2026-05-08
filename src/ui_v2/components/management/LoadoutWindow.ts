@@ -52,11 +52,14 @@ export class LoadoutWindow extends Component {
             card.appendChild(stats);
 
             card.addEventListener('click', () => {
+                const selectedEntityId = UIStore.selectedEntityId.get();
+                if (!selectedEntityId) return;
+
                 presetContainer.querySelectorAll('.lo-card').forEach(c => c.classList.remove('is-selected'));
                 card.classList.add('is-selected');
                 selectedIdx = i;
                 if (UIStore.client) {
-                    UIStore.client.dispatch({ type: 'SetLoadout', loadout: p.name } as unknown as Record<string, unknown>);
+                    UIStore.client.dispatch({ type: 'SetLoadout', entityId: selectedEntityId, loadout: p.name });
                 }
             });
             presetContainer.appendChild(card);

@@ -58,7 +58,7 @@ export class MissionPanel extends Component {
         if (!id) return;
 
         try {
-            await sdkClient.dispatch({ type: 'SetMission', entityId: id, mission: { missionType: type as "Patrol" | "Strike" | "Escort" | "Idle" | "VBSS" | "MCM" | "Intercept" } });
+            await sdkClient.dispatch({ type: 'SetMission', entityId: id, mission: { type: type as any, params: {} } as any });
             console.log(`Assigned mission ${type} to ${id}`);
         } catch (err: unknown) {
             const error = err as Error;

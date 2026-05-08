@@ -112,17 +112,28 @@ export enum IdentificationStatus {
 }
 export const IdentificationStatusSchema = z.nativeEnum(IdentificationStatus);
 
+export const ESMBearingSchema = z.object({
+    observerId: z.string(),
+    observerPos: Vector3Schema.optional(),
+    bearingDeg: z.number(),
+    confidencePct: z.number(),
+    targetId: z.string().optional()
+});
+export type ESMBearing = z.infer<typeof ESMBearingSchema>;
+
 export const TrackSchema = z.object({
     id: z.string(),
     trueEntityId: z.string().describe("Hidden ground truth entity ID"),
     position: Vector3Schema,
     velocity: Vector3Schema,
+    firstSeenTick: z.number(),
     lastSeenTick: z.number(),
     cepM: z.number().describe("Circular Error Probable in meters"),
     status: TrackStatusSchema,
     classification: z.string().describe("e.g. 'Air-Commercial', 'Surface-Combatant'"),
     identification: IdentificationStatusSchema,
-    confidence: z.number().min(0).max(1).describe("Confidence in classification/ID")
+    confidence: z.number().min(0).max(1).describe("Confidence in classification/ID"),
+    bearings: z.array(ESMBearingSchema).optional().describe("Supporting ESM bearings for triangulation")
 });
 export type Track = z.infer<typeof TrackSchema>;
 
@@ -130,7 +141,7 @@ export interface IComponent {
     readonly type: string;
 }
 
-export type ComponentConstructor<T extends IComponent> = new (...args: unknown[]) => T;
+export type ComponentConstructor<T extends IComponent> = new (...args: any[]) => T;
 
 export enum SensorType {
     Radar = 'Radar',
@@ -181,6 +192,28 @@ export enum ROE {
     HOLD = 'Hold'
 }
 export const ROESchema = z.nativeEnum(ROE);
+
+export enum GroupFormation {
+    None = 'None',
+    LineAbreast = 'LineAbreast',
+    Column = 'Column',
+    Wedge = 'Wedge',
+    Diamond = 'Diamond'
+}
+export const GroupFormationSchema = z.nativeEnum(GroupFormation);
+
+export enum TurnaroundState {
+    None = 'None',
+    Landing = 'Landing',
+    Taxiing = 'Taxiing',
+    Rearming = 'Rearming',
+    Refueling = 'Refueling',
+    Boarding = 'Boarding',
+    PreFlight = 'PreFlight',
+    Ready = 'Ready',
+    InFlight = 'InFlight'
+}
+export const TurnaroundStateSchema = z.nativeEnum(TurnaroundState);
 
 export const WRARuleSchema = z.object({
     targetType: z.string(),

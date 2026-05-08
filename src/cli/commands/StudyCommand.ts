@@ -2,7 +2,7 @@ import * as fs from 'fs';
 import * as path from 'path';
 import { Command as CommanderCommand } from 'commander';
 import { BaseCommand } from '../core/BaseCommand.js';
-import { WarGamesClient, Side, ViewStatePayload, SimulationEvent } from '../../sdk/index.js';
+import { WarGamesClient, Side, ViewStatePayload, SimulationEvent, ViewUnitPayload } from '../../sdk/index.js';
 import { C } from '../core/Utils.js';
 import { scenarios } from '../../data/scenarios.js';
 
@@ -54,7 +54,8 @@ export class StudyCommand extends BaseCommand {
         const client = new WarGamesClient({ url: `ws://localhost:${port}` });
         await client.connect();
 
-        await client.joinMatch(Side.Neutral, `study-${timestamp}`);
+        const matchId = `study-${timestamp}`;
+        await client.joinMatch(Side.Neutral, matchId);
         await client.scenario.importScenario(selectedScenario);
         client.setTimeCompression(100);
 
@@ -63,36 +64,46 @@ export class StudyCommand extends BaseCommand {
 
         console.log(`${C.dim}Recording telemetry to ${studyDir}...${C.reset}`);
 
-        client.events.on('state:viewState', (vs: ViewStatePayload) => {
+        const onViewState = (vs: ViewStatePayload) => {
             lastVs = vs;
             tickCount = vs.tick;
-            
+
             // Record trajectories
             vs.units.forEach(u => {
                 trajStream.write(JSON.stringify({ tick: vs.tick, id: u.id, side: u.side, pos: u.pos, hp: u.hp }) + '\n');
             });
-        });
+        };
 
-        client.events.on('events:new', (evt: SimulationEvent) => {
+        const onEvent = (evt: SimulationEvent) => {
             eventStream.write(JSON.stringify(evt) + '\n');
-        });
+        };
+
+        client.events.on('state:viewState', onViewState);
+        client.events.on('events:new', onEvent);
 
         // Run until end condition (e.g. no more units on one side, or max ticks)
-        const MaxTicks = 10000;
+        const MaxTicks = 5000;
         return new Promise((resolve) => {
             const check = setInterval(async () => {
                 if (tickCount >= MaxTicks || (lastVs && this.isScenarioOver(lastVs))) {
                     clearInterval(check);
-                    
+
+                    // Stop listening to events before closing streams
+                    client.events.off('state:viewState', onViewState);
+                    client.events.off('events:new', onEvent);
+
                     eventStream.end();
                     trajStream.end();
 
                     const summary = `Study Complete: ${selectedScenario.name}\nDuration: ${tickCount} ticks\nLosses: ${JSON.stringify(lastVs?.losses)}\n`;
                     fs.writeFileSync(summaryFile, summary);
-                    
+
                     console.log(`\n${C.green}✔ Study Finished.${C.reset}`);
                     console.log(summary);
-                    
+
+                    // Clean up server-side match
+                    await client.deleteMatch(matchId);
+
                     client.disconnect();
                     resolve();
                     process.exit(0);
@@ -102,8 +113,14 @@ export class StudyCommand extends BaseCommand {
     }
 
     private isScenarioOver(vs: ViewStatePayload): boolean {
-        const blue = vs.units.filter(u => u.side === Side.Blue && !u.isDestroyed).length;
-        const red = vs.units.filter(u => u.side === Side.Red && !u.isDestroyed).length;
+        const isCombatant = (u: ViewUnitPayload) => {
+            const pid = (u.profileId || '').toLowerCase();
+            return !pid.includes('missile') && !pid.includes('projectile') && !pid.includes('torpedo') && !pid.includes('sonobuoy');
+        };
+
+        const blue = vs.units.filter(u => u.side === Side.Blue && !u.isDestroyed && isCombatant(u)).length;
+        const red = vs.units.filter(u => u.side === Side.Red && !u.isDestroyed && isCombatant(u)).length;
+        
         return blue === 0 || red === 0;
     }
 }

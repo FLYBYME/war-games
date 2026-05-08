@@ -65,6 +65,7 @@ export type ScenarioAssertion = z.infer<typeof ScenarioAssertionSchema>;
 
 export const WorldStateSchema = z.object({
     currentTick: z.number(),
+    seed: z.number().optional(),
     entities: z.array(z.object({
         id: z.string(),
         side: SideSchema,

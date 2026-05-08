@@ -50,7 +50,7 @@ export class EntityManager {
     ) { }
 
     public spawn(params: SpawnParams): Entity {
-        const id = params.id || `entity-${Math.random().toString(36).substring(2, 11)}`;
+        const id = params.id || `entity-${this.world.random.integer(0, 0xFFFFFFFF).toString(16)}`;
         const profile = params.profile || (params.profileId ? this.profiles.get(params.profileId) : undefined);
 
         if (!profile) {
@@ -72,11 +72,11 @@ export class EntityManager {
         }
 
         // 1. Mandatory Physical Presence
-        entity.addComponent(new TransformComponent(
+        entity.addComponent(new TransformComponent({
             position,
-            params.heading || 0,
-            params.pitch || 0
-        ));
+            rotation: params.heading || 0,
+            pitch: params.pitch || 0
+        }));
 
         // 2. Physics & Aero
         const hdgRad = (params.heading || 0) * (Math.PI / 180);
@@ -94,36 +94,32 @@ export class EntityManager {
             const initialFuel = profile.fuel?.maxKg || 0;
             const totalMass = massEmpty + initialFuel;
 
-            entity.addComponent(new KinematicsComponent(
-                vel,
-                { x: 0, y: 0, z: 0 },
-                { x: 0, y: 0, z: 0 },
-                totalMass,
-                (profile.aero?.dragCoeffCd || profile.kinematics.dragCoeff || 0.05),
-                0,
-                massEmpty
-            ));
+            entity.addComponent(new KinematicsComponent({
+                velocity: vel,
+                massKg: totalMass,
+                massEmptyKg: massEmpty,
+                dragCoeff: (profile.aero?.dragCoeffCd || profile.kinematics.dragCoeff || 0.05),
+                thrustN: 0
+            }));
         }
 
         if (profile.aero) {
-            entity.addComponent(new AeroComponent(
-                profile.aero.wingspanM || 10,
-                profile.aero.wingAreaS || 25,
-                profile.aero.dragCoeffCd || 0.02,
-                profile.aero.liftCoeffCl || 0.5,
-                profile.aero.maxG || 9,
-                0.05 // inducedDragFactor
-            ));
+            entity.addComponent(new AeroComponent({
+                wingspanM: profile.aero.wingspanM || 10,
+                wingAreaS: profile.aero.wingAreaS || 25,
+                dragCoeffCd: profile.aero.dragCoeffCd || 0.02,
+                liftCoeffCl: profile.aero.liftCoeffCl || 0.5,
+                maxG: profile.aero.maxG || 9
+            }));
         } else if (profile.type === 'Aircraft' || profile.type === 'Weapon' || profile.type === 'Helicopter') {
-            const isWeapon = profile.type === 'Weapon';
-            entity.addComponent(new AeroComponent(
-                isWeapon ? 1.0 : 10.0,  // wingspan
-                isWeapon ? 0.5 : 25.0,  // wingArea
-                0.02,                   // dragCoeffCd
-                0.3,                    // liftCoeffCl
-                isWeapon ? 50.0 : 9.0,  // maxG
-                0.05                    // inducedDragFactor
-            ));
+            const defaults = this.getPlatformDefaults(profile.type);
+            entity.addComponent(new AeroComponent({
+                wingspanM: defaults.wingspanM,
+                wingAreaS: defaults.wingAreaS,
+                dragCoeffCd: defaults.dragCoeffCd,
+                liftCoeffCl: defaults.liftCoeffCl,
+                maxG: defaults.maxG
+            }));
         }
 
         if (profile.type === 'Aircraft' || profile.type === 'Helicopter') {
@@ -135,34 +131,38 @@ export class EntityManager {
         // 3. Propulsion & Fuel
         const isShip = profile.type === 'Ship';
         if (profile.propulsion) {
-            entity.addComponent(new PropulsionComponent(
-                0, // throttle
-                0, // currentThrustN
-                profile.propulsion.maxThrustDryN || (isShip ? 5000000 : 50000),
-                profile.propulsion.maxThrustAbN || (isShip ? 5000000 : 80000),
-                profile.propulsion.spoolRate || 0.1,
-                profile.propulsion.sfcDry || 0.8,
-                profile.propulsion.sfcAb || 2.0,
-                profile.propulsion.abThreshold || 0.9
-            ));
+            entity.addComponent(new PropulsionComponent({
+                throttle: 0,
+                currentThrustN: 0,
+                maxThrustDryN: profile.propulsion.maxThrustDryN || (isShip ? 5000000 : 50000),
+                maxThrustAbN: profile.propulsion.maxThrustAbN || (isShip ? 5000000 : 80000),
+                spoolRate: profile.propulsion.spoolRate || 0.1,
+                sfcDry: profile.propulsion.sfcDry || 0.8,
+                sfcAb: profile.propulsion.sfcAb || 2.0,
+                abThreshold: profile.propulsion.abThreshold || 0.9
+            }));
         }
 
         if (profile.fuel) {
-            entity.addComponent(new FuelComponent(
-                profile.fuel.maxKg || 5000,
-                profile.fuel.maxKg || 5000
-            ));
+            entity.addComponent(new FuelComponent({
+                maxKg: profile.fuel.maxKg || 5000,
+                currentKg: profile.fuel.maxKg || 5000
+            }));
         }
 
         // 4. Autopilot & Comms
         if (profile.type !== 'Weapon' && profile.type !== 'Mine') {
             entity.addComponent(new NavigationComponent());
             entity.addComponent(new DoctrineComponent());
-            entity.addComponent(new DatalinkComponent('default-net'));
-            entity.addComponent(new MissionComponent(MissionType.Idle, {}));
+            entity.addComponent(new DatalinkComponent({ networkId: 'default-net' }));
+            entity.addComponent(new MissionComponent({ missionType: MissionType.Idle, params: {} }));
             entity.addComponent(new TaskGraphComponent());
         } else if (profile.type === 'Weapon') {
-            entity.addComponent(new MissionComponent(MissionType.Intercept, { targetId: 'unknown' }, MissionStatus.Active));
+            entity.addComponent(new MissionComponent({ 
+                missionType: MissionType.Intercept, 
+                params: { targetId: 'unknown' }, 
+                status: MissionStatus.Active 
+            }));
         }
 
         if (profile.stages && profile.stages.length > 0) {
@@ -181,13 +181,12 @@ export class EntityManager {
             entity.addComponent(new DetectionComponent());
             entity.addComponent(new TrackComponent());
             for (const s of profile.sensors) {
-                entity.addComponent(new SensorComponent(
-                    s.type as SensorType,
-                    s.maxRangeM || 20000,
-                    true,
-                    360, 50, -110, 3000, EMBand.S, SensorMode.Search, MountingType.Fixed, 30, 0, 0, undefined, undefined, undefined,
-                    s.name || `Sensor-${s.type}`
-                ));
+                entity.addComponent(new SensorComponent({
+                    sensorType: s.type as SensorType,
+                    maxRangeM: s.maxRangeM || 20000,
+                    isActive: true,
+                    name: s.name || `Sensor-${s.type}`
+                }));
             }
         }
 
@@ -214,52 +213,75 @@ export class EntityManager {
                 slewRate: m.slewRate,
                 alignmentThresholdDeg: m.alignmentThresholdDeg ?? 1.0
             }));
-            entity.addComponent(new CombatComponent(mounts, magazines));
+            entity.addComponent(new CombatComponent({ mounts, magazines }));
         }
 
         if (profile.aviation) {
-            entity.addComponent(new FacilityComponent(
-                FacilityType.Carrier,
-                [{ id: 'deck-1', lengthM: 300, isDamaged: false, isOccupied: false }], // Runways
-                profile.aviation.hangarCapacity || 4, // Hangar size
-                [], // hostedEntityIds
-                profile.aviation.aviationFuelKg || 500000,
-                new Map() // ammoReserves
-            ));
+            entity.addComponent(new FacilityComponent({
+                facilityType: FacilityType.Carrier,
+                runways: [{ id: 'deck-1', lengthM: 300, isDamaged: false, isOccupied: false }],
+                hangarCapacity: profile.aviation.hangarCapacity || 4,
+                fuelReservesKg: profile.aviation.aviationFuelKg || 500000
+            }));
         }
 
         // 5. Health & Vitality
         const healthParams = profile.health || { maxHp: 100 };
-        entity.addComponent(new HealthComponent(
-            healthParams.maxHp || 100,
-            healthParams.maxHp || 100
-        ));
+        entity.addComponent(new HealthComponent({
+            maxHp: healthParams.maxHp || 100,
+            hp: healthParams.maxHp || 100
+        }));
 
         // 6. Signatures
-        const baseRCS = profile.signatures?.baseRCS ?? (profile.type === 'Ship' ? 5000 : 5);
-        entity.addComponent(new RCSComponent(baseRCS));
+        const sigDefaults = this.getSignatureDefaults(profile.type || 'Aircraft');
+        const baseRCS = profile.signatures?.baseRCS ?? sigDefaults.rcs;
+        entity.addComponent(new RCSComponent({ baseRCS }));
 
         if (profile.type === 'Ship' || profile.type === 'Submarine') {
-            const baseSL = profile.signatures?.acousticSL ?? (profile.type === 'Ship' ? 140 : 110);
-            entity.addComponent(new AcousticSignatureComponent(baseSL));
+            const baseSL = profile.signatures?.acousticSL ?? sigDefaults.sl;
+            entity.addComponent(new AcousticSignatureComponent({ baseSL }));
         }
 
         // 7. Collision Physicality
-        let colRadius = 5;
-        let colLayer = 'default';
-        switch (profile.type) {
-            case 'Ship': colRadius = 150; colLayer = 'surface'; break;
-            case 'Aircraft': colRadius = 10; colLayer = 'air'; break;
-            case 'Weapon': colRadius = 1; colLayer = 'missile'; break;
-            case 'Facility': colRadius = 200; colLayer = 'surface'; break;
-        }
-        entity.addComponent(new CollisionComponent(colRadius, undefined, colLayer, ['surface', 'air', 'missile', 'default']));
+        const colDefaults = this.getCollisionDefaults(profile.type || 'Aircraft');
+        entity.addComponent(new CollisionComponent({
+            radiusMeters: colDefaults.radius,
+            layer: colDefaults.layer,
+            collidesWith: ['surface', 'air', 'missile', 'default']
+        }));
 
         // 8. Telemetry History
-        entity.addComponent(new TelemetryComponent(500));
+        entity.addComponent(new TelemetryComponent({ maxHistory: 500 }));
 
         this.world.addEntity(entity);
         return entity;
+    }
+
+    private getPlatformDefaults(type: string) {
+        switch (type) {
+            case 'Weapon': return { wingspanM: 1, wingAreaS: 0.5, dragCoeffCd: 0.02, liftCoeffCl: 0.3, maxG: 50 };
+            case 'Helicopter': return { wingspanM: 12, wingAreaS: 30, dragCoeffCd: 0.05, liftCoeffCl: 0.8, maxG: 4 };
+            default: return { wingspanM: 10, wingAreaS: 25, dragCoeffCd: 0.02, liftCoeffCl: 0.5, maxG: 9 };
+        }
+    }
+
+    private getSignatureDefaults(type: string) {
+        switch (type) {
+            case 'Ship': return { rcs: 5000, sl: 140 };
+            case 'Submarine': return { rcs: 1, sl: 110 };
+            case 'Weapon': return { rcs: 0.1, sl: 0 };
+            default: return { rcs: 5, sl: 0 };
+        }
+    }
+
+    private getCollisionDefaults(type: string) {
+        switch (type) {
+            case 'Ship': return { radius: 150, layer: 'surface' };
+            case 'Aircraft': return { radius: 10, layer: 'air' };
+            case 'Weapon': return { radius: 1, layer: 'missile' };
+            case 'Facility': return { radius: 200, layer: 'surface' };
+            default: return { radius: 5, layer: 'default' };
+        }
     }
 
     public getWorld(): World {

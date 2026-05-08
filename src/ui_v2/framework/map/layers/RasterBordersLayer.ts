@@ -15,7 +15,7 @@ export class RasterBordersLayer implements MapLayer {
             const regions = manifest?.regions || [];
 
             for (const region of regions) {
-                await this.loadRegion(region);
+                await this.loadRegion(region as any);
             }
         } catch (error) {
             console.warn('RasterBordersLayer: Failed to load manifest (expected if using WGT)', error);
