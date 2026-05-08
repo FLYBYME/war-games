@@ -82,7 +82,7 @@ export async function registerWebSocketPlugin(app: FastifyInstance) {
         const now = Date.now();
 
         for (const session of sessions) {
-            if (session.side === Side.Neutral || session.side === snapshot.side) {
+            if (session.side === snapshot.side) {
                 // Check Sync Rate Throttling
                 if (session.syncRateHz && session.syncRateHz > 0) {
                     const minIntervalMs = 1000 / session.syncRateHz;

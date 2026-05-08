@@ -90,6 +90,7 @@ export class FireWeaponHandler implements CommandHandler<FireWeaponCommand> {
 
                 // If we got here, we are aligned or it's a missile
                 magazine.currentCount--;
+                world.stats.munitionsExpended++;
                 // Update lastFireTick to reset reload timer
                 combat.mounts[cmd.mountIndex].lastFireTick = world.currentTick;
 
@@ -128,6 +129,7 @@ export class FireSalvoHandler implements CommandHandler<FireSalvoCommand> {
             if (magazine && magazine.currentCount > 0) {
                 const quantity = Math.min(cmd.quantity, magazine.currentCount);
                 magazine.currentCount -= quantity;
+                world.stats.munitionsExpended += quantity;
                 mount.lastFireTick = world.currentTick;
 
                 const weaponProfile = world.weaponProfiles.get(magazine.weaponProfileId);
@@ -173,6 +175,14 @@ export class ApplyDamageHandler implements CommandHandler<ApplyDamageCommand> {
 
             if (wasAlive && health.hp === 0) {
                 health.isDestroyed = true;
+                
+                // Track losses for combatants (exclude weapons/munitions)
+                const profile = world.profileRegistry.get(entity!.profileId || '');
+                if (profile?.type !== 'Weapon') {
+                    if (entity!.side === Side.Blue) world.stats.blue++;
+                    if (entity!.side === Side.Red) world.stats.red++;
+                }
+
                 world.events.emit({
                     type: 'EntityDestroyed',
                     tick: world.currentTick,
@@ -183,7 +193,6 @@ export class ApplyDamageHandler implements CommandHandler<ApplyDamageCommand> {
                 });
 
                 // Also immediately remove if it's a munition, otherwise let the world reaper handle it
-                const profile = world.profileRegistry.get(entity!.profileId || '');
                 if (profile?.type === 'Weapon') {
                     world.removeEntity(cmd.entityId);
                 }

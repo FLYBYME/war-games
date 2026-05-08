@@ -64,6 +64,7 @@ export class StudyCommand extends BaseCommand {
 
         console.log(`${C.dim}Recording telemetry to ${studyDir}...${C.reset}`);
 
+        const eventCounts = new Map<string, number>();
         const onViewState = (vs: ViewStatePayload) => {
             lastVs = vs;
             tickCount = vs.tick;
@@ -76,16 +77,24 @@ export class StudyCommand extends BaseCommand {
 
         const onEvent = (evt: SimulationEvent) => {
             eventStream.write(JSON.stringify(evt) + '\n');
+            const count = eventCounts.get(evt.type) || 0;
+            eventCounts.set(evt.type, count + 1);
         };
 
         client.events.on('state:viewState', onViewState);
         client.events.on('events:new', onEvent);
+        client.events.on('error', (err) => {
+            console.error(`${C.red}SDK Error: ${JSON.stringify(err)}${C.reset}`);
+        });
+
+        console.log(`${C.dim}Waiting for first viewstate...${C.reset}`);
 
         // Run until end condition (e.g. no more units on one side, or max ticks)
-        const MaxTicks = 5000;
+        const MaxTicks = 10000; // Increased for longer studies
         return new Promise((resolve) => {
             const check = setInterval(async () => {
                 if (tickCount >= MaxTicks || (lastVs && this.isScenarioOver(lastVs))) {
+                    console.log(`\n${C.green}Exit condition met: tickCount=${tickCount}${C.reset}`);
                     clearInterval(check);
 
                     // Stop listening to events before closing streams
@@ -95,11 +104,51 @@ export class StudyCommand extends BaseCommand {
                     eventStream.end();
                     trajStream.end();
 
-                    const summary = `Study Complete: ${selectedScenario.name}\nDuration: ${tickCount} ticks\nLosses: ${JSON.stringify(lastVs?.losses)}\n`;
-                    fs.writeFileSync(summaryFile, summary);
+                    // Generate Rich Summary
+                    let s = `================================================================================\n`;
+                    s += `📊 SCIENTIFIC STUDY REPORT: ${selectedScenario.name}\n`;
+                    s += `Generated: ${new Date().toLocaleString()}\n`;
+                    s += `Directory: ${studyDir}\n`;
+                    s += `================================================================================\n\n`;
+                    
+                    s += `## SIMULATION METRICS\n`;
+                    s += `Total Duration:    ${tickCount} ticks\n`;
+                    s += `Realtime Duration: ${(tickCount / 10).toFixed(1)}s (at 10Hz)\n`;
+                    s += `Final Losses (Blue): ${lastVs?.losses.blue || 0}\n`;
+                    s += `Final Losses (Red):  ${lastVs?.losses.red || 0}\n`;
+                    s += `Munitions Expended:  ${lastVs?.losses.munitionsExpended || 0}\n\n`;
+
+                    s += `## EVENT ANALYSIS\n`;
+                    if (eventCounts.size === 0) {
+                        s += `No significant events recorded.\n`;
+                    } else {
+                        Array.from(eventCounts.entries()).sort((a,b) => b[1] - a[1]).forEach(([type, count]) => {
+                            s += `- ${type.padEnd(20)}: ${count}\n`;
+                        });
+                    }
+                    s += `\n`;
+
+                    s += `## FINAL FORCE DISPOSITION\n`;
+                    s += `ID`.padEnd(30) + `SIDE`.padEnd(10) + `STATUS`.padEnd(15) + `HP`.padEnd(10) + `FUEL%\n`;
+                    s += `-`.repeat(80) + `\n`;
+
+                    if (lastVs) {
+                        const sortedUnits = [...lastVs.units].sort((a, b) => a.side.localeCompare(b.side));
+                        sortedUnits.forEach(u => {
+                            if (u.category === 'Weapon') return; // Skip in-flight munitions
+                            const status = u.isDestroyed ? 'DESTROYED' : 'OPERATIONAL';
+                            const fuelStr = (u.fuelPct * 100).toFixed(1) + '%';
+                            s += `${u.id.slice(0, 29).padEnd(30)}${u.side.padEnd(10)}${status.padEnd(15)}${u.hp.toString().padEnd(10)}${fuelStr}\n`;
+                        });
+                    }
+                    
+                    s += `\n================================================================================\n`;
+                    s += `END OF REPORT\n`;
+
+                    fs.writeFileSync(summaryFile, s);
 
                     console.log(`\n${C.green}✔ Study Finished.${C.reset}`);
-                    console.log(summary);
+                    console.log(`${C.dim}Summary written to ${summaryFile}${C.reset}`);
 
                     // Clean up server-side match
                     await client.deleteMatch(matchId);
@@ -120,7 +169,7 @@ export class StudyCommand extends BaseCommand {
 
         const blue = vs.units.filter(u => u.side === Side.Blue && !u.isDestroyed && isCombatant(u)).length;
         const red = vs.units.filter(u => u.side === Side.Red && !u.isDestroyed && isCombatant(u)).length;
-        
+
         return blue === 0 || red === 0;
     }
 }

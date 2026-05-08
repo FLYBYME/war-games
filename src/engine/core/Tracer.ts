@@ -14,14 +14,40 @@ export interface TraceLog {
  */
 export class Tracer {
     private readonly logs: TraceLog[] = [];
+    private maxCapacity: number = 10000;
+    public isEnabled: boolean = true;
+
+    public get size(): number { return this.logs.length; }
+
+    public setCapacity(capacity: number): void {
+        this.maxCapacity = capacity;
+        this.prune();
+    }
 
     public record(tick: number, cmd: Command): void {
+        if (!this.isEnabled) return;
+
+        // If we are at capacity, we would just prune anyway. 
+        // For high-performance simulations, we should avoid the clone overhead entirely.
+        if (this.logs.length >= this.maxCapacity) {
+            this.prune();
+        }
+
+        // Only clone if we have space. 
+        // Use a simpler spread for performance if the command doesn't have deep nested objects.
+        // Commands in this engine are generally flat payloads.
         this.logs.push({
             tick,
             entityId: cmd.entityId,
             commandType: cmd.constructor.name,
-            details: structuredClone(cmd) as unknown // Fast, modern deep copy
+            details: { ...cmd } as any
         });
+    }
+
+    private prune(): void {
+        if (this.logs.length > this.maxCapacity) {
+            this.logs.splice(0, this.logs.length - this.maxCapacity);
+        }
     }
 
     public getLogsForEntity(id: EntityId): TraceLog[] {

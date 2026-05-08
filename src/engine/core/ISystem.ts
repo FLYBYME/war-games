@@ -4,6 +4,12 @@ import { Vector3, TacticalEvent } from './Types.js';
 import { EventBus } from './EventBus.js';
 import { DeterministicRandom } from '../math/DeterministicRandom.js';
 
+export interface SimulationStats {
+    blue: number;
+    red: number;
+    munitionsExpended: number;
+}
+
 export interface IWorldView {
     readonly currentTick: number;
     readonly timestamp: number;
@@ -11,6 +17,7 @@ export interface IWorldView {
     readonly random: DeterministicRandom;
     readonly profileRegistry: unknown;
     readonly weaponProfiles: unknown;
+    readonly stats: SimulationStats;
     readonly events: EventBus;
     getEntity(id: string): Entity | undefined;
     getEntities(): IterableIterator<Entity>;

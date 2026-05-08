@@ -14,6 +14,8 @@ export async function registerSystemRoutes(app: FastifyInstance) {
                 external: Math.round(mem.external / 1024 / 1024)
             },
             simulation: stats,
+            totalTracerLogs: stats.totalTracerLogs,
+            totalOctreeNodes: stats.totalOctreeNodes,
             sessions: app.sessionManager.getAllSessions().length
         };
     });

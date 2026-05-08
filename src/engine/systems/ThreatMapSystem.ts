@@ -1,6 +1,7 @@
 import { ISystem, IWorldView, SystemPhase } from '../core/ISystem.js';
 import { Command } from '../core/Command.js';
-import { Side, Vector3 } from '../core/Types.js';
+import { Side } from '../core/Types.js';
+import type { Vector3 } from '../core/Types.js';
 import { CombatComponent } from '../components/Combat.js';
 import { TransformComponent } from '../components/Physics.js';
 import { WeaponProfileRegistry } from '../core/WeaponProfileRegistry.js';

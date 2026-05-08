@@ -1,5 +1,6 @@
 import { Entity } from './Entity.js';
-import { EntityId, Vector3, WorldState, WorldStateSchema, SimulationEvent, TacticalEvent } from './Types.js';
+import { WorldStateSchema } from './Types.js';
+import type { EntityId, Vector3, WorldState, SimulationEvent, TacticalEvent } from './Types.js';
 import {
     Command, SetPositionCommand, SetHeadingCommand, SetPitchCommand, SetAltitudeCommand, SetSpeedCommand,
     UpdateKinematicsCommand, SetThrottleCommand, ApplyForceCommand,
@@ -7,7 +8,7 @@ import {
     NextWeaponStageCommand, UpdateStageTicksCommand,
     FireWeaponCommand, FireSalvoCommand, ApplyDamageCommand, DestroyEntityCommand, DetonateCommand,
     UpdateEnvironmentCommand, CreateTrackCommand, UpdateTrackCommand,
-    DropTrackCommand, UpdateMountSlewCommand, SyncTracksCommand, UpdateSensorScanCommand,
+    DropTrackCommand, UpdateMountSlewCommand, SyncTracksCommand, UpdateSensorScanCommand, SyncESMBearingsCommand,
     UpdateThrustCommand, ConsumeFuelCommand,
     LandAtFacilityCommand, LaunchAircraftCommand, UpdateLogisticsStateCommand, TransferResourcesCommand,
     ApplySubsystemDamageCommand, SetConditionCommand,
@@ -62,6 +63,7 @@ export class World implements IWorldView {
     public readonly grid = new Octree();
 
     public sideLogistics = new Map<Side, SideLogistics>();
+    public readonly stats: { blue: number; red: number; munitionsExpended: number } = { blue: 0, red: 0, munitionsExpended: 0 };
 
     public currentTick: number = 0;
     public timestamp: number = 0;
@@ -71,6 +73,8 @@ export class World implements IWorldView {
     public get isPaused(): boolean { return this.clock.isPaused; }
     public set isPaused(val: boolean) { this.clock.isPaused = val; }
     public get timeCompression(): number { return this.clock.timeCompression; }
+    public getTracerSize(): number { return this.tracer.size; }
+    public getOctreeNodeCount(): number { return this.grid.getNodeCount(); }
 
     constructor(
         public readonly tracer: Tracer = new Tracer(),
@@ -114,6 +118,8 @@ export class World implements IWorldView {
         this.dispatcher.register(SetConditionCommand, new CombatHandlers.SetConditionHandler());
         this.dispatcher.register(DestroyEntityCommand, new CombatHandlers.DestroyEntityHandler());
         this.dispatcher.register(DetonateCommand, new CombatHandlers.DetonateHandler());
+        this.dispatcher.register(NextWeaponStageCommand, new CombatHandlers.NextWeaponStageHandler());
+        this.dispatcher.register(UpdateStageTicksCommand, new CombatHandlers.UpdateStageTicksHandler());
 
         // Sensors & Tracks
         this.dispatcher.register(AddDetectionCommand, new SensorHandlers.AddDetectionHandler());
@@ -123,20 +129,29 @@ export class World implements IWorldView {
         this.dispatcher.register(UpdateTrackCommand, new TrackHandlers.UpdateTrackHandler());
         this.dispatcher.register(DropTrackCommand, new TrackHandlers.DropTrackHandler());
         this.dispatcher.register(SyncTracksCommand, new TrackHandlers.SyncTracksHandler());
+        this.dispatcher.register(SyncESMBearingsCommand, new SensorHandlers.SyncESMBearingsHandler());
+        this.dispatcher.register(UpdateMountSlewCommand, new SensorHandlers.UpdateMountSlewHandler());
+        this.dispatcher.register(SetSensorStateCommand, new SensorHandlers.SetSensorStateHandler());
+        this.dispatcher.register(SetEMCONCommand, new SensorHandlers.SetEMCONHandler());
 
         // Navigation
         this.dispatcher.register(AddWaypointCommand, new NavHandlers.AddWaypointHandler());
         this.dispatcher.register(ClearWaypointsCommand, new NavHandlers.ClearWaypointsHandler());
         this.dispatcher.register(JoinFormationCommand, new NavHandlers.JoinFormationHandler());
         this.dispatcher.register(BreakFormationCommand, new NavHandlers.BreakFormationHandler());
+        this.dispatcher.register(SetFormationCommand, new NavHandlers.SetFormationHandler());
 
         // Logistics
         this.dispatcher.register(LandAtFacilityCommand, new LogisticsHandlers.LandAtFacilityHandler());
         this.dispatcher.register(LaunchAircraftCommand, new LogisticsHandlers.LaunchAircraftHandler());
+        this.dispatcher.register(ConsumeFuelCommand, new LogisticsHandlers.ConsumeFuelHandler());
+        this.dispatcher.register(TransferResourcesCommand, new LogisticsHandlers.TransferResourcesHandler());
+        this.dispatcher.register(UpdateLogisticsStateCommand, new LogisticsHandlers.UpdateLogisticsStateHandler());
 
         // Doctrine
         this.dispatcher.register(SetROECommand, new DoctrineHandlers.SetROEHandler());
         this.dispatcher.register(SetSideROECommand, new DoctrineHandlers.SetSideROEHandler());
+        this.dispatcher.register(SetMissionROECommand, new DoctrineHandlers.SetMissionROEHandler());
 
         // System
         this.dispatcher.register(SetSimulationSpeedCommand, new SystemHandlers.SetSimulationSpeedHandler());
@@ -147,6 +162,8 @@ export class World implements IWorldView {
         this.dispatcher.register(AssignWeaponCommand, new DoctrineHandlers.AssignWeaponHandler());
         this.dispatcher.register(SetEnvironmentCommand, new SystemHandlers.SetEnvironmentHandler());
         this.dispatcher.register(SpawnEntityCommand, new SystemHandlers.SpawnEntityHandler());
+        this.dispatcher.register(ChangeSideCommand, new SystemHandlers.ChangeSideHandler());
+        this.dispatcher.register(UpdateEnvironmentCommand, new SystemHandlers.UpdateEnvironmentHandler());
     }
 
     public async tick(dt: number): Promise<void> {
@@ -161,9 +178,11 @@ export class World implements IWorldView {
             this.timestamp += subDt;
 
             const simulationPhases = [
+                SystemPhase.Environment,
                 SystemPhase.Doctrine,
                 SystemPhase.Decision,
                 SystemPhase.Perception,
+                SystemPhase.Bridge,
                 SystemPhase.Forces,
                 SystemPhase.Physics,
                 SystemPhase.Lifecycle
@@ -214,7 +233,16 @@ export class World implements IWorldView {
                 tick: this.currentTick,
                 data: { phaseTimes }
             });
+
+            if (this.currentTick % 1000 === 0) {
+                this.prune();
+            }
         }
+    }
+
+    public prune(): void {
+        this.grid.prune();
+        // Tracer handles its own capacity, but we could explicitly clear here if needed.
     }
 
     public resolveCommands(commands: Command[]): void {

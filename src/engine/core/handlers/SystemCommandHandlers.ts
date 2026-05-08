@@ -1,9 +1,31 @@
 import { CommandHandler } from '../CommandDispatcher.js';
 import { World } from '../World.js';
-import { SpawnEntityCommand, ChangeSideCommand, SetSimulationSpeedCommand, SetEnvironmentCommand } from '../Command.js';
+import { SpawnEntityCommand, ChangeSideCommand, SetSimulationSpeedCommand, SetEnvironmentCommand, UpdateEnvironmentCommand } from '../Command.js';
 import { EntityManager } from '../EntityManager.js';
 import { EnvironmentComponent } from '../../components/Environment.js';
 import { logger } from '../Logger.js';
+
+export class UpdateEnvironmentHandler implements CommandHandler<UpdateEnvironmentCommand> {
+    execute(cmd: UpdateEnvironmentCommand, world: World): void {
+        const entity = world.getEntity(cmd.entityId);
+        if (entity) {
+            const env = entity.getComponent(EnvironmentComponent);
+            if (env) {
+                env.terrainHeightM = cmd.terrainHeightM;
+                env.airDensity = cmd.airDensity;
+                env.pressureRatio = cmd.pressureRatio;
+                env.isGrounded = cmd.isGrounded;
+                env.waterTemperatureC = cmd.waterTemperatureC;
+                env.soundSpeedMPS = cmd.soundSpeedMPS;
+                env.layerDepthM = cmd.layerDepthM;
+                env.isSubmerged = cmd.isSubmerged;
+                env.precipitationRateMMhr = cmd.precipitationRateMMhr;
+                env.cloudCover = cmd.cloudCover;
+                env.seaState = cmd.seaState;
+            }
+        }
+    }
+}
 
 export class SetEnvironmentHandler implements CommandHandler<SetEnvironmentCommand> {
     execute(cmd: SetEnvironmentCommand, world: World): void {

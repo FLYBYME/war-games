@@ -6,6 +6,10 @@ import { SimulationEvent } from '../../engine/core/Types.js';
  */
 export class MatchRecorder {
     private readonly logDir: string;
+    private ignoreList = [
+        'metrics:performance',
+        'TickCompleted',
+    ]
 
     constructor(
         private storage: IStorageProvider,
@@ -29,7 +33,7 @@ export class MatchRecorder {
 
     public async recordEvent(matchId: string, event: SimulationEvent) {
         // Skip high-frequency performance metrics to save disk space
-        if (event.type === 'metrics:performance') return;
+        if (this.ignoreList.includes(event.type)) return;
 
         const logPath = this.storage.join(this.logDir, `${matchId}.jsonl`);
         const line = JSON.stringify(event) + '\n';

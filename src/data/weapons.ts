@@ -1,4 +1,5 @@
-import { WeaponProfile, GuidanceType, WarheadType } from "../sdk/schemas/profiles.js";
+import { GuidanceType, WarheadType } from "../sdk/schemas/profiles.js";
+import type { WeaponProfile } from "../sdk/schemas/profiles.js";
 
 /**
  * Weapon Performance Profiles: Guidance, Range, and Lethality.

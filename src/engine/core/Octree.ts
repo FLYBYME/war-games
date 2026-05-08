@@ -23,6 +23,15 @@ export class Octree {
             { x: size / 2, y: size / 2, z: size / 2 }
         );
     }
+    
+    public getNodeCount(): number {
+        return this.countNodes(this.root);
+    }
+
+    private countNodes(node: OctreeNode): number {
+        if (!node.children) return 1;
+        return 1 + node.children.reduce((acc, child) => acc + this.countNodes(child), 0);
+    }
 
     private createNode(min: Vector3, max: Vector3): OctreeNode {
         return { bounds: { min, max }, entities: [], children: null };
@@ -42,6 +51,30 @@ export class Octree {
         }
         // Always delete from map, even if tree removal fails (it will be cleaned up on next subdivision)
         this.entityMap.delete(id);
+    }
+
+    public prune(): void {
+        this.pruneRecursive(this.root);
+    }
+
+    private pruneRecursive(node: OctreeNode): boolean {
+        if (!node.children) {
+            return node.entities.length === 0;
+        }
+
+        let allChildrenEmpty = true;
+        for (const child of node.children) {
+            if (!this.pruneRecursive(child)) {
+                allChildrenEmpty = false;
+            }
+        }
+
+        if (allChildrenEmpty) {
+            node.children = null;
+            return node.entities.length === 0;
+        }
+
+        return false;
     }
 
     private insert(node: OctreeNode, id: EntityId, pos: Vector3, depth: number): void {

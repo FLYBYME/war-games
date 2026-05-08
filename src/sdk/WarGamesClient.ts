@@ -371,14 +371,35 @@ export class WarGamesClient {
     private onMessage(event: MessageEvent): void {
         try {
             // Handle Binary ViewState Snapshots
-            if (event.data instanceof ArrayBuffer || (typeof Buffer !== 'undefined' && Buffer.isBuffer(event.data))) {
-                const ab = (event.data instanceof ArrayBuffer ? event.data : 
-                    event.data.buffer.slice(event.data.byteOffset, event.data.byteOffset + event.data.byteLength)) as ArrayBuffer;
-                
-                const snapshot = this.decoder.decode(ab);
-                this.lastViewState = snapshot;
-                this.currentTick = snapshot.tick;
-                this.events.emit('state:viewState', snapshot);
+            const isBinary = event.data instanceof ArrayBuffer || 
+                           (typeof Buffer !== 'undefined' && Buffer.isBuffer(event.data)) ||
+                           (event.data && typeof event.data === 'object' && 'buffer' in event.data);
+
+            if (isBinary) {
+                let ab: ArrayBufferLike;
+                if (event.data instanceof ArrayBuffer) {
+                    ab = event.data;
+                } else if (typeof Buffer !== 'undefined' && Buffer.isBuffer(event.data)) {
+                    ab = event.data.buffer.slice(event.data.byteOffset, event.data.byteOffset + event.data.byteLength);
+                } else {
+                    // Fallback for other array-like objects (e.g. {buffer: ArrayBuffer})
+                    const dataObj = event.data as { buffer: ArrayBufferLike };
+                    ab = dataObj.buffer;
+                }
+
+                try {
+                    const snapshot = this.decoder.decode(ab);
+                    if (snapshot) {
+                        this.lastViewState = snapshot;
+                        this.currentTick = snapshot.tick;
+                        this.events.emit('state:viewState', snapshot);
+                    }
+                } catch (decodeErr: unknown) {
+                    this.events.emit('error', { 
+                        message: 'Delta decoding failed', 
+                        error: decodeErr instanceof Error ? decodeErr.message : String(decodeErr) 
+                    });
+                }
                 return;
             }
 
@@ -396,7 +417,7 @@ export class WarGamesClient {
                     const payload = msg.payload;
                     const seq = payload.sequence;
                     const pending = seq ? this.pendingCommands.get(seq) : this.pendingCommands.get(payload.commandType);
-                    
+
                     if (pending) {
                         clearTimeout(pending.timeout);
                         if (seq) this.pendingCommands.delete(seq);

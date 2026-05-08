@@ -5,7 +5,8 @@ import { SensorComponent } from '../components/Sensors.js';
 import { TrackComponent } from '../components/Track.js';
 import { CombatComponent } from '../components/Combat.js';
 import { HealthComponent } from '../components/Health.js';
-import { ViewStatePayload, ViewUnitPayload, ViewTrackPayload, Side } from '../core/Types.js';
+import { Side } from '../core/Types.js';
+import type { ViewStatePayload, ViewUnitPayload, ViewTrackPayload } from '../core/Types.js';
 import { GeoProjection } from '../math/GeoProjection.js';
 import { TerrainOracle } from '../environment/TerrainOracle.js';
 import { WeaponProfileRegistry } from '../core/WeaponProfileRegistry.js';
@@ -40,8 +41,17 @@ export class ViewStateSystem implements ISystem {
         this.projection.setOrigin(lat, lon);
     }
 
+    private lastSnapshotTick: number = 0;
+    private lastSnapshotTime: number = 0;
+
     public async process(world: IWorldView, _dt: number): Promise<Command[]> {
-        if (world.currentTick % 2 === 0) { // 5Hz UI update
+        const now = performance.now();
+        const ticksSinceLast = world.currentTick - this.lastSnapshotTick;
+        
+        // Limit snapshot generation to ~10Hz real-time, OR every 50 ticks (fallback for high speed)
+        if (now - this.lastSnapshotTime >= 100 || ticksSinceLast >= 50) { 
+            this.lastSnapshotTime = now;
+            this.lastSnapshotTick = world.currentTick;
             const sides = [Side.Blue, Side.Red, Side.Neutral];
             for (const side of sides) {
                 const snapshot = await this.generateSnapshot(world, side);
@@ -88,6 +98,7 @@ export class ViewStateSystem implements ISystem {
                     vel: kin ? { x: kin.velocity.x, y: kin.velocity.y, z: kin.velocity.z } : undefined,
                     lla: { lat: geo.lat, lon: geo.lon, alt: transform.position.z },
                     heading: transform.rotation,
+                    category: entity.category as any, // Cast to any to bypass strict Zod enum check in TS if needed, but entity.category should match
                     hp: health?.hp || 100,
                     isDestroyed: health?.isDestroyed || false,
                     logState: 'Ready', // Mock for now
@@ -174,7 +185,11 @@ export class ViewStateSystem implements ISystem {
             origin: this.projection.getOrigin(),
             units,
             tracks,
-            losses: { blue: 0, red: 0, munitionsExpended: 0 },
+            losses: { 
+                blue: world.stats.blue, 
+                red: world.stats.red, 
+                munitionsExpended: world.stats.munitionsExpended 
+            },
             weather: {
                 cloudCover: 0.2,
                 seaState: 3,

@@ -13,7 +13,7 @@ export class DeltaDecoder {
         this.tracks.clear();
     }
 
-    public decode(input: ArrayBuffer | Uint8Array): ViewStateSnapshot {
+    public decode(input: ArrayBufferLike | Uint8Array): ViewStateSnapshot {
         const bytes = input instanceof Uint8Array ? input : new Uint8Array(input);
         const buffer = bytes.buffer;
         const view = new DataView(buffer, bytes.byteOffset, bytes.byteLength);

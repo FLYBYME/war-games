@@ -160,7 +160,7 @@ export class MatchService {
             world.events.on('ViewStateUpdated', (evt: unknown) => {
                 if (this.broadcastCallback) {
                     if (evt && typeof evt === 'object' && 'data' in evt) {
-                        this.broadcastCallback(matchId, (evt as { data: ViewStateSnapshot }).data);
+                        this.broadcastCallback(matchId, (evt as { data: any }).data);
                     }
                 }
             });
@@ -291,13 +291,15 @@ export class MatchService {
         return this.profiles.get(id);
     }
 
-    public getStats(): { totalMatches: number; totalEntities: number; profilesCount: number; weaponProfilesCount: number } {
+    public getStats(): { totalMatches: number; totalEntities: number; profilesCount: number; weaponProfilesCount: number; totalTracerLogs: number; totalOctreeNodes: number } {
         const matches = Array.from(this.matches.values());
         return {
             totalMatches: matches.length,
             totalEntities: matches.reduce((acc, world) => acc + Array.from(world.getEntities()).length, 0),
             profilesCount: this.profiles.list().length,
-            weaponProfilesCount: this.weaponProfiles.list().length
+            weaponProfilesCount: this.weaponProfiles.list().length,
+            totalTracerLogs: matches.reduce((acc, world) => acc + world.getTracerSize(), 0),
+            totalOctreeNodes: matches.reduce((acc, world) => acc + world.getOctreeNodeCount(), 0)
         };
     }
 

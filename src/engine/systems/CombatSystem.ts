@@ -3,7 +3,7 @@ import { Command, FireWeaponCommand } from '../core/Command.js';
 import { CombatComponent, Mount } from '../components/Combat.js';
 import { TrackComponent } from '../components/Track.js';
 import { DoctrineComponent } from '../components/Doctrine.js';
-import { Vector3, WeaponProfile, EntityProfile } from '../core/Types.js';
+import type { Vector3, WeaponProfile, EntityProfile } from '../core/Types.js';
 import { WeaponProfileRegistry, GuidanceType } from '../core/WeaponProfileRegistry.js';
 import { FireControl } from '../math/FireControl.js';
 import { KinematicsComponent, TransformComponent } from '../components/Physics.js';
@@ -105,6 +105,7 @@ export class CombatSystem implements ISystem {
                     if (dist <= maxRange && isAligned) {
                         logger.info(`Manual engagement`, { shooterId: entity.id, targetId: targetTrack.trueEntityId, weapon: weaponProfile.id });
                         commands.push(new FireWeaponCommand(entity.id, i, targetTrack.trueEntityId as string));
+                        world.stats.munitionsExpended++;
                         
                         world.recordEvent({
                             tick: world.currentTick,
