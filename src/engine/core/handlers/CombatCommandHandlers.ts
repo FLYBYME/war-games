@@ -80,23 +80,39 @@ export class FireWeaponHandler implements CommandHandler<FireWeaponCommand> {
                             if (azDiff > threshold || elDiff > threshold) {
                                 if (mount.slewRate > 0) {
                                     mount.currentTargetId = cmd.targetId;
-                                    logger.debug(`FireWeaponHandler rejected: mount ${mount.name} not aligned | targetAz: ${relativeAz.toFixed(1)} curAz: ${mount.currentAzimuth?.toFixed(1)} diff: ${azDiff.toFixed(1)}`);
-                                    return;
+                                    logger.debug(`FireWeaponHandler rejected: mount ${mount.name} not aligned | targetAz: ${relativeAz.toFixed(1)} curAz: ${mount.currentAzimuth?.toFixed(1)} | targetEl: ${relativeEl.toFixed(1)} curEl: ${mount.currentElevation?.toFixed(1)} | diffs: az=${azDiff.toFixed(1)} el=${elDiff.toFixed(1)}`);
+                                    throw new Error(`Mount ${mount.name} not aligned. Sluing to target... (Az: ${relativeAz.toFixed(1)}, El: ${relativeEl.toFixed(1)})`);
+                                } else {
+                                    throw new Error(`Mount ${mount.name} not aligned and cannot slew.`);
                                 }
                             }
                         }
+                    } else {
+                        throw new Error(`Target ${cmd.targetId} has no transform.`);
                     }
+                } else {
+                    throw new Error(`Target ${cmd.targetId} or weapon profile not found.`);
                 }
 
                 // If we got here, we are aligned or it's a missile
+                if (magazine.currentCount <= 0) {
+                    throw new Error(`Magazine ${magazine.name} is empty.`);
+                }
+                
+                const reloadProgress = world.currentTick - (mount.lastFireTick || 0);
+                if (reloadProgress < mount.reloadTicks) {
+                    throw new Error(`Mount ${mount.name} is reloading (${mount.reloadTicks - reloadProgress} ticks remaining).`);
+                }
+
                 magazine.currentCount--;
                 world.stats.munitionsExpended++;
                 // Update lastFireTick to reset reload timer
                 combat.mounts[cmd.mountIndex].lastFireTick = world.currentTick;
 
+                let munitionEntity;
                 // Use MunitionFactory for spawning
                 if (weaponProfile && (weaponProfile.type === 'Missile' || weaponProfile.type === 'Gun')) {
-                    MunitionFactory.spawnMunition(world, cmd.entityId, cmd.targetId, weaponProfile, mount.name || 'Default');
+                    munitionEntity = MunitionFactory.spawnMunition(world, cmd.entityId, cmd.targetId, weaponProfile, mount.name || 'Default');
                 }
 
                 world.events.emit({
@@ -106,7 +122,8 @@ export class FireWeaponHandler implements CommandHandler<FireWeaponCommand> {
                     targetId: cmd.targetId,
                     data: {
                         weaponProfileId: magazine.weaponProfileId,
-                        mountIndex: cmd.mountIndex
+                        mountIndex: cmd.mountIndex,
+                        munitionId: munitionEntity?.id
                     }
                 });
             }
@@ -215,6 +232,7 @@ export class DetonateHandler implements CommandHandler<DetonateCommand> {
                 tick: world.currentTick,
                 entityId: cmd.entityId,
                 data: {
+                    position: { ...transform.position },
                     radius: cmd.radius,
                     damage: cmd.damage
                 }

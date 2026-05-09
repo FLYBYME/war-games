@@ -50,21 +50,32 @@ export class CombatSystem implements ISystem {
                 const targetId = mount.currentTargetId || combat.currentTargetId;
 
                 if (targetId) {
-                    const unitTracks = entity.getComponent(TrackComponent);
-                    if (!unitTracks) continue;
+                    let targetPos: Vector3 | undefined = undefined;
+                    let targetVel: Vector3 = { x: 0, y: 0, z: 0 };
 
-                    let targetTrack = undefined;
-                    for (const t of unitTracks.tracks.values()) {
-                        if (t.trueEntityId === targetId) {
-                            targetTrack = t;
-                            break;
+                    // 0. Try to find in tracks first (standard workflow)
+                    if (tracks) {
+                        for (const t of tracks.tracks.values()) {
+                            if (t.trueEntityId === targetId) {
+                                targetPos = t.position;
+                                targetVel = t.velocity;
+                                break;
+                            }
                         }
                     }
 
-                    if (!targetTrack) continue;
-                    const targetPos = targetTrack.position;
+                    // 1. Fallback to direct entity access (manual override/test range)
+                    if (!targetPos) {
+                        const targetEntity = world.getEntity(targetId);
+                        if (targetEntity) {
+                            targetPos = targetEntity.getComponent(TransformComponent)?.position;
+                            targetVel = targetEntity.getComponent(KinematicsComponent)?.velocity || { x: 0, y: 0, z: 0 };
+                        }
+                    }
 
-                    // 1. Fire Control Solution
+                    if (!targetPos) continue;
+
+                    // 2. Fire Control Solution
                     if (!mount || !mount.magazineIndices) continue;
                     const magIdx = mount.magazineIndices[mount.activeMagazineIndex];
 
@@ -74,7 +85,6 @@ export class CombatSystem implements ISystem {
                     const weaponProfile = magazine ? this.weaponProfiles.get(magazine.weaponProfileId) : undefined;
                     
                     const shooterVel = entity.getComponent(KinematicsComponent)?.velocity || { x: 0, y: 0, z: 0 };
-                    const targetVel = targetTrack.velocity;
                     const env = entity.getComponent(EnvironmentComponent);
                     
                     // We use a default profile for slewing if no weapon is loaded, or the actual weapon profile
@@ -94,7 +104,8 @@ export class CombatSystem implements ISystem {
                     }
 
                     // 2. Engagement Logic
-                    if (world.currentTick - mount.lastFireTick < mount.reloadTicks) continue;
+                    const lastFire = mount.lastFireTick || 0;
+                    if (world.currentTick - lastFire < mount.reloadTicks) continue;
                     if (!magazine || magazine.currentCount <= 0) continue;
                     if (!weaponProfile) continue;
 
@@ -103,15 +114,14 @@ export class CombatSystem implements ISystem {
                     const maxRange = WeaponProfileRegistry.getEffectiveMaxRange(weaponProfile, shooterAlt);
 
                     if (dist <= maxRange && isAligned) {
-                        logger.info(`Manual engagement`, { shooterId: entity.id, targetId: targetTrack.trueEntityId, weapon: weaponProfile.id });
-                        commands.push(new FireWeaponCommand(entity.id, i, targetTrack.trueEntityId as string));
-                        world.stats.munitionsExpended++;
+                        logger.info(`Manual engagement`, { shooterId: entity.id, targetId: targetId, weapon: weaponProfile.id });
+                        commands.push(new FireWeaponCommand(entity.id, i, targetId as string));
                         
                         world.recordEvent({
                             tick: world.currentTick,
                             type: 'WeaponFired',
                             entityId: entity.id,
-                            targetId: targetTrack.trueEntityId,
+                            targetId: targetId,
                             data: {
                                 weaponProfileId: weaponProfile.id,
                                 mountIndex: i

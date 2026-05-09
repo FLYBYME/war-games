@@ -7,6 +7,7 @@ import { AeroComponent } from '../components/Aero.js';
 import { VectorMath } from '../math/VectorMath.js';
 import { Physics } from '../PhysicsConstants.js';
 import { ProfileRegistry } from '../core/ProfileRegistry.js';
+import { logger } from '../core/Logger.js';
 
 /**
  * AeroSystem: Generates Lift and Drag forces based on fluid dynamics.
@@ -68,52 +69,63 @@ export class AeroSystem implements ISystem {
                 
                 // Lift: Simplified AoA-dependent lift curve
                 // Cl = Cl_0 + Cl_alpha * alpha
-                // We assume Cl_0 is enough to maintain level flight at cruise speed 
-                // but for simplicity we'll just use a small offset so 0 AoA still has some lift.
-                const cl0 = 0.1; 
-                const clSlope = 2 * Math.PI;
+                const cl0 = aero.liftCoeffCl > 0 ? 0.1 : 0; 
+                const clSlope = aero.liftCoeffCl > 0 ? 2 * Math.PI : 0;
                 let cl = cl0 + clSlope * aoa;
-
-                if (isHelo && airspeedMag < 10.0) {
-                    // Helicopter Hover Lift: Provide enough lift to counter gravity
-                    const weight = kinematics.massKg * Physics.GRAVITY_G;
-                    const hoverLiftMag = weight / (q * aero.wingAreaS);
-                    cl = Math.max(cl, hoverLiftMag);
-                }
-                
-                // AoA Stall Clamp: Lift drops after ~15 deg (0.26 rad)
-                const stallAngleRad = 15 * Physics.DEG_TO_RAD;
-                if (Math.abs(aoa) > stallAngleRad) {
-                    cl = cl * (1.0 / (Math.abs(aoa) * Physics.RAD_TO_DEG - 14));
-                }
 
                 // Drag: Cd = Cd_base + K * Cl^2 + WaveDrag
                 let cd = aero.dragCoeffCd + aero.inducedDragFactor * (cl * cl);
 
-                // Simple Wave Drag (Prandtl-Glauert singularity workaround)
+                // Simple Wave Drag
                 if (aero.machNumber > 0.8) {
-                    const waveDrag = Math.pow(Math.max(0, aero.machNumber - 0.8), 2) * 5.0;
+                    const waveDrag = Math.pow(Math.max(0, aero.machNumber - 0.8), 2) * 0.5;
                     cd += waveDrag;
                 }
 
-                // 4. Generate Forces in Body Frame
-                // Drag is opposite to velocity vector
+                // 4. Generate Forces
                 const dragMag = Math.min(1e9, cd * q * aero.wingAreaS);
                 const dragBody = VectorMath.multiplyScalar(VectorMath.normalize(vBody), -dragMag);
                 
-                // Lift is perpendicular to velocity (simplified: mostly along body Z)
-                const liftMag = Math.min(1e9, cl * q * aero.wingAreaS);
-                const liftBody: Vector3 = { x: 0, y: 0, z: liftMag };
+                let worldForce: Vector3;
+                if (isHelo && airspeedMag < 15.0) {
+                    // Helicopter Hover/Transition Mode
+                    const weight = kinematics.massKg * Physics.GRAVITY_G;
+                    
+                    // Smooth transition from hover lift to wing lift
+                    const hoverFactor = Math.max(0, 1.0 - (airspeedMag / 15.0));
+                    
+                    // Hover lift is always World-UP (Simplified rotor model)
+                    const hoverLiftWorld: Vector3 = { x: 0, y: 0, z: weight * hoverFactor };
+                    
+                    // Wing lift (standard aero model)
+                    const wingLiftMag = cl * q * aero.wingAreaS * (1.0 - hoverFactor);
+                    const wingLiftBody: Vector3 = { x: 0, y: 0, z: wingLiftMag };
+                    const wingLiftWorld = VectorMath.rotateEuler(wingLiftBody, transform.rotation, transform.pitch, transform.roll);
 
-                const bodyForce = VectorMath.add(dragBody, liftBody);
+                    // Drag is still body-relative
+                    const dragWorld = VectorMath.rotateEuler(dragBody, transform.rotation, transform.pitch, transform.roll);
+                    
+                    worldForce = VectorMath.add(dragWorld, VectorMath.add(hoverLiftWorld, wingLiftWorld));
+                } else {
+                    // Standard Fixed-Wing or High-Speed Helo Aero
+                    // AoA Stall Clamp: Lift drops after ~15 deg (0.26 rad)
+                    const stallAngleRad = 15 * Physics.DEG_TO_RAD;
+                    if (Math.abs(aoa) > stallAngleRad) {
+                        cl = cl * (1.0 / (Math.abs(aoa) * Physics.RAD_TO_DEG - 14));
+                    }
 
-                // 5. Transform Body Forces to World Frame
-                const worldForce = VectorMath.rotateEuler(
-                    bodyForce,
-                    transform.rotation,
-                    transform.pitch,
-                    transform.roll
-                );
+                    const liftMag = Math.min(1e9, cl * q * aero.wingAreaS);
+                    const liftBody: Vector3 = { x: 0, y: 0, z: liftMag };
+                    const bodyForce = VectorMath.add(dragBody, liftBody);
+
+                    // Transform Body Forces to World Frame
+                    worldForce = VectorMath.rotateEuler(
+                        bodyForce,
+                        transform.rotation,
+                        transform.pitch,
+                        transform.roll
+                    );
+                }
 
                 commands.push(new ApplyForceCommand(
                     entity.id,

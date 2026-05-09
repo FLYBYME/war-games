@@ -36,3 +36,4 @@ spec/*
 *.wgt
 playwright-report/*
 test-results/*
+dump/*

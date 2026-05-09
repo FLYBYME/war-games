@@ -92,13 +92,12 @@ export class ViewStateSystem implements ISystem {
                 const unitPayload: ViewUnitPayload = {
                     id: entity.id,
                     side: entity.side,
-                    category: profile?.type as any, // Cast to any to match the protocol enum
+                    category: profile?.type,
                     parentId: entity.parentEntityId,
                     pos: { x: transform.position.x, y: transform.position.y, z: transform.position.z },
                     vel: kin ? { x: kin.velocity.x, y: kin.velocity.y, z: kin.velocity.z } : undefined,
                     lla: { lat: geo.lat, lon: geo.lon, alt: transform.position.z },
                     heading: transform.rotation,
-                    category: entity.category as any, // Cast to any to bypass strict Zod enum check in TS if needed, but entity.category should match
                     hp: health?.hp || 100,
                     isDestroyed: health?.isDestroyed || false,
                     logState: 'Ready', // Mock for now
@@ -121,7 +120,7 @@ export class ViewStateSystem implements ISystem {
                     mission: mission ? {
                         type: mission.missionType,
                         status: mission.status,
-                        params: mission.params as Record<string, unknown>
+                        params: mission.params
                     } : undefined,
                     activeTasks: []
                 };
@@ -208,8 +207,7 @@ export class ViewStateSystem implements ISystem {
     }
 
     public getEntityType(entity: Entity, world: IWorldView): string {
-        const profileRegistry = world.profileRegistry as ProfileRegistry;
-        const profile = profileRegistry.get(entity.profileId || '');
+        const profile = world.profileRegistry.get(entity.profileId || '');
         return profile?.type || 'Unknown';
     }
 }

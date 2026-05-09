@@ -183,7 +183,7 @@ export class MunitionFactory {
         }
 
         munition.addComponent(new GuidanceComponent({
-            guidanceType: compGuidanceType as any,
+            guidanceType: compGuidanceType,
             targetId,
             illuminatorId: compGuidanceType === CompGuidanceType.SARH ? shooterId : undefined
         }));

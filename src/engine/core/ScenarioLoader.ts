@@ -9,7 +9,7 @@ import { FacilityComponent, LogisticsComponent, TurnaroundState } from '../compo
 import { PropulsionComponent, EngineState } from '../components/Propulsion.js';
 import { logger } from './Logger.js';
 
-import type { ScenarioManifest, ScenarioEvent, ScenarioAssertion, ScenarioIntent, Vector3 } from '../../sdk/schemas/index.js';
+import type { ScenarioManifest, ScenarioEvent, ScenarioAssertion, ScenarioIntent, Vector3 } from './Types.js';
 export type { ScenarioManifest, ScenarioEvent, ScenarioAssertion, ScenarioIntent };
 
 /**

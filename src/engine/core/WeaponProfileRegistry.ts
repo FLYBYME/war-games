@@ -1,6 +1,6 @@
 import { z } from 'zod';
-import { GuidanceType, WarheadType, WeaponProfileSchema } from '../../sdk/schemas/index.js';
-import type { WeaponProfile } from '../../sdk/schemas/index.js';
+import { GuidanceType, WarheadType, WeaponProfileSchema } from './Types.js';
+import type { WeaponProfile } from './Types.js';
 export { GuidanceType, WarheadType };
 export type { WeaponProfile };
 
@@ -30,7 +30,7 @@ export class WeaponProfileRegistry {
     public static getEffectiveMaxRange(profile: WeaponProfile, shooterAlt: number): number {
         // Simple linear bonus for now: Rmax increases with altitude
         // In a pro sim, this would be a more complex spline or lookup table.
-        const altBonus = Math.max(0, shooterAlt) * (profile.altitudeRmaxBonus || 0);
+        const altBonus = Math.max(0, shooterAlt) * (profile.altitudeRmaxBonus ?? 0);
         return profile.maxRangeM + altBonus;
     }
 }

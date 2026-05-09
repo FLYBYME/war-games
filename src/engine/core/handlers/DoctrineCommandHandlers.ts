@@ -27,8 +27,8 @@ export class SetIntentHandler implements CommandHandler<SetIntentCommand> {
                 if (entity) {
                     entity.removeComponent(MissionComponent);
                     const newMission = new MissionComponent({
-                        missionType: intent.missionType as MissionType,
-                        params: intent.params as any
+                        missionType: intent.missionType,
+                        params: intent.params
                     });
                     entity.addComponent(newMission);
                 }
@@ -84,7 +84,7 @@ export class SetIntentHandler implements CommandHandler<SetIntentCommand> {
                                 groupId: intent.groupId,
                                 leaderId: intent.leaderId,
                                 memberIds: membersSet,
-                                formation: formation as any
+                                formation: formation
                             });
                             entity.addComponent(groupComp);
                         } else {
@@ -210,7 +210,7 @@ export class SetMissionHandler implements CommandHandler<SetMissionCommand> {
             entity.removeComponent(MissionComponent);
             const newMission = new MissionComponent({
                 missionType: cmd.missionType as MissionType,
-                params: cmd.params as any,
+                params: cmd.params,
                 status: MissionStatus.Pending
             });
             entity.addComponent(newMission);

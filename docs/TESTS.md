@@ -3,70 +3,70 @@
 This document contains a comprehensive checklist of 300 test cases designed to cover the core components, physics, combat systems, AI, and network protocols of the simulation engine.
 
 ## 1. Physics & Kinematics (1-20)
-- [x] 1. Calculate velocity correctly from speed and heading
-- [x] 2. Entity accelerates up to max speed over time
-- [x] 3. Entity decelerates correctly when commanded to lower speed
-- [x] 4. Turn rate respects maximum slew/turn rate limits
-- [x] 5. Altitude change obeys pitch and thrust constraints
-- [x] 6. Aerodynamic drag scales with velocity squared
-- [x] 7. Air density reduces aerodynamic drag at higher altitudes
-- [x] 8. VectorMath.magnitude returns correct length
-- [x] 9. VectorMath.dot returns correct dot product
-- [x] 10. VectorMath.cross returns correct cross product
-- [x] 11. GeoProjection correctly converts Lat/Lon to cartesian X/Y
-- [x] 12. GeoProjection correctly converts cartesian X/Y to Lat/Lon
-- [x] 13. Great circle distance calculation is accurate
-- [x] 14. Pitch changes affect horizontal velocity component
-- [x] 15. Fuel mass reduction correctly updates overall entity mass
-- [x] 16. Surface entities are clamped to Z=0 (prevent falling through world)
-- [x] 17. Kinematics integration respects delta time accurately
-- [x] 18. Entities cannot exceed Mach 10 safety limit
-- [x] 19. Gravity applies correctly to ballistic munitions
-- [x] 20. Subsurface entities can have negative altitude/Z component
+- [ ] 1. Calculate velocity correctly from speed and heading
+- [ ] 2. Entity accelerates up to max speed over time
+- [ ] 3. Entity decelerates correctly when commanded to lower speed
+- [ ] 4. Turn rate respects maximum slew/turn rate limits
+- [ ] 5. Altitude change obeys pitch and thrust constraints
+- [ ] 6. Aerodynamic drag scales with velocity squared
+- [ ] 7. Air density reduces aerodynamic drag at higher altitudes
+- [ ] 8. VectorMath.magnitude returns correct length
+- [ ] 9. VectorMath.dot returns correct dot product
+- [ ] 10. VectorMath.cross returns correct cross product
+- [ ] 11. GeoProjection correctly converts Lat/Lon to cartesian X/Y
+- [ ] 12. GeoProjection correctly converts cartesian X/Y to Lat/Lon
+- [ ] 13. Great circle distance calculation is accurate
+- [ ] 14. Pitch changes affect horizontal velocity component
+- [ ] 15. Fuel mass reduction correctly updates overall entity mass
+- [ ] 16. Surface entities are clamped to Z=0 (prevent falling through world)
+- [ ] 17. Kinematics integration respects delta time accurately
+- [ ] 18. Entities cannot exceed Mach 10 safety limit
+- [ ] 19. Gravity applies correctly to ballistic munitions
+- [ ] 20. Subsurface entities can have negative altitude/Z component
 
 ## 2. Sensors & Detection (21-40)
-- [x] 21. Radar detects target within max range and line of sight
-- [x] 22. Radar fails to detect target outside max range
-- [x] 23. Radar fails to detect target behind terrain (masking)
-- [x] 24. Sonar detects submarine within acoustic range
-- [x] 25. Thermal layers block sonar detection appropriately
-- [x] 26. ESM detects active radar emissions at extended range
-- [x] 27. IRST detects high-speed aircraft (heat signatures)
-- [x] 28. Visual sensors require daylight and clear weather
-- [x] 29. Active radar gives away position to enemy ESM
-- [x] 30. Sensor sweeping azimuth updates correctly per tick
-- [x] 31. Target outside sensor cone is not detected
-- [x] 32. Sea state degrades surface radar detection
-- [x] 33. Cloud cover degrades visual and IRST detection
-- [x] 34. Turning off active sensor removes emissions instantly
-- [x] 35. Radar Cross Section (RCS) scales detection probability
-- [x] 36. Acoustic Source Level (SL) scales sonar detection probability
-- [x] 37. Active sonar ping detects silent submarines
-- [x] 38. Multiple active sensors correctly combine detection probabilities
-- [x] 39. Stealth aircraft evade radar detection at medium range
-- [x] 40. Electronic warfare (ECM) reduces radar detection range
+- [ ] 21. Radar detects target within max range and line of sight
+- [ ] 22. Radar fails to detect target outside max range
+- [ ] 23. Radar fails to detect target behind terrain (masking)
+- [ ] 24. Sonar detects submarine within acoustic range
+- [ ] 25. Thermal layers block sonar detection appropriately
+- [ ] 26. ESM detects active radar emissions at extended range
+- [ ] 27. IRST detects high-speed aircraft (heat signatures)
+- [ ] 28. Visual sensors require daylight and clear weather
+- [ ] 29. Active radar gives away position to enemy ESM
+- [ ] 30. Sensor sweeping azimuth updates correctly per tick
+- [ ] 31. Target outside sensor cone is not detected
+- [ ] 32. Sea state degrades surface radar detection
+- [ ] 33. Cloud cover degrades visual and IRST detection
+- [ ] 34. Turning off active sensor removes emissions instantly
+- [ ] 35. Radar Cross Section (RCS) scales detection probability
+- [ ] 36. Acoustic Source Level (SL) scales sonar detection probability
+- [ ] 37. Active sonar ping detects silent submarines
+- [ ] 38. Multiple active sensors correctly combine detection probabilities
+- [ ] 39. Stealth aircraft evade radar detection at medium range
+- [ ] 40. Electronic warfare (ECM) reduces radar detection range
 
 ## 3. Tracking & Fusion (41-60)
-- [x] 41. New detection generates a Pending track
-- [x] 42. Three consecutive detections promote track to Active
-- [x] 43. Track position interpolates correctly between updates
-- [x] 44. Missing detections cause track to enter Coasting state
-- [x] 45. Coasting track degrades CEP over time
-- [x] 46. Track is Dropped after coasting for too long
-- [x] 47. Multiple sensors detecting same entity fuse into single track
-- [x] 48. Datalink shares tracks between friendly units
-- [x] 49. Track classification correctly identifies "Aircraft" vs "Ship"
-- [x] 50. IFF identifies friendly transponders automatically
-- [x] 51. Hostile act (firing weapon) marks track as Hostile
-- [x] 52. Track ID remains consistent across coasting periods
-- [x] 53. Fused track accuracy uses the best sensor's CEP
-- [x] 54. ESM-only track generates a line of bearing, not exact position
+- [ ] 41. New detection generates a Pending track
+- [ ] 42. Three consecutive detections promote track to Active
+- [ ] 43. Track position interpolates correctly between updates
+- [ ] 44. Missing detections cause track to enter Coasting state
+- [ ] 45. Coasting track degrades CEP over time
+- [ ] 46. Track is Dropped after coasting for too long
+- [ ] 47. Multiple sensors detecting same entity fuse into single track
+- [ ] 48. Datalink shares tracks between friendly units
+- [ ] 49. Track classification correctly identifies "Aircraft" vs "Ship"
+- [ ] 50. IFF identifies friendly transponders automatically
+- [ ] 51. Hostile act (firing weapon) marks track as Hostile
+- [ ] 52. Track ID remains consistent across coasting periods
+- [ ] 53. Fused track accuracy uses the best sensor's CEP
+- [ ] 54. ESM-only track generates a line of bearing, not exact position
 - [ ] 55. Triangulation of multiple ESM bearings resolves a track position
-- [x] 56. Track velocity is correctly estimated from position delta
-- [x] 57. High-speed maneuvering degrades track velocity estimate
-- [x] 58. Splitting tracks (e.g., missile launch) creates distinct track IDs
+- [ ] 56. Track velocity is correctly estimated from position delta
+- [ ] 57. High-speed maneuvering degrades track velocity estimate
+- [ ] 58. Splitting tracks (e.g., missile launch) creates distinct track IDs
 - [ ] 59. Jamming introduces ghost tracks or high CEP
-- [x] 60. Re-acquiring a dropped track generates a new track ID
+- [ ] 60. Re-acquiring a dropped track generates a new track ID
 
 ## 4. Combat & Fire Control (61-80)
 - [ ] 61. FireWeaponCommand successfully checks magazine capacity
@@ -244,71 +244,71 @@ This document contains a comprehensive checklist of 300 test cases designed to c
 - [ ] 219. Helicopters can land on small ship helipads
 - [ ] 220. VTOL aircraft do not require runway length
 
-## 12. Network & Protocol Serialization (221-240)
-- [ ] 221. Zod safely parses valid ViewStatePayload
-- [ ] 222. Zod rejects ViewStatePayload missing required fields
-- [ ] 223. Binary DeltaEncoder correctly compresses ViewState
-- [ ] 224. Binary DeltaDecoder accurately restores ViewState
-- [ ] 225. Delta encoding only sends changed properties for existing entities
-- [ ] 226. Delta decoding handles new entity spawns smoothly
-- [ ] 227. Delta decoding handles entity deletions correctly
-- [ ] 228. String tables reduce bandwidth for repeated strings (e.g. profiles)
-- [ ] 229. CommandFactory parses FireWeaponCommand JSON
-- [ ] 230. CommandFactory rejects invalid SetCourseCommand (missing coords)
-- [ ] 231. SetMissionSchema union strictly enforces parameter structures
-- [ ] 232. WebSocket connection handles message framing properly
-- [ ] 233. Client reconnects and requests full sync on connection drop
-- [ ] 234. Server Message Error payload correctly propagates to client
-- [ ] 235. ScenarioIntent Schema strictly validates nested WRA rules
-- [ ] 236. EngineEventSchema serializes weapon fire events
-- [ ] 237. EngineEventSchema serializes impact events
-- [ ] 238. Telemetry history is correctly chunked for historical sync
-- [ ] 239. Zod descriptions are exported successfully for LLM tools
-- [ ] 240. MatchInfo payload correctly omits heavy state arrays
+## 12. V2 API & SDK Architecture (221-240)
+- [ ] 221. Zod safely parses valid ToolContract input payload
+- [ ] 222. Zod rejects ToolContract input missing required fields
+- [ ] 223. RouteGenerator correctly maps Contract paths to Fastify routes
+- [ ] 224. CreateHandler merges URL params, Query, and Body into Tool input
+- [ ] 225. GlobalServerToolRegistry contains all 90+ defined domain tools
+- [ ] 226. SDK Generator outputs a zero-dependency standalone TypeScript client
+- [ ] 227. SDK Client methods provide full type-safety for input/output types
+- [ ] 228. Server correctly handles CORS and security headers for SDK access
+- [ ] 229. ToolBuilder defineTool enforces contract-implementation parity
+- [ ] 230. Fastify route handler catches and serializes Zod errors to 400 Bad Request
+- [ ] 231. SetMissionSchema union strictly enforces nested tool parameter structures
+- [ ] 232. SSE Stream (sim_get_stream) maintains persistent connection for telemetry
+- [ ] 233. SSE Stream emits heartbeats and periodic tick synchronization events
+- [ ] 234. Server Message Error payload correctly propagates Tool execution failures
+- [ ] 235. ScenarioIntent Schema strictly validates nested WRA rules at the API boundary
+- [ ] 236. EngineEventSchema serializes combat events via the history toolset
+- [ ] 237. SDK Client correctly handles baseUrl and credential propagation
+- [ ] 238. Telemetry history is correctly chunked for historical sync via history_ tools
+- [ ] 239. Zod descriptions are exported successfully for automated AI tool definitions
+- [ ] 240. MatchInfo payload correctly omits heavy world state arrays for listing
 
-## 13. Scenario & State Management (241-260)
-- [ ] 241. ScenarioLoader creates entities from profile definitions
-- [ ] 242. ScenarioLoader applies initial waypoints correctly
-- [ ] 243. ScenarioLoader assigns entities to correct sides
-- [ ] 244. ScenarioLoader imports GeoJSON zones as MapRegions
-- [ ] 245. Time compression 2x updates physics at double rate
-- [ ] 246. Time compression 10x skips render frames but maintains physics delta
-- [ ] 247. Pause state freezes all entity kinematics
-- [ ] 248. Pause state freezes sensor rotations and fuel burn
-- [ ] 249. Commands can be issued and queued while paused
-- [ ] 250. TickManager strictly maintains deterministic tick count
-- [ ] 251. Random seed ensures deterministic weapon accuracy
-- [ ] 252. Scenario Export serializes current world state to JSON
-- [ ] 253. Scenario Import accurately restores world state from JSON
-- [ ] 254. Multiple concurrent matches run in isolated World instances
-- [ ] 255. DatabaseService logs MatchInfo properly
-- [ ] 256. World reaper cleans up destroyed entities at end of tick
-- [ ] 257. World querying by quadtree returns accurate nearby entities
-- [ ] 258. Collision layer masking prevents subs from hitting aircraft
-- [ ] 259. Side identification prevents Blue forces from seeing Red truth data
-- [ ] 260. Neutral ships default to unknown classification until scanned
+## 13. V2 Persistence & Registry (241-260)
+- [ ] 241. Drizzle ORM correctly maps SQLite schema for unit profiles
+- [ ] 242. Drizzle ORM correctly maps SQLite schema for scenario templates
+- [ ] 243. ScenarioLoader initializes EntityManager from SQLite record
+- [ ] 244. DuckDB engine successfully initializes for historical analytics
+- [ ] 245. TelemetrySystem streams tick-delta data to Parquet files on disk
+- [ ] 246. HistoryHeatmap tool executes DuckDB SQL query against Parquet files
+- [ ] 247. SQLite 'matches' table tracks active and archived session metadata
+- [ ] 248. WeaponRegistry (SQLite) stores performance envelopes and seeker specs
+- [ ] 249. Drizzle Transaction ensures atomic updates during scenario save
+- [ ] 250. DuckDB accurately aggregates attrition metrics across multiple Parquet files
+- [ ] 251. Random seed in Match record ensures deterministic Monte Carlo runs
+- [ ] 252. Scenario Export writes current world state to SQLite template
+- [ ] 253. Scenario Import accurately restores world state from SQLite record
+- [ ] 254. Multiple concurrent matches run in isolated, memory-resident World instances
+- [ ] 255. DatabaseService (V2) handles SQLite connection pooling and migrations
+- [ ] 256. DuckDB successfully samples localized Sound Speed Profiles (SSP)
+- [ ] 257. World querying by quadtree returns accurate nearby entities for tool logic
+- [ ] 258. Collision layer masking in ECS is validated by entity_get_status tool
+- [ ] 259. Side identification prevents Blue SDK from seeing Red truth data via API
+- [ ] 260. Global Registry handles CRUD operations for all simulation static data
 
-## 14. Commands & Command Handlers (261-280)
-- [ ] 261. ApplyDamageCommand executes via CommandDispatcher
-- [ ] 262. DestroyEntityCommand completely removes entity
-- [ ] 263. SpawnEntityCommand instantiates new entity at runtime
-- [ ] 264. SetSensorStateCommand correctly toggles isActive flag
-- [ ] 265. SetEMCONCommand iterates all unit sensors and applies state
-- [ ] 266. SetUnitROECommand updates DoctrineComponent
-- [ ] 267. UpdateWRARulesCommand merges new rules into Doctrine
-- [ ] 268. JoinFormationCommand correctly sets leader ID
-- [ ] 269. BreakFormationCommand nullifies leader ID
-- [ ] 270. AddWaypointCommand appends to NavigationComponent array
-- [ ] 271. ClearWaypointsCommand truncates NavigationComponent array
-- [ ] 272. SetAltitudeCommand creates a dive/climb waypoint
-- [ ] 273. FireSalvoCommand handles quantity boundaries correctly
-- [ ] 274. NextWeaponStageCommand forces booster separation
-- [ ] 275. SetEnvironmentCommand alters wind speed globally
-- [ ] 276. LandAtFacilityCommand sets Navigation to facility coords
-- [ ] 277. DetonateCommand applies splash damage at coordinate
-- [ ] 278. SetConditionCommand applies fire/flooding flags
-- [ ] 279. SetIntentCommand executes complex group directives
-- [ ] 280. Command queues are flushed exactly once per tick
+## 14. V2 Tool Implementation & Commands (261-280)
+- [ ] 261. EntityCreate tool translates DTO to SpawnEntityCommand
+- [ ] 262. EntityDelete tool translates DTO to DestroyEntityCommand
+- [ ] 263. CombatFire tool maps input to FireWeaponCommand in the dispatcher
+- [ ] 264. SensorUpdate tool correctly toggles isActive flag in ECS component
+- [ ] 265. SensorSetEmcon tool iterates all unit sensors and applies EMCON state
+- [ ] 266. SideUpdateROE tool updates faction-wide DoctrineComponent
+- [ ] 267. CombatUpdateWRA tool merges new rules into unit Doctrine
+- [ ] 268. NavJoinFormation tool correctly sets leader ID in the ECS world
+- [ ] 269. NavBreakFormation tool nullifies leader ID and resumes independent nav
+- [ ] 270. NavAddWaypoint tool appends to NavigationComponent array via tool call
+- [ ] 271. NavClearWaypoints tool truncates NavigationComponent array via tool call
+- [ ] 272. KinematicsUpdate tool adjusts velocity and heading vectors directly
+- [ ] 273. CombatFireSalvo tool handles multi-munition launch logic in implementation
+- [ ] 274. CombatNextStage tool forces booster separation via tool call
+- [ ] 275. EnvUpdate tool alters wind speed globally via environment toolset
+- [ ] 276. LogisticsLand tool sets Navigation to facility coordinates
+- [ ] 277. CombatDetonate tool applies splash damage at specified coordinate
+- [ ] 278. LogisticsSetCondition tool applies fire/flooding status flags
+- [ ] 279. MatchSetIntent tool executes complex strategic evaluations
+- [ ] 280. Tool call handler executes CommandDispatcher.execute() exactly once per request
 
 ## 15. UI, MapRenderer & Tools (281-300)
 - [ ] 281. MapEngine renders units at correct geo-projected canvas coordinates

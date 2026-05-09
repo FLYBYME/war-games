@@ -34,9 +34,8 @@ export class ScenarioAutomationSystem implements ISystem {
         });
 
         this.assertions = assertions.map(a => {
-            const assertion = a as unknown as { tick?: number, trigger?: ScenarioTrigger };
-            if (assertion.tick !== undefined && !assertion.trigger) {
-                return { ...a, trigger: { type: 'tick', tick: assertion.tick } } as unknown as ScenarioAssertion;
+            if ('tick' in a && a.tick !== undefined && !('trigger' in a && a.trigger)) {
+                return { ...a, trigger: { type: 'tick' as const, tick: a.tick } };
             }
             return a;
         });
@@ -114,7 +113,7 @@ export class ScenarioAutomationSystem implements ISystem {
         const remainingAssertions: ScenarioAssertion[] = [];
         for (const assertion of this.assertions) {
             let evaluate = false;
-            const trigger = (assertion as unknown as { trigger?: ScenarioTrigger }).trigger;
+            const trigger = 'trigger' in assertion ? (assertion.trigger as ScenarioTrigger | undefined) : undefined;
 
             if (!trigger) {
                 // If no trigger, it might be a cumulative assertion (e.g. event_occurred byTick)

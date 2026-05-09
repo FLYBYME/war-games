@@ -1,24 +1,38 @@
-import { SimulationEvent } from '../../sdk/schemas/index.js';
+import { SimulationEvent } from './Types.js';
 
 export type EventHandler<T extends SimulationEvent> = (event: T) => void;
 
 /**
  * EventBus: Type-safe message passing for Engine V3.
+ * 
+ * The internal handler map stores functions typed as `(event: SimulationEvent) => void`.
+ * Narrowed handlers are wrapped at registration time so no `as unknown` casts are needed.
+ * A secondary Map tracks the wrapped versions for deregistration.
  */
 export class EventBus {
-    private readonly handlers = new Map<string, Set<EventHandler<SimulationEvent>>>();
+    private readonly handlers = new Map<string, Set<(event: SimulationEvent) => void>>();
     private readonly anyHandlers = new Set<(event: SimulationEvent) => void>();
+    // Map original handler function → wrapped handler for removal support
+    private readonly wrapperMap = new Map<Function, (event: SimulationEvent) => void>();
 
     public on<T extends SimulationEvent>(type: T['type'], handler: EventHandler<T>): void {
-        //console.log(`[EventBus] Registering handler for: ${type}`);
         if (!this.handlers.has(type)) {
             this.handlers.set(type, new Set());
         }
-        this.handlers.get(type)?.add(handler as unknown as EventHandler<SimulationEvent>);
+        // Create a base-typed wrapper that narrows at call time
+        const wrapper = (event: SimulationEvent): void => {
+            handler(event as T);
+        };
+        this.handlers.get(type)?.add(wrapper);
+        this.wrapperMap.set(handler, wrapper);
     }
 
     public off<T extends SimulationEvent>(type: T['type'], handler: EventHandler<T>): void {
-        this.handlers.get(type)?.delete(handler as unknown as EventHandler<SimulationEvent>);
+        const wrapper = this.wrapperMap.get(handler);
+        if (wrapper) {
+            this.handlers.get(type)?.delete(wrapper);
+            this.wrapperMap.delete(handler);
+        }
     }
 
     public onAny(handler: (event: SimulationEvent) => void): void {

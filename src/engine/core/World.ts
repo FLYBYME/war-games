@@ -161,14 +161,13 @@ export class World implements IWorldView {
         this.dispatcher.register(UpdateWRARulesCommand, new DoctrineHandlers.UpdateWRARulesHandler());
         this.dispatcher.register(AssignWeaponCommand, new DoctrineHandlers.AssignWeaponHandler());
         this.dispatcher.register(SetEnvironmentCommand, new SystemHandlers.SetEnvironmentHandler());
+        this.dispatcher.register(AddDetectionCommand, new SystemHandlers.AddDetectionHandler());
         this.dispatcher.register(SpawnEntityCommand, new SystemHandlers.SpawnEntityHandler());
         this.dispatcher.register(ChangeSideCommand, new SystemHandlers.ChangeSideHandler());
         this.dispatcher.register(UpdateEnvironmentCommand, new SystemHandlers.UpdateEnvironmentHandler());
     }
 
     public async tick(dt: number): Promise<void> {
-        if (this.clock.isPaused) return;
-
         const timeStep = dt * this.clock.timeCompression;
         const subSteps = this.clock.isHighFidelity ? 10 : 1;
         const subDt = timeStep / subSteps;
@@ -270,15 +269,18 @@ export class World implements IWorldView {
     }
 
     public removeEntity(id: EntityId): void {
-        this.entities.delete(id);
-        this.grid.removeEntity(id);
-        logger.info(`Entity removed: ${id}`);
-        this.events.emit({
-            type: 'EntityRemoved',
-            tick: this.currentTick,
-            entityId: id,
-            data: {}
-        });
+        const entity = this.entities.get(id);
+        if (entity) {
+            this.events.emit({
+                type: 'EntityRemoved',
+                tick: this.currentTick,
+                entityId: id,
+                data: {}
+            });
+            this.entities.delete(id);
+            this.grid.removeEntity(id);
+            logger.info(`Entity removed: ${id}`);
+        }
     }
 
     public getEntity(id: EntityId): Entity | undefined {
@@ -301,7 +303,7 @@ export class World implements IWorldView {
         this.systemsByPhase.set(system.phase, phaseSystems);
     }
 
-    public getSystem<T extends ISystem>(ctor: { new(...args: any[]): T }): T | undefined {
+    public getSystem<T extends ISystem>(ctor: new (...args: never[]) => T): T | undefined {
         return this.systems.find(s => s instanceof ctor) as T | undefined;
     }
 

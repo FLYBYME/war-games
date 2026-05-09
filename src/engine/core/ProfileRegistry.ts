@@ -1,5 +1,5 @@
-import { EntityProfileSchema } from '../../sdk/schemas/index.js';
-import type { EntityProfile, SensorProfile, MountProfile } from '../../sdk/schemas/index.js';
+import { EntityProfileSchema } from './Types.js';
+import type { EntityProfile, SensorProfile, MountProfile } from './Types.js';
 
 export type { MountProfile, SensorProfile };
 

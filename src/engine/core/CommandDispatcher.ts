@@ -7,6 +7,9 @@ export interface CommandHandler<T extends Command> {
 
 /**
  * CommandDispatcher: Decouples command execution logic from the World.
+ * 
+ * Handlers are stored with a base-typed wrapper to avoid `as unknown` casts.
+ * The wrapper safely narrows the command type at execution time.
  */
 export class CommandDispatcher {
     private handlers = new Map<string, CommandHandler<Command>>();
@@ -14,8 +17,14 @@ export class CommandDispatcher {
     /**
      * Register a handler for a specific command class.
      */
-    public register<T extends Command>(commandClass: Function, handler: CommandHandler<T>): void {
-        this.handlers.set(commandClass.name, handler as unknown as CommandHandler<Command>);
+    public register<T extends Command>(commandClass: { name: string }, handler: CommandHandler<T>): void {
+        // Wrap the narrowed handler to accept the base Command type
+        const baseHandler: CommandHandler<Command> = {
+            execute(command: Command, world: World): void {
+                handler.execute(command as T, world);
+            }
+        };
+        this.handlers.set(commandClass.name, baseHandler);
     }
 
     /**

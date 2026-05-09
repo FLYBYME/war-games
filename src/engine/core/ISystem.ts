@@ -3,6 +3,8 @@ import { Command } from './Command.js';
 import { Vector3, TacticalEvent } from './Types.js';
 import { EventBus } from './EventBus.js';
 import { DeterministicRandom } from '../math/DeterministicRandom.js';
+import { ProfileRegistry } from './ProfileRegistry.js';
+import { WeaponProfileRegistry } from './WeaponProfileRegistry.js';
 
 export interface SimulationStats {
     blue: number;
@@ -15,8 +17,8 @@ export interface IWorldView {
     readonly timestamp: number;
     readonly isPaused: boolean;
     readonly random: DeterministicRandom;
-    readonly profileRegistry: unknown;
-    readonly weaponProfiles: unknown;
+    readonly profileRegistry: ProfileRegistry;
+    readonly weaponProfiles: WeaponProfileRegistry;
     readonly stats: SimulationStats;
     readonly events: EventBus;
     getEntity(id: string): Entity | undefined;
@@ -40,7 +42,7 @@ export interface ISystem {
     readonly name: string;
     readonly phase: SystemPhase;
     readonly dependencies: string[];
-    
+
     /**
      * process: Pure logic phase.
      * V3: Returns a Promise of Commands to allow for I/O (Terrain/Atmosphere).

@@ -23,7 +23,7 @@ import { TaskGraphComponent } from '../components/TaskGraph.js';
 import { RCSComponent } from '../components/Signatures.js';
 import { AcousticSignatureComponent } from '../components/Subsurface.js';
 
-import type { EntityProfile } from '../../sdk/schemas/index.js';
+import type { EntityProfile } from './Types.js';
 
 import { TelemetryComponent } from '../components/Telemetry.js';
 

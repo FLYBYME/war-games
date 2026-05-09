@@ -1,9 +1,25 @@
 import { CommandHandler } from '../CommandDispatcher.js';
 import { World } from '../World.js';
-import { SpawnEntityCommand, ChangeSideCommand, SetSimulationSpeedCommand, SetEnvironmentCommand, UpdateEnvironmentCommand } from '../Command.js';
+import { SpawnEntityCommand, ChangeSideCommand, SetSimulationSpeedCommand, SetEnvironmentCommand, UpdateEnvironmentCommand, AddDetectionCommand } from '../Command.js';
 import { EntityManager } from '../EntityManager.js';
 import { EnvironmentComponent } from '../../components/Environment.js';
+import { DetectionComponent } from '../../components/Sensors.js';
 import { logger } from '../Logger.js';
+
+export class AddDetectionHandler implements CommandHandler<AddDetectionCommand> {
+    execute(cmd: AddDetectionCommand, world: World): void {
+        const entity = world.getEntity(cmd.entityId);
+        if (entity) {
+            let detection = entity.getComponent(DetectionComponent);
+            if (!detection) {
+                detection = new DetectionComponent();
+                entity.addComponent(detection);
+            }
+            detection.detectedEntityIds.add(cmd.targetId);
+            logger.info(`Manual detection added: ${entity.id} -> ${cmd.targetId}`);
+        }
+    }
+}
 
 export class UpdateEnvironmentHandler implements CommandHandler<UpdateEnvironmentCommand> {
     execute(cmd: UpdateEnvironmentCommand, world: World): void {

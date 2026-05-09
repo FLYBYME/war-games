@@ -10,9 +10,20 @@ export class TransformComponent implements IComponent {
     public pitch: number = 0;    // Pitch in degrees
     public roll: number = 0;     // Roll in degrees
 
+    get heading() { return this.rotation; }
+    set heading(v: number) { this.rotation = v; }
+
     constructor(init?: Partial<TransformComponent>) {
         if (init) Object.assign(this, init);
     }
+}
+
+/**
+ * SideComponent: Represents the organizational side of an entity.
+ */
+export class SideComponent implements IComponent {
+    readonly type = 'SideComponent';
+    constructor(public side: string = 'Neutral') {}
 }
 
 /**

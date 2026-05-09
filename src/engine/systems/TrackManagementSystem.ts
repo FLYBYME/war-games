@@ -1,4 +1,5 @@
 import { ISystem, IWorldView, SystemPhase } from '../core/ISystem.js';
+import { Entity } from '../core/Entity.js';
 import { Command, CreateTrackCommand, UpdateTrackCommand, DropTrackCommand } from '../core/Command.js';
 import { DetectionComponent } from '../components/Sensors.js';
 import type { ESMBearing } from '../components/Sensors.js';
@@ -275,7 +276,7 @@ export class TrackManagementSystem implements ISystem {
         return commands;
     }
 
-    private checkHostileAct(world: IWorldView, target: any, track: Track) {
+    private checkHostileAct(world: IWorldView, target: Entity, track: Track) {
         if (track.identification === IdentificationStatus.HOSTILE) return;
         const targetCombat = target.getComponent(CombatComponent);
         if (targetCombat) {

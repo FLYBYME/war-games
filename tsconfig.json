@@ -3,7 +3,11 @@
     "target": "ESNext",
     "module": "ESNext",
     "moduleResolution": "Bundler",
-    "lib": ["ESNext", "DOM", "DOM.Iterable"],
+    "lib": [
+      "ESNext",
+      "DOM",
+      "DOM.Iterable"
+    ],
     "strict": true,
     "noImplicitAny": true,
     "esModuleInterop": true,
@@ -13,9 +17,20 @@
     "noEmit": true,
     "baseUrl": ".",
     "paths": {
-      "war-games/sdk": ["./src/sdk/index.ts"]
+      "@sdk/*": [
+        "./src/sdk_v2/*"
+      ],
+      "@engine/*": [
+        "./src/engine/*"
+      ]
     },
     "allowJs": true
   },
-  "include": ["src/**/*"]
+  "include": [
+    "src/**/*"
+  ],
+  "exclude": [
+    "node_modules",
+    "dump"
+  ]
 }

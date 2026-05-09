@@ -5,7 +5,7 @@ export interface TraceLog {
     tick: number;
     entityId: EntityId;
     commandType: string;
-    details: unknown;
+    details: Record<string, string | number | boolean | null | object>;
 }
 
 /**
@@ -36,11 +36,22 @@ export class Tracer {
         // Only clone if we have space. 
         // Use a simpler spread for performance if the command doesn't have deep nested objects.
         // Commands in this engine are generally flat payloads.
+        const commandDetails: Record<string, string | number | boolean | null | object> = {};
+        const cmdRecord = Object.getOwnPropertyNames(cmd);
+        for (const key of cmdRecord) {
+            const descriptor = Object.getOwnPropertyDescriptor(cmd, key);
+            if (descriptor && 'value' in descriptor) {
+                const val = descriptor.value;
+                if (val === null || typeof val === 'string' || typeof val === 'number' || typeof val === 'boolean' || typeof val === 'object') {
+                    commandDetails[key] = val;
+                }
+            }
+        }
         this.logs.push({
             tick,
             entityId: cmd.entityId,
             commandType: cmd.constructor.name,
-            details: { ...cmd } as any
+            details: commandDetails
         });
     }
 

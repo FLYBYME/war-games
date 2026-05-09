@@ -1,7 +1,7 @@
 import { Command as CommanderCommand } from 'commander';
 import { BaseCommand } from '../core/BaseCommand.js';
-import { startServer } from '../../server/index.js';
 import { C } from '../core/Utils.js';
+import { createServer } from '../../server_v2/server.js';
 
 interface StartServerOptions {
     port?: number;
@@ -26,8 +26,11 @@ export class StartServerCommand extends BaseCommand {
         console.log(`${C.blue}${C.bold}Starting War-Games Server...${C.reset}`);
 
         try {
-            const { port: finalPort } = await startServer(port, logLevel);
-            console.log(`${C.green}${C.bold}✔ Server is up and running on port ${finalPort}${C.reset}`);
+            const finalPort = port || 3000;
+            const app = await createServer();
+            await app.listen({ port: finalPort, host: '0.0.0.0' });
+            
+            console.log(`${C.green}${C.bold}✔ V2 Server is up and running on port ${finalPort}${C.reset}`);
             console.log(`${C.dim}Press Ctrl+C to stop the server${C.reset}\n`);
 
             // Keep the process alive

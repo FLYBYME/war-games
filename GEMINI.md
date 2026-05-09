@@ -43,15 +43,17 @@ export const UserSchema = z.object({ id: z.string() });
 export type User = z.infer<typeof UserSchema>;
 ```
 
-## 3. Type Assertions (`as Type`) are a Code Smell
-Casting using the `as` keyword tells the compiler to ignore its own inference. This masks structural errors.
+## 3. Type Assertions and Non-Nulls are a Code Smell
+Casting using the `as` keyword or the non-null assertion `!` tells the compiler to ignore its own inference. This masks structural errors and causes runtime crashes.
 
-* **Rule:** Avoid `as Type` unless interacting with external boundaries where type definition is impossible (e.g., specific DOM elements like `e.target as HTMLInputElement`).
+* **Rule: No `as Type` Casting:** Avoid `as Type` unless interacting with external boundaries where type definition is impossible (e.g., specific DOM elements like `e.target as HTMLInputElement`).
+* **Rule: No Non-Null Assertions (`!`):** NEVER use the `!` operator to override nullability checks. If a value might be null/undefined, handle it with an explicit `if` check, a default value, or throw a descriptive error.
 * **Alternative:** Use structural checking, discriminated unions, or type predicate functions (`arg is Type`).
 
 **Bad:**
 ```typescript
-const track = entity as Track;
+const track = entity as Track; // Unsafe casting
+const name = unit.profile!.name; // Potential runtime crash
 ```
 
 **Good:**
@@ -59,6 +61,10 @@ const track = entity as Track;
 if (isTrack(entity)) {
     // entity is safely narrowed to Track
 }
+
+const profile = unit.profile;
+if (!profile) throw new Error(`Unit ${unit.id} has no profile`);
+const name = profile.name; // Safely accessed
 ```
 
 ## 4. Strict Scoping and Control Flow
@@ -86,53 +92,49 @@ switch (action) {
 }
 ```
 
-## 5. Architectural Boundaries
-Data passing from the Engine/Server to the UI must maintain its type integrity across the gap.
+## 5. Architectural Boundaries (V2)
+Data passing from the Engine/Server to the UI must maintain its type integrity across the gap. The V2 architecture enforces this via a **Generated SDK** and **Auto-Routing**.
 
 * **Rule:** Do not pass raw generic blobs into presentation components.
 * **Rule:** Destructure and pass explicitly typed primitives or inferred Zod objects to UI components. If a map layer needs a unit's WEZ (Weapon Engagement Zone), pass the `wez` array specifically, not the entire untyped unit object.
+* **Rule:** UI and External Scripts must use the generated `WarGamesClientV2` to ensure 100% type-safe API interactions.
 
-## 6. Universal Command Pattern (CQRS)
-To prevent interface fragmentation and ensure total parity between the UI, Server, and AI Agents, all state-mutating actions MUST utilize the Universal Command Pattern. 
+## 6. Unified Tool Contract (V2)
+To ensure total parity between the UI, Server, and AI Agents, every action and query in the system MUST be defined as a `WarGamesTool` using a **Unified Tool Contract**.
 
-* **Rule: Single Source of Truth:** All commands must be defined as strict Zod objects and exported within the master `EngineCommandSchema` `z.discriminatedUnion`.
-* **Rule: Strict Payloads (No Unknowns):** Never use `z.record(z.unknown())`, `z.any()`, or loose generic types to bypass strict typing on complex commands. If a command like `SetMission` has wildly different parameters based on the mission type, you MUST use a nested discriminated union. 
-* **Rule: Universal Dispatch:** The SDK, UI, CLI, and test suites must never use specialized wrapper functions (e.g., `setCourse(x,y)`). They must construct the raw command object and pass it to the singular `executeCommand(payload)` method.
-* **Rule: Self-Documenting LLM Schemas:** Every field in a command schema MUST include a `.describe("...")` annotation. AI Tools are generated directly and automatically from these Zod schemas; if you omit descriptions, the AI will not know how to command the engine.
+* **Rule: Source of Truth (Contract):** Every capability must be defined in `src/sdk_v2/contracts` using `defineContract`. This includes Zod schemas for input/output and REST metadata.
+* **Rule: Implementation Split:** The server-side logic MUST live in `src/server_v2/tools` and be defined using `defineTool`. Implementation code (like ECS engine logic) must never be imported into the Contract files.
+* **Rule: Strict Payloads (No Unknowns):** Never use `z.record(z.unknown())`, `z.any()`, or loose generic types. Use discriminated unions for complex, polymorphic payloads.
+* **Rule: Self-Documenting Annotations:** Every field in an `inputSchema` MUST include a `.describe("...")` annotation. This is mandatory for auto-generating AI tool definitions and SDK documentation.
 
-**Bad (Fragmented & Lazy):**
+**Bad (Leaky & Untyped):**
 ```typescript
-// Hand-written wrapper
-function assignMission(id: string, missionType: string, params: any) { ... }
-
-// Lazy Schema
-const SetMissionSchema = z.object({
-    type: z.literal('SetMission'),
-    entityId: z.string(),
-    missionType: z.string(),
-    params: z.record(z.unknown()) // ILLEGAL: Allows AI hallucinations
-});
+// Server logic leaked into shared file
+export const MyTool = {
+    call: async (data: any) => { /* engine logic here */ } 
+};
 ```
 
-**Good (Strict & Universal):**
+**Good (Strict & Split):**
 ```typescript
-// Strict Nested Union
-const InterceptMissionSchema = z.object({
-    missionType: z.literal('Intercept').describe("Assign intercept mission"),
-    targetId: z.string().describe("Hostile track ID to intercept"),
-    speedKts: z.number().describe("Intercept velocity")
+// 1. Shared Contract (src/sdk_v2/contracts/entity/entity_move.ts)
+export const entityMoveContract = defineContract({
+    domain: 'entity',
+    action: 'move',
+    description: 'Command an entity to move to a 3D coordinate.',
+    inputSchema: z.object({
+        matchId: z.string().describe("Target match ID"),
+        entityId: z.string().describe("Target entity ID"),
+        position: Vector3Schema.describe("Target destination")
+    }),
+    outputSchema: z.object({ success: z.boolean() }),
+    rest: { method: 'POST', path: '/matches/:matchId/entities/:entityId/move' }
 });
 
-const SetMissionSchema = z.object({
-    type: z.literal('SetMission').describe("Assigns a new mission to a unit"),
-    entityId: z.string().describe("ID of the executing unit"),
-    mission: z.discriminatedUnion('missionType', [InterceptMissionSchema, PatrolMissionSchema])
-});
-
-// Universal Execution
-sdkClient.dispatch({
-    type: 'SetHeading',
-    entityId: intent.entityId,
-    heading: p.heading
+// 2. Server Implementation (src/server_v2/tools/entity/entity_move.ts)
+export const entity_move = defineTool(entityMoveContract, async (input, ctx) => {
+    const world = ctx.app.matchService.getMatch(input.matchId);
+    // ... execution logic ...
+    return { success: true };
 });
 ```

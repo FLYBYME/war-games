@@ -13,7 +13,8 @@ export class MinistryOfPatrol implements IMinistry<MissionType.Patrol> {
     public evaluate(entity: Entity, mission: MissionComponent<MissionType.Patrol>, _world: IWorldView): DesiredState {
         const params = mission.params;
         const transform = entity.getComponent(TransformComponent);
-        const center = params.center || transform?.position || { x: 0, y: 0, z: 0, z0: 0 } as unknown as Vector3;
+        const fallbackPosition: Vector3 = transform?.position ?? { x: 0, y: 0, z: 0 };
+        const center: Vector3 = params.center ?? fallbackPosition;
         const radiusM = params.radiusM || 5000;
         
         const tracks = entity.getComponent(TrackComponent);
@@ -65,7 +66,7 @@ export class MinistryOfPatrol implements IMinistry<MissionType.Patrol> {
             doctrineUpdates: { 
                 emcon: 'Active',
                 roe: 'Free',
-                speedKts: (params as { speedKts?: number }).speedKts || 350,
+                speedKts: params.speedKts ?? 350,
                 currentTargetId: targetId
             }
         };

@@ -1,5 +1,4 @@
-import { EntityId, Vector3, Track, Side } from './Types.js';
-import { ScenarioIntent } from '../../sdk/schemas/index.js';
+import { EntityId, Vector3, Track, Side, ScenarioIntent, ESMBearing, MissionParams, WRARule } from './Types.js';
 
 export abstract class Command {
     public isExternal: boolean = false;
@@ -77,7 +76,7 @@ export class RemoveDetectionCommand extends Command {
     }
 }
 export class SyncESMBearingsCommand extends Command {
-    constructor(observerId: EntityId, public readonly bearings: unknown[]) {
+    constructor(observerId: EntityId, public readonly bearings: ESMBearing[]) {
         super(observerId, 15);
     }
 }
@@ -213,7 +212,7 @@ export class SetMissionROECommand extends Command {
 }
 
 export class SetMissionCommand extends Command {
-    constructor(entityId: EntityId, public readonly missionType: string, public readonly params: unknown) {
+    constructor(entityId: EntityId, public readonly missionType: string, public readonly params: MissionParams) {
         super(entityId, 25);
     }
 }
@@ -231,7 +230,7 @@ export class AssignWeaponCommand extends Command {
 }
 
 export class UpdateWRARulesCommand extends Command {
-    constructor(entityId: EntityId, public readonly rules: unknown[]) {
+    constructor(entityId: EntityId, public readonly rules: WRARule[]) {
         super(entityId, 15);
     }
 }
@@ -354,7 +353,8 @@ export class SpawnEntityCommand extends Command {
         public readonly profileId: string,
         public readonly side: Side,
         public readonly position: Vector3,
-        public readonly heading: number
+        public readonly heading: number,
+        public readonly speedKts?: number
     ) {
         super(id, 60);
     }

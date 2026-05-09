@@ -65,8 +65,8 @@ export class VectorMath {
         const d2r = Physics.DEG_TO_RAD;
         const cy = Math.cos(yaw * d2r);
         const sy = Math.sin(yaw * d2r);
-        const cp = Math.cos(pitch * d2r);
-        const sp = Math.sin(pitch * d2r);
+        const cp = Math.cos(-pitch * d2r);
+        const sp = Math.sin(-pitch * d2r);
         const cr = Math.cos(roll * d2r);
         const sr = Math.sin(roll * d2r);
 
@@ -95,8 +95,8 @@ export class VectorMath {
         const d2r = Physics.DEG_TO_RAD;
         const cy = Math.cos(yaw * d2r);
         const sy = Math.sin(yaw * d2r);
-        const cp = Math.cos(pitch * d2r);
-        const sp = Math.sin(pitch * d2r);
+        const cp = Math.cos(-pitch * d2r);
+        const sp = Math.sin(-pitch * d2r);
         const cr = Math.cos(roll * d2r);
         const sr = Math.sin(roll * d2r);
 

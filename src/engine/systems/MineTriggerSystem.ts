@@ -17,15 +17,15 @@ export class MineTriggerSystem implements ISystem {
         const commands: Command[] = [];
 
         for (const mine of world.getEntities()) {
-            const profileRegistry = world.profileRegistry as ProfileRegistry;
-            const profile = profileRegistry.get(mine.profileId || '') as EntityProfile | undefined;
+            const profileRegistry = world.profileRegistry;
+            const profile = profileRegistry.get(mine.profileId || '');
             if (profile?.type !== 'Mine') continue;
 
             const transform = mine.getComponent(TransformComponent);
             if (!transform) continue;
 
             // Simple proximity trigger
-            const triggerRadius = 50; 
+            const triggerRadius = 50;
             const nearby = world.getNearbyEntities(transform.position, triggerRadius);
 
             for (const target of nearby) {
@@ -37,7 +37,7 @@ export class MineTriggerSystem implements ISystem {
                     const dist = VectorMath.distance(transform.position, targetTransform.position);
                     if (dist < triggerRadius) {
                         commands.push(new DetonateCommand(mine.id, 100, 500));
-                        break; 
+                        break;
                     }
                 }
             }
