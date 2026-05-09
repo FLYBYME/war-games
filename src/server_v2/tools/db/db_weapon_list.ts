@@ -1,8 +1,21 @@
 import { defineTool } from '../../core/tool_builder.js';
-import { dbWeaponListContract } from '../../../sdk_v2/contracts/index.js'; // Verify import path
+import { dbWeaponListContract, WeaponProfileSchema } from '../../../sdk_v2/contracts/index.js';
+import { db } from '../../db/db.js';
+import { weapons } from '../../db/schema.js';
 
-export const db_weapon_list = defineTool(dbWeaponListContract, async (input, ctx) => {
-    // TODO: Implement db weapon_list
-    console.log("Executing db_weapon_list", input);
-    throw new Error("Not implemented");
+export const db_weapon_list = defineTool(dbWeaponListContract, async (_input, _ctx) => {
+    const results = db.select().from(weapons).all();
+    
+    return {
+        weapons: results.map((r) => {
+            const weaponData = WeaponProfileSchema.parse(r.data);
+            return {
+                id: r.id,
+                name: r.name,
+                type: weaponData.type,
+                maxRangeM: weaponData.maxRangeM
+            };
+        }),
+        totalCount: results.length
+    };
 });

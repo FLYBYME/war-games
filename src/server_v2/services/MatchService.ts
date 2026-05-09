@@ -6,19 +6,82 @@ import { db } from '../db/db.js';
 import { scenarios, matches } from '../db/schema.js';
 import { eq } from 'drizzle-orm';
 import { randomUUID } from 'crypto';
+import { ScenarioManifestSchema } from '../../sdk_v2/contracts/index.js';
+import { TerrainService } from './TerrainService.js';
+import { TerrainServiceAdapter } from './TerrainServiceAdapter.js';
+import { TerrainOracle } from '../../engine/environment/TerrainOracle.js';
+import { GeoProjection } from '../../engine/math/GeoProjection.js';
+
+// Import Systems
+import { AeroSystem } from '../../engine/systems/AeroSystem.js';
+import { CollisionSystem } from '../../engine/systems/CollisionSystem.js';
+import { CombatSystem } from '../../engine/systems/CombatSystem.js';
+import { DamageDegradationSystem } from '../../engine/systems/DamageDegradationSystem.js';
+import { DatalinkSystem } from '../../engine/systems/DatalinkSystem.js';
+import { DoctrineSystem } from '../../engine/systems/DoctrineSystem.js';
+import { EnvironmentSystem } from '../../engine/systems/EnvironmentSystem.js';
+import { FormationSystem } from '../../engine/systems/FormationSystem.js';
+import { GuidanceSystem } from '../../engine/systems/GuidanceSystem.js';
+import { HealthSystem } from '../../engine/systems/HealthSystem.js';
+import { MissionSystem } from '../../engine/systems/MissionSystem.js';
+import { PhysicsSystem } from '../../engine/systems/PhysicsSystem.js';
+import { PropulsionSystem } from '../../engine/systems/PropulsionSystem.js';
+import { SensorSystem } from '../../engine/systems/SensorSystem.js';
+import { TelemetrySystem } from '../../engine/systems/TelemetrySystem.js';
+import { TrackManagementSystem } from '../../engine/systems/TrackManagementSystem.js';
+import { WaypointSystem } from '../../engine/systems/WaypointSystem.js';
+import { WeaponStageSystem } from '../../engine/systems/WeaponStageSystem.js';
+import { WRAExecutorSystem } from '../../engine/systems/WRAExecutorSystem.js';
 
 /**
  * MatchHandle: Concrete implementation of a live simulation match.
- * Wraps an ECS World instance and provides metadata.
  */
 export class MatchHandle implements IMatchHandle {
     public readonly world: World;
     constructor(
         public readonly id: string,
         public readonly name: string,
-        public readonly scenarioId: string
+        public readonly scenarioId: string,
+        terrainService?: TerrainService
     ) {
         this.world = new World();
+        
+        // Initialize Systems with dependencies
+        const projection = new GeoProjection();
+        let oracle: TerrainOracle;
+        
+        if (terrainService) {
+            const provider = new TerrainServiceAdapter(terrainService);
+            oracle = new TerrainOracle(provider);
+        } else {
+            oracle = new TerrainOracle(); // Null provider returns 0 elevation
+        }
+
+        // Registry the core perception/action loop
+        this.world.addSystem(new EnvironmentSystem(oracle, projection));
+        this.world.addSystem(new DoctrineSystem());
+        this.world.addSystem(new MissionSystem());
+        this.world.addSystem(new WaypointSystem());
+        this.world.addSystem(new FormationSystem());
+        
+        this.world.addSystem(new SensorSystem(oracle, projection));
+        this.world.addSystem(new TrackManagementSystem());
+        this.world.addSystem(new DatalinkSystem());
+        
+        this.world.addSystem(new PropulsionSystem());
+        this.world.addSystem(new AeroSystem());
+        this.world.addSystem(new GuidanceSystem());
+        this.world.addSystem(new WeaponStageSystem());
+        this.world.addSystem(new PhysicsSystem());
+        
+        this.world.addSystem(new CollisionSystem(this.world.grid));
+        this.world.addSystem(new HealthSystem());
+        this.world.addSystem(new DamageDegradationSystem());
+        
+        this.world.addSystem(new CombatSystem(this.world.weaponProfiles));
+        this.world.addSystem(new WRAExecutorSystem(this.world.weaponProfiles));
+        
+        this.world.addSystem(new TelemetrySystem());
     }
 
     public get isPaused(): boolean { return this.world.isPaused; }
@@ -31,11 +94,6 @@ export class MatchHandle implements IMatchHandle {
     }
 }
 
-import { ScenarioManifestSchema } from '../../sdk_v2/contracts/index.js';
-
-/**
- * Type guard to safely narrow IMatchHandle to concrete MatchHandle.
- */
 export function isMatchHandle(handle: IMatchHandle): handle is MatchHandle {
     return handle instanceof MatchHandle;
 }
@@ -47,31 +105,21 @@ export class MatchService implements IMatchService {
     private activeMatches = new Map<string, MatchHandle>();
     private runnerInterval: NodeJS.Timeout | null = null;
 
-    constructor() {
+    constructor(private terrainService?: TerrainService) {
         this.startRunner();
     }
 
-    /**
-     * Retrieves an active match by its ID.
-     */
     public getMatch(matchId: string): MatchHandle {
         const match = this.activeMatches.get(matchId);
         if (!match) throw new Error(`Match not found: ${matchId}`);
         return match;
     }
 
-    /**
-     * Lists all currently active matches.
-     */
     public listMatches(): MatchHandle[] {
         return Array.from(this.activeMatches.values());
     }
 
-    /**
-     * Creates a new match from a scenario template.
-     */
     public async createMatch(scenarioId: string, name: string): Promise<MatchHandle> {
-        // 1. Fetch scenario from DB
         const scenario = await db.query.scenarios.findFirst({
             where: eq(scenarios.id, scenarioId)
         });
@@ -79,19 +127,16 @@ export class MatchService implements IMatchService {
         if (!scenario) throw new Error(`Scenario not found: ${scenarioId}`);
 
         const matchId = randomUUID();
-        const handle = new MatchHandle(matchId, name, scenarioId);
+        const handle = new MatchHandle(matchId, name, scenarioId, this.terrainService);
 
-        // 2. Load scenario into world
         const entityMgr = new EntityManager(handle.world, handle.world.profileRegistry);
         const loader = new ScenarioLoader(entityMgr);
         
-        // Use Zod to safely parse the manifest from the DB
         const manifest = ScenarioManifestSchema.parse(scenario.manifest);
         loader.load(manifest);
 
         this.activeMatches.set(matchId, handle);
 
-        // 3. Save match metadata to DB
         db.insert(matches).values({
             id: matchId,
             name,
@@ -104,9 +149,6 @@ export class MatchService implements IMatchService {
         return handle;
     }
 
-    /**
-     * Deletes/Stops a match and updates its status in the DB.
-     */
     public deleteMatch(matchId: string): boolean {
         const deleted = this.activeMatches.delete(matchId);
         if (deleted) {
@@ -118,19 +160,13 @@ export class MatchService implements IMatchService {
         return deleted;
     }
 
-    /**
-     * Starts the global simulation runner loop.
-     */
     private startRunner() {
         if (this.runnerInterval) return;
 
-        // Simulation runner: 100ms interval
-        // Steps the simulation world at a base rate of 10Hz
         this.runnerInterval = setInterval(async () => {
             for (const match of this.activeMatches.values()) {
                 if (!match.isPaused) {
                     try {
-                        // World.tick is async due to some system logic
                         await match.world.tick(0.1);
                     } catch (err) {
                         console.error(`Simulation Tick Error in match ${match.id}:`, err);
@@ -140,9 +176,6 @@ export class MatchService implements IMatchService {
         }, 100);
     }
 
-    /**
-     * Stops the global simulation runner loop.
-     */
     public stopRunner() {
         if (this.runnerInterval) {
             clearInterval(this.runnerInterval);

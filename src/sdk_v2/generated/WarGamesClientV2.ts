@@ -35,6 +35,7 @@ export class WarGamesClientV2 {
             weapon_list: async (args: z.infer<typeof Contracts.DBWeaponListInputSchema>): Promise<z.infer<typeof Contracts.DBWeaponListOutputSchema>> => this.request('GET', `/db/weapons`, args),
             weapon_get: async (args: z.infer<typeof Contracts.DBWeaponGetInputSchema>): Promise<z.infer<typeof Contracts.WeaponProfileSchema>> => this.request('GET', `/db/weapons/${args.id}`, args),
             scenario_list: async (args: z.infer<typeof Contracts.DBScenarioListInputSchema>): Promise<z.infer<typeof Contracts.DBScenarioListOutputSchema>> => this.request('GET', `/db/scenarios`, args),
+            scenario_get: async (args: z.infer<typeof Contracts.DBScenarioGetInputSchema>): Promise<z.infer<typeof Contracts.ScenarioManifestSchema>> => this.request('GET', `/db/scenarios/${args.id}`, args),
         },
         entity: {
             list: async (args: z.infer<typeof Contracts.EntityListInputSchema>): Promise<z.infer<typeof Contracts.EntityListOutputSchema>> => this.request('GET', `/matches/${args.matchId}/entities`, args),

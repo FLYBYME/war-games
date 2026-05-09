@@ -5,7 +5,8 @@ import { WarGamesClientV2 } from '../../sdk_v2/generated/WarGamesClientV2.js';
 import { C } from '../core/Utils.js';
 
 export function registerGeneratedCommands(program: Command, client: WarGamesClientV2) {
-    const combat = program.command('combat').description('COMBAT domain tools');
+    let combat = program.commands.find(c => c.name() === 'combat');
+    if (!combat) combat = program.command('combat').description('COMBAT domain tools');
     const combat_get = combat.command('get').description(`View current engagement targets, weapon status, and ammo counts.`).action(async (o) => {
         try { const res = await client.api.combat.get(ZodToCliMapper.parseOptions(o, Contracts.CombatGetInputSchema)); console.log(JSON.stringify(res, null, 2)); } catch (err: any) { console.error(`\n${C.red}${C.bold}✖ Error:${C.reset} ${err.message}`); process.exit(1); }
     });
@@ -34,7 +35,8 @@ export function registerGeneratedCommands(program: Command, client: WarGamesClie
         try { const res = await client.api.combat.update_roe(ZodToCliMapper.parseOptions(o, Contracts.CombatUpdateROEInputSchema)); console.log(JSON.stringify(res, null, 2)); } catch (err: any) { console.error(`\n${C.red}${C.bold}✖ Error:${C.reset} ${err.message}`); process.exit(1); }
     });
     ZodToCliMapper.mapSchemaToOptions(combat_update_roe, Contracts.CombatUpdateROEInputSchema);
-    const db = program.command('db').description('DB domain tools');
+    let db = program.commands.find(c => c.name() === 'db');
+    if (!db) db = program.command('db').description('DB domain tools');
     const db_profile_list = db.command('profile_list').description(`List all available unit profiles.`).action(async (o) => {
         try { const res = await client.api.db.profile_list(ZodToCliMapper.parseOptions(o, Contracts.DBProfileListInputSchema)); console.log(JSON.stringify(res, null, 2)); } catch (err: any) { console.error(`\n${C.red}${C.bold}✖ Error:${C.reset} ${err.message}`); process.exit(1); }
     });
@@ -59,7 +61,12 @@ export function registerGeneratedCommands(program: Command, client: WarGamesClie
         try { const res = await client.api.db.scenario_list(ZodToCliMapper.parseOptions(o, Contracts.DBScenarioListInputSchema)); console.log(JSON.stringify(res, null, 2)); } catch (err: any) { console.error(`\n${C.red}${C.bold}✖ Error:${C.reset} ${err.message}`); process.exit(1); }
     });
     ZodToCliMapper.mapSchemaToOptions(db_scenario_list, Contracts.DBScenarioListInputSchema);
-    const entity = program.command('entity').description('ENTITY domain tools');
+    const db_scenario_get = db.command('scenario_get').description(`Retrieve the full manifest for a specific scenario template.`).action(async (o) => {
+        try { const res = await client.api.db.scenario_get(ZodToCliMapper.parseOptions(o, Contracts.DBScenarioGetInputSchema)); console.log(JSON.stringify(res, null, 2)); } catch (err: any) { console.error(`\n${C.red}${C.bold}✖ Error:${C.reset} ${err.message}`); process.exit(1); }
+    });
+    ZodToCliMapper.mapSchemaToOptions(db_scenario_get, Contracts.DBScenarioGetInputSchema);
+    let entity = program.commands.find(c => c.name() === 'entity');
+    if (!entity) entity = program.command('entity').description('ENTITY domain tools');
     const entity_list = entity.command('list').description(`List all entities in the match with optional filtering.`).action(async (o) => {
         try { const res = await client.api.entity.list(ZodToCliMapper.parseOptions(o, Contracts.EntityListInputSchema)); console.log(JSON.stringify(res, null, 2)); } catch (err: any) { console.error(`\n${C.red}${C.bold}✖ Error:${C.reset} ${err.message}`); process.exit(1); }
     });
@@ -80,7 +87,8 @@ export function registerGeneratedCommands(program: Command, client: WarGamesClie
         try { const res = await client.api.entity.get_status(ZodToCliMapper.parseOptions(o, Contracts.EntityStatusInputSchema)); console.log(JSON.stringify(res, null, 2)); } catch (err: any) { console.error(`\n${C.red}${C.bold}✖ Error:${C.reset} ${err.message}`); process.exit(1); }
     });
     ZodToCliMapper.mapSchemaToOptions(entity_get_status, Contracts.EntityStatusInputSchema);
-    const env = program.command('env').description('ENV domain tools');
+    let env = program.commands.find(c => c.name() === 'env');
+    if (!env) env = program.command('env').description('ENV domain tools');
     const env_get = env.command('get').description(`Retrieve global environmental data (weather, ocean, time).`).action(async (o) => {
         try { const res = await client.api.env.get(ZodToCliMapper.parseOptions(o, Contracts.EnvGetInputSchema)); console.log(JSON.stringify(res, null, 2)); } catch (err: any) { console.error(`\n${C.red}${C.bold}✖ Error:${C.reset} ${err.message}`); process.exit(1); }
     });
@@ -113,7 +121,8 @@ export function registerGeneratedCommands(program: Command, client: WarGamesClie
         try { const res = await client.api.env.get_cache_stats(ZodToCliMapper.parseOptions(o, Contracts.EnvGetCacheStatsInputSchema)); console.log(JSON.stringify(res, null, 2)); } catch (err: any) { console.error(`\n${C.red}${C.bold}✖ Error:${C.reset} ${err.message}`); process.exit(1); }
     });
     ZodToCliMapper.mapSchemaToOptions(env_get_cache_stats, Contracts.EnvGetCacheStatsInputSchema);
-    const ew = program.command('ew').description('EW domain tools');
+    let ew = program.commands.find(c => c.name() === 'ew');
+    if (!ew) ew = program.command('ew').description('EW domain tools');
     const ew_get_jammer = ew.command('get_jammer').description(`Fetch current jammer power, frequency, and beam settings.`).action(async (o) => {
         try { const res = await client.api.ew.get_jammer(ZodToCliMapper.parseOptions(o, Contracts.EWGetJammerInputSchema)); console.log(JSON.stringify(res, null, 2)); } catch (err: any) { console.error(`\n${C.red}${C.bold}✖ Error:${C.reset} ${err.message}`); process.exit(1); }
     });
@@ -130,7 +139,8 @@ export function registerGeneratedCommands(program: Command, client: WarGamesClie
         try { const res = await client.api.ew.get_sigint(ZodToCliMapper.parseOptions(o, Contracts.EWGetSIGINTInputSchema)); console.log(JSON.stringify(res, null, 2)); } catch (err: any) { console.error(`\n${C.red}${C.bold}✖ Error:${C.reset} ${err.message}`); process.exit(1); }
     });
     ZodToCliMapper.mapSchemaToOptions(ew_get_sigint, Contracts.EWGetSIGINTInputSchema);
-    const group = program.command('group').description('GROUP domain tools');
+    let group = program.commands.find(c => c.name() === 'group');
+    if (!group) group = program.command('group').description('GROUP domain tools');
     const group_list = group.command('list').description(`List all tactical groups in the match.`).action(async (o) => {
         try { const res = await client.api.group.list(ZodToCliMapper.parseOptions(o, Contracts.GroupListInputSchema)); console.log(JSON.stringify(res, null, 2)); } catch (err: any) { console.error(`\n${C.red}${C.bold}✖ Error:${C.reset} ${err.message}`); process.exit(1); }
     });
@@ -151,7 +161,8 @@ export function registerGeneratedCommands(program: Command, client: WarGamesClie
         try { const res = await client.api.group.set_parameters(ZodToCliMapper.parseOptions(o, Contracts.GroupSetParametersInputSchema)); console.log(JSON.stringify(res, null, 2)); } catch (err: any) { console.error(`\n${C.red}${C.bold}✖ Error:${C.reset} ${err.message}`); process.exit(1); }
     });
     ZodToCliMapper.mapSchemaToOptions(group_set_parameters, Contracts.GroupSetParametersInputSchema);
-    const guidance = program.command('guidance').description('GUIDANCE domain tools');
+    let guidance = program.commands.find(c => c.name() === 'guidance');
+    if (!guidance) guidance = program.command('guidance').description('GUIDANCE domain tools');
     const guidance_get = guidance.command('get').description(`Inspect lock-on status, seeker type, and current track.`).action(async (o) => {
         try { const res = await client.api.guidance.get(ZodToCliMapper.parseOptions(o, Contracts.GuidanceGetInputSchema)); console.log(JSON.stringify(res, null, 2)); } catch (err: any) { console.error(`\n${C.red}${C.bold}✖ Error:${C.reset} ${err.message}`); process.exit(1); }
     });
@@ -164,7 +175,8 @@ export function registerGeneratedCommands(program: Command, client: WarGamesClie
         try { const res = await client.api.guidance.set_target(ZodToCliMapper.parseOptions(o, Contracts.GuidanceSetTargetInputSchema)); console.log(JSON.stringify(res, null, 2)); } catch (err: any) { console.error(`\n${C.red}${C.bold}✖ Error:${C.reset} ${err.message}`); process.exit(1); }
     });
     ZodToCliMapper.mapSchemaToOptions(guidance_set_target, Contracts.GuidanceSetTargetInputSchema);
-    const history = program.command('history').description('HISTORY domain tools');
+    let history = program.commands.find(c => c.name() === 'history');
+    if (!history) history = program.command('history').description('HISTORY domain tools');
     const history_list_telemetry = history.command('list_telemetry').description(`Fetch time-series position and state data for a unit.`).action(async (o) => {
         try { const res = await client.api.history.list_telemetry(ZodToCliMapper.parseOptions(o, Contracts.HistoryListTelemetryInputSchema)); console.log(JSON.stringify(res, null, 2)); } catch (err: any) { console.error(`\n${C.red}${C.bold}✖ Error:${C.reset} ${err.message}`); process.exit(1); }
     });
@@ -185,7 +197,8 @@ export function registerGeneratedCommands(program: Command, client: WarGamesClie
         try { const res = await client.api.history.aggregate_metrics(ZodToCliMapper.parseOptions(o, Contracts.HistoryAggregateMetricsInputSchema)); console.log(JSON.stringify(res, null, 2)); } catch (err: any) { console.error(`\n${C.red}${C.bold}✖ Error:${C.reset} ${err.message}`); process.exit(1); }
     });
     ZodToCliMapper.mapSchemaToOptions(history_aggregate_metrics, Contracts.HistoryAggregateMetricsInputSchema);
-    const kinematics = program.command('kinematics').description('KINEMATICS domain tools');
+    let kinematics = program.commands.find(c => c.name() === 'kinematics');
+    if (!kinematics) kinematics = program.command('kinematics').description('KINEMATICS domain tools');
     const kinematics_get = kinematics.command('get').description(`Retrieve high-fidelity position, velocity, and orientation data.`).action(async (o) => {
         try { const res = await client.api.kinematics.get(ZodToCliMapper.parseOptions(o, Contracts.KinematicsGetInputSchema)); console.log(JSON.stringify(res, null, 2)); } catch (err: any) { console.error(`\n${C.red}${C.bold}✖ Error:${C.reset} ${err.message}`); process.exit(1); }
     });
@@ -202,7 +215,8 @@ export function registerGeneratedCommands(program: Command, client: WarGamesClie
         try { const res = await client.api.kinematics.apply_force(ZodToCliMapper.parseOptions(o, Contracts.KinematicsApplyForceInputSchema)); console.log(JSON.stringify(res, null, 2)); } catch (err: any) { console.error(`\n${C.red}${C.bold}✖ Error:${C.reset} ${err.message}`); process.exit(1); }
     });
     ZodToCliMapper.mapSchemaToOptions(kinematics_apply_force, Contracts.KinematicsApplyForceInputSchema);
-    const logistics = program.command('logistics').description('LOGISTICS domain tools');
+    let logistics = program.commands.find(c => c.name() === 'logistics');
+    if (!logistics) logistics = program.command('logistics').description('LOGISTICS domain tools');
     const logistics_get = logistics.command('get').description(`Check fuel, ammo, and structural integrity.`).action(async (o) => {
         try { const res = await client.api.logistics.get(ZodToCliMapper.parseOptions(o, Contracts.LogisticsGetInputSchema)); console.log(JSON.stringify(res, null, 2)); } catch (err: any) { console.error(`\n${C.red}${C.bold}✖ Error:${C.reset} ${err.message}`); process.exit(1); }
     });
@@ -227,7 +241,8 @@ export function registerGeneratedCommands(program: Command, client: WarGamesClie
         try { const res = await client.api.logistics.launch(ZodToCliMapper.parseOptions(o, Contracts.LogisticsLaunchInputSchema)); console.log(JSON.stringify(res, null, 2)); } catch (err: any) { console.error(`\n${C.red}${C.bold}✖ Error:${C.reset} ${err.message}`); process.exit(1); }
     });
     ZodToCliMapper.mapSchemaToOptions(logistics_launch, Contracts.LogisticsLaunchInputSchema);
-    const map = program.command('map').description('MAP domain tools');
+    let map = program.commands.find(c => c.name() === 'map');
+    if (!map) map = program.command('map').description('MAP domain tools');
     const map_list_regions = map.command('list_regions').description(`List all pre-defined geographic theaters.`).action(async (o) => {
         try { const res = await client.api.map.list_regions(ZodToCliMapper.parseOptions(o, Contracts.MapListRegionsInputSchema)); console.log(JSON.stringify(res, null, 2)); } catch (err: any) { console.error(`\n${C.red}${C.bold}✖ Error:${C.reset} ${err.message}`); process.exit(1); }
     });
@@ -264,7 +279,8 @@ export function registerGeneratedCommands(program: Command, client: WarGamesClie
         try { const res = await client.api.map.convert(ZodToCliMapper.parseOptions(o, Contracts.MapConvertCoordinatesInputSchema)); console.log(JSON.stringify(res, null, 2)); } catch (err: any) { console.error(`\n${C.red}${C.bold}✖ Error:${C.reset} ${err.message}`); process.exit(1); }
     });
     ZodToCliMapper.mapSchemaToOptions(map_convert, Contracts.MapConvertCoordinatesInputSchema);
-    const match = program.command('match').description('MATCH domain tools');
+    let match = program.commands.find(c => c.name() === 'match');
+    if (!match) match = program.command('match').description('MATCH domain tools');
     const match_list = match.command('list').description(`Retrieve a paginated list of matches with optional filtering.`).action(async (o) => {
         try { const res = await client.api.match.list(ZodToCliMapper.parseOptions(o, Contracts.MatchListInputSchema)); console.log(JSON.stringify(res, null, 2)); } catch (err: any) { console.error(`\n${C.red}${C.bold}✖ Error:${C.reset} ${err.message}`); process.exit(1); }
     });
@@ -289,7 +305,8 @@ export function registerGeneratedCommands(program: Command, client: WarGamesClie
         try { const res = await client.api.match.get_win_state(ZodToCliMapper.parseOptions(o, Contracts.MatchWinStateInputSchema)); console.log(JSON.stringify(res, null, 2)); } catch (err: any) { console.error(`\n${C.red}${C.bold}✖ Error:${C.reset} ${err.message}`); process.exit(1); }
     });
     ZodToCliMapper.mapSchemaToOptions(match_get_win_state, Contracts.MatchWinStateInputSchema);
-    const mission = program.command('mission').description('MISSION domain tools');
+    let mission = program.commands.find(c => c.name() === 'mission');
+    if (!mission) mission = program.command('mission').description('MISSION domain tools');
     const mission_list = mission.command('list').description(`List all active and queued missions for a unit.`).action(async (o) => {
         try { const res = await client.api.mission.list(ZodToCliMapper.parseOptions(o, Contracts.MissionListInputSchema)); console.log(JSON.stringify(res, null, 2)); } catch (err: any) { console.error(`\n${C.red}${C.bold}✖ Error:${C.reset} ${err.message}`); process.exit(1); }
     });
@@ -302,7 +319,8 @@ export function registerGeneratedCommands(program: Command, client: WarGamesClie
         try { const res = await client.api.mission.get_tasks(ZodToCliMapper.parseOptions(o, Contracts.MissionGetTasksInputSchema)); console.log(JSON.stringify(res, null, 2)); } catch (err: any) { console.error(`\n${C.red}${C.bold}✖ Error:${C.reset} ${err.message}`); process.exit(1); }
     });
     ZodToCliMapper.mapSchemaToOptions(mission_get_tasks, Contracts.MissionGetTasksInputSchema);
-    const nav = program.command('nav').description('NAV domain tools');
+    let nav = program.commands.find(c => c.name() === 'nav');
+    if (!nav) nav = program.command('nav').description('NAV domain tools');
     const nav_get = nav.command('get').description(`Check current destination, course, and autopilot mode.`).action(async (o) => {
         try { const res = await client.api.nav.get(ZodToCliMapper.parseOptions(o, Contracts.NavGetInputSchema)); console.log(JSON.stringify(res, null, 2)); } catch (err: any) { console.error(`\n${C.red}${C.bold}✖ Error:${C.reset} ${err.message}`); process.exit(1); }
     });
@@ -331,7 +349,8 @@ export function registerGeneratedCommands(program: Command, client: WarGamesClie
         try { const res = await client.api.nav.break_formation(ZodToCliMapper.parseOptions(o, Contracts.NavBreakFormationInputSchema)); console.log(JSON.stringify(res, null, 2)); } catch (err: any) { console.error(`\n${C.red}${C.bold}✖ Error:${C.reset} ${err.message}`); process.exit(1); }
     });
     ZodToCliMapper.mapSchemaToOptions(nav_break_formation, Contracts.NavBreakFormationInputSchema);
-    const propulsion = program.command('propulsion').description('PROPULSION domain tools');
+    let propulsion = program.commands.find(c => c.name() === 'propulsion');
+    if (!propulsion) propulsion = program.command('propulsion').description('PROPULSION domain tools');
     const propulsion_get = propulsion.command('get').description(`Fetch real-time throttle, thrust, and engine state.`).action(async (o) => {
         try { const res = await client.api.propulsion.get(ZodToCliMapper.parseOptions(o, Contracts.PropulsionGetInputSchema)); console.log(JSON.stringify(res, null, 2)); } catch (err: any) { console.error(`\n${C.red}${C.bold}✖ Error:${C.reset} ${err.message}`); process.exit(1); }
     });
@@ -344,7 +363,8 @@ export function registerGeneratedCommands(program: Command, client: WarGamesClie
         try { const res = await client.api.propulsion.set_state(ZodToCliMapper.parseOptions(o, Contracts.PropulsionSetStateInputSchema)); console.log(JSON.stringify(res, null, 2)); } catch (err: any) { console.error(`\n${C.red}${C.bold}✖ Error:${C.reset} ${err.message}`); process.exit(1); }
     });
     ZodToCliMapper.mapSchemaToOptions(propulsion_set_state, Contracts.PropulsionSetStateInputSchema);
-    const sensor = program.command('sensor').description('SENSOR domain tools');
+    let sensor = program.commands.find(c => c.name() === 'sensor');
+    if (!sensor) sensor = program.command('sensor').description('SENSOR domain tools');
     const sensor_list = sensor.command('list').description(`List all onboard sensors and their settings.`).action(async (o) => {
         try { const res = await client.api.sensor.list(ZodToCliMapper.parseOptions(o, Contracts.SensorListInputSchema)); console.log(JSON.stringify(res, null, 2)); } catch (err: any) { console.error(`\n${C.red}${C.bold}✖ Error:${C.reset} ${err.message}`); process.exit(1); }
     });
@@ -357,7 +377,8 @@ export function registerGeneratedCommands(program: Command, client: WarGamesClie
         try { const res = await client.api.sensor.set_emcon(ZodToCliMapper.parseOptions(o, Contracts.SensorSetEmconInputSchema)); console.log(JSON.stringify(res, null, 2)); } catch (err: any) { console.error(`\n${C.red}${C.bold}✖ Error:${C.reset} ${err.message}`); process.exit(1); }
     });
     ZodToCliMapper.mapSchemaToOptions(sensor_set_emcon, Contracts.SensorSetEmconInputSchema);
-    const side = program.command('side').description('SIDE domain tools');
+    let side = program.commands.find(c => c.name() === 'side');
+    if (!side) side = program.command('side').description('SIDE domain tools');
     const side_get_roe = side.command('get_roe').description(`Retrieve the current ROE and EMCON for a side.`).action(async (o) => {
         try { const res = await client.api.side.get_roe(ZodToCliMapper.parseOptions(o, Contracts.SideGetROEInputSchema)); console.log(JSON.stringify(res, null, 2)); } catch (err: any) { console.error(`\n${C.red}${C.bold}✖ Error:${C.reset} ${err.message}`); process.exit(1); }
     });
@@ -366,7 +387,8 @@ export function registerGeneratedCommands(program: Command, client: WarGamesClie
         try { const res = await client.api.side.update_roe(ZodToCliMapper.parseOptions(o, Contracts.SideUpdateROEInputSchema)); console.log(JSON.stringify(res, null, 2)); } catch (err: any) { console.error(`\n${C.red}${C.bold}✖ Error:${C.reset} ${err.message}`); process.exit(1); }
     });
     ZodToCliMapper.mapSchemaToOptions(side_update_roe, Contracts.SideUpdateROEInputSchema);
-    const signature = program.command('signature').description('SIGNATURE domain tools');
+    let signature = program.commands.find(c => c.name() === 'signature');
+    if (!signature) signature = program.command('signature').description('SIGNATURE domain tools');
     const signature_get = signature.command('get').description(`Fetch RCS, IR, and acoustic signatures.`).action(async (o) => {
         try { const res = await client.api.signature.get(ZodToCliMapper.parseOptions(o, Contracts.SignatureGetInputSchema)); console.log(JSON.stringify(res, null, 2)); } catch (err: any) { console.error(`\n${C.red}${C.bold}✖ Error:${C.reset} ${err.message}`); process.exit(1); }
     });
@@ -375,7 +397,8 @@ export function registerGeneratedCommands(program: Command, client: WarGamesClie
         try { const res = await client.api.signature.update(ZodToCliMapper.parseOptions(o, Contracts.SignatureUpdateInputSchema)); console.log(JSON.stringify(res, null, 2)); } catch (err: any) { console.error(`\n${C.red}${C.bold}✖ Error:${C.reset} ${err.message}`); process.exit(1); }
     });
     ZodToCliMapper.mapSchemaToOptions(signature_update, Contracts.SignatureUpdateInputSchema);
-    const cm = program.command('cm').description('CM domain tools');
+    let cm = program.commands.find(c => c.name() === 'cm');
+    if (!cm) cm = program.command('cm').description('CM domain tools');
     const cm_deploy = cm.command('deploy').description(`Deploy chaff, flares, or acoustic decoys.`).action(async (o) => {
         try { const res = await client.api.cm.deploy(ZodToCliMapper.parseOptions(o, Contracts.CMDeployInputSchema)); console.log(JSON.stringify(res, null, 2)); } catch (err: any) { console.error(`\n${C.red}${C.bold}✖ Error:${C.reset} ${err.message}`); process.exit(1); }
     });
@@ -384,7 +407,8 @@ export function registerGeneratedCommands(program: Command, client: WarGamesClie
         try { const res = await client.api.cm.get_inventory(ZodToCliMapper.parseOptions(o, Contracts.CMGetInventoryInputSchema)); console.log(JSON.stringify(res, null, 2)); } catch (err: any) { console.error(`\n${C.red}${C.bold}✖ Error:${C.reset} ${err.message}`); process.exit(1); }
     });
     ZodToCliMapper.mapSchemaToOptions(cm_get_inventory, Contracts.CMGetInventoryInputSchema);
-    const sim = program.command('sim').description('SIM domain tools');
+    let sim = program.commands.find(c => c.name() === 'sim');
+    if (!sim) sim = program.command('sim').description('SIM domain tools');
     const sim_get = sim.command('get').description(`Get the current simulation status including tick, speed, and pause state.`).action(async (o) => {
         try { const res = await client.api.sim.get(ZodToCliMapper.parseOptions(o, Contracts.SimGetInputSchema)); console.log(JSON.stringify(res, null, 2)); } catch (err: any) { console.error(`\n${C.red}${C.bold}✖ Error:${C.reset} ${err.message}`); process.exit(1); }
     });
@@ -397,7 +421,8 @@ export function registerGeneratedCommands(program: Command, client: WarGamesClie
         try { const res = await client.api.sim.update(ZodToCliMapper.parseOptions(o, Contracts.SimUpdateInputSchema)); console.log(JSON.stringify(res, null, 2)); } catch (err: any) { console.error(`\n${C.red}${C.bold}✖ Error:${C.reset} ${err.message}`); process.exit(1); }
     });
     ZodToCliMapper.mapSchemaToOptions(sim_update, Contracts.SimUpdateInputSchema);
-    const track = program.command('track').description('TRACK domain tools');
+    let track = program.commands.find(c => c.name() === 'track');
+    if (!track) track = program.command('track').description('TRACK domain tools');
     const track_list = track.command('list').description(`Retrieve all tracks known to a specific side.`).action(async (o) => {
         try { const res = await client.api.track.list(ZodToCliMapper.parseOptions(o, Contracts.TrackListInputSchema)); console.log(JSON.stringify(res, null, 2)); } catch (err: any) { console.error(`\n${C.red}${C.bold}✖ Error:${C.reset} ${err.message}`); process.exit(1); }
     });
@@ -414,7 +439,8 @@ export function registerGeneratedCommands(program: Command, client: WarGamesClie
         try { const res = await client.api.track.delete(ZodToCliMapper.parseOptions(o, Contracts.TrackDeleteInputSchema)); console.log(JSON.stringify(res, null, 2)); } catch (err: any) { console.error(`\n${C.red}${C.bold}✖ Error:${C.reset} ${err.message}`); process.exit(1); }
     });
     ZodToCliMapper.mapSchemaToOptions(track_delete, Contracts.TrackDeleteInputSchema);
-    const worker = program.command('worker').description('WORKER domain tools');
+    let worker = program.commands.find(c => c.name() === 'worker');
+    if (!worker) worker = program.command('worker').description('WORKER domain tools');
     const worker_list = worker.command('list').description(`List all active worker pools and their high-level status.`).action(async (o) => {
         try { const res = await client.api.worker.list(ZodToCliMapper.parseOptions(o, Contracts.WorkerListInputSchema)); console.log(JSON.stringify(res, null, 2)); } catch (err: any) { console.error(`\n${C.red}${C.bold}✖ Error:${C.reset} ${err.message}`); process.exit(1); }
     });

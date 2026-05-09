@@ -10,9 +10,9 @@ import { initDb } from './db/db.js';
 
 export async function createServer() {
     await initDb();
-    const matchService = new MatchService();
     const workerService = new WorkerService();
     const terrainService = new TerrainService(workerService);
+    const matchService = new MatchService(terrainService);
 
     const serverContext = {
         app: {
@@ -24,7 +24,6 @@ export async function createServer() {
     const app = fastify({ logger: true });
 
     // Import all tools to ensure they are registered
-    // A more dynamic import could be used in production
     await import('./tools/index.js');
 
     // Generate routes from the global registry

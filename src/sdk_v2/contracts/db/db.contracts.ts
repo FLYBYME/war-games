@@ -1,6 +1,7 @@
 import { z } from 'zod';
 import { defineContract } from '../core/tool_contract.js';
 import { EntityProfileSchema, WeaponProfileSchema, PlatformTypeSchema } from '../domain/tactical.schema.js';
+import { ScenarioManifestSchema } from '../domain/scenarios.schema.js';
 
 // ─── db_profile_list ─────────────────────────────────────────────────────────
 
@@ -129,4 +130,19 @@ export const dbScenarioListContract = defineContract({
     inputSchema: DBScenarioListInputSchema,
     outputSchema: DBScenarioListOutputSchema,
     rest: { method: 'GET', path: '/db/scenarios' }
+});
+
+// ─── db_scenario_get ─────────────────────────────────────────────────────────
+
+export const DBScenarioGetInputSchema = z.object({
+    id: z.string().describe("Scenario ID")
+});
+
+export const dbScenarioGetContract = defineContract({
+    domain: 'db',
+    action: 'scenario_get',
+    description: 'Retrieve the full manifest for a specific scenario template.',
+    inputSchema: DBScenarioGetInputSchema,
+    outputSchema: ScenarioManifestSchema,
+    rest: { method: 'GET', path: '/db/scenarios/:id' }
 });

@@ -135,7 +135,8 @@ export class GenerateCommand extends BaseCommand {
 
         let code = `import { Command } from 'commander';\nimport { ZodToCliMapper } from '../core/ZodToCliMapper.js';\nimport * as Contracts from '../../sdk_v2/contracts/index.js';\nimport { WarGamesClientV2 } from '../../sdk_v2/generated/WarGamesClientV2.js';\nimport { C } from '../core/Utils.js';\n\nexport function registerGeneratedCommands(program: Command, client: WarGamesClientV2) {\n`;
         for (const [domain, methods] of Object.entries(byDomain)) {
-            code += `    const ${domain} = program.command('${domain}').description('${domain.toUpperCase()} domain tools');\n`;
+            code += `    let ${domain} = program.commands.find(c => c.name() === '${domain}');\n`;
+            code += `    if (!${domain}) ${domain} = program.command('${domain}').description('${domain.toUpperCase()} domain tools');\n`;
             for (const m of methods) {
                 code += `    const ${domain}_${m.action} = ${domain}.command('${m.action}').description(\`${m.description}\`).action(async (o) => {\n        try { const res = await client.api.${domain}.${m.action}(ZodToCliMapper.parseOptions(o, Contracts.${m.inputType})); console.log(JSON.stringify(res, null, 2)); } catch (err: any) { console.error(\`\\n\${C.red}\${C.bold}✖ Error:\${C.reset} \${err.message}\`); process.exit(1); }\n    });\n    ZodToCliMapper.mapSchemaToOptions(${domain}_${m.action}, Contracts.${m.inputType});\n`;
             }

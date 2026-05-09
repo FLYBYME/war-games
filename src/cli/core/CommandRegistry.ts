@@ -26,7 +26,7 @@ export class CommandRegistry {
         return groups;
     }
 
-    public printHelp(): void {
+    public printHelp(program?: CommanderCommand): void {
         const groups = this.getCommandsByCategory();
         console.log(`\n${C.magenta}${C.bold}WAR-GAMES CLI${C.reset}\n`);
 
@@ -40,6 +40,21 @@ export class CommandRegistry {
                 console.log(`  ${C.cyan}${C.bold}${cmd.name.padEnd(18)}${C.reset}${aliases} ${C.dim}${cmd.description}${C.reset}`);
             }
             console.log();
+        }
+
+        // Print generated commands from Commander that aren't in the registry
+        if (program) {
+            const registryCommandNames = new Set(this.commands.map(c => c.name));
+            // Also filter out 'help' command if it's hidden or redundant
+            const externalCommands = program.commands.filter(c => !registryCommandNames.has(c.name()) && c.name() !== 'help');
+
+            if (externalCommands.length > 0) {
+                console.log(`${C.blue}${C.bold}Tactical Tools (V2)${C.reset}`);
+                for (const cmd of externalCommands) {
+                    console.log(`  ${C.cyan}${C.bold}${cmd.name().padEnd(18)}${C.reset} ${C.dim}${cmd.description()}${C.reset}`);
+                }
+                console.log();
+            }
         }
     }
 }

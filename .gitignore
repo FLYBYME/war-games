@@ -30,7 +30,7 @@ tsconfig.tsbuildinfo
 lint_results.json
 
 mesht/.mesh/*
-scratch/*
+#scratch/*
 spec/*
 # data/*
 *.wgt
