@@ -84,12 +84,12 @@ export class OllamaAdapter extends EventEmitter {
             tools: tools.length > 0 ? tools : undefined,
             stream: true,
             options: {
-                temperature: 0
+                temperature: 0.1
             }
         });
 
         const fullMessage: Message = { role: 'assistant', content: '' };
-        
+
         for await (const chunk of stream) {
             if (chunk.message.thinking) {
                 const text = chunk.message.thinking;
@@ -161,7 +161,7 @@ export function getToolDefinition(tool: ToolContract): ToolDefinition {
 
 function getJsonType(zodType: Z.ZodTypeAny): string {
     let unwrapped = zodType;
-    
+
     // Unwrap common wrappers
     while (true) {
         if (unwrapped instanceof Z.ZodOptional || unwrapped instanceof Z.ZodDefault || unwrapped instanceof Z.ZodNullable) {
@@ -182,6 +182,6 @@ function getJsonType(zodType: Z.ZodTypeAny): string {
     if (unwrapped instanceof Z.ZodDiscriminatedUnion) return 'object';
     if (unwrapped instanceof Z.ZodRecord) return 'object';
     if (unwrapped instanceof Z.ZodUnion) return 'object';
-    
+
     return 'string';
 }

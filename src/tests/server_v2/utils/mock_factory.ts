@@ -1,4 +1,4 @@
-import { IMatchService, IMatchHandle, ToolContext, IServerApp } from '../core/tool_builder.js';
+import { IMatchService, IMatchHandle, ToolContext, IServerApp } from '../../../server_v2/core/tool_builder.js';
 import { vi } from 'vitest';
 
 /**

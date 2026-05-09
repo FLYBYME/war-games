@@ -1,6 +1,6 @@
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
-import { TerrainService } from './TerrainService.js';
-import { WorkerService } from './WorkerService.js';
+import { TerrainService } from '../../../server_v2/services/TerrainService.js';
+import { WorkerService } from '../../../server_v2/services/WorkerService.js';
 
 describe('TerrainService', () => {
     let service: TerrainService;

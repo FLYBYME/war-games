@@ -5,6 +5,13 @@ export interface KinematicSnapshot {
     pos: Vector3;
     speedKts: number;
     altM: number;
+    hp: number;
+    isDestroyed: boolean;
+    fuelPct: number;
+    mission?: {
+        type: string;
+        status: string;
+    };
 }
 
 /**
@@ -14,7 +21,7 @@ export interface KinematicSnapshot {
 export class TelemetryComponent implements IComponent {
     readonly type = 'TelemetryComponent';
     public history: KinematicSnapshot[] = [];
-    public maxHistory: number = 300;
+    public maxHistory: number = 10000;
 
     constructor(init?: Partial<TelemetryComponent>) {
         if (init) Object.assign(this, init);

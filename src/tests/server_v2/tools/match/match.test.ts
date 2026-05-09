@@ -1,13 +1,13 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
-import { match_list } from './match_list.js';
-import { match_get } from './match_get.js';
-import { match_create } from './match_create.js';
-import { match_delete } from './match_delete.js';
-import { match_update } from './match_update.js';
-import { createMockMatchHandle, createMockMatchService, createMockContext } from '../../test_utils/mock_factory.js';
+import { match_list } from '../../../../server_v2/tools/match/match_list.js';
+import { match_get } from '../../../../server_v2/tools/match/match_get.js';
+import { match_create } from '../../../../server_v2/tools/match/match_create.js';
+import { match_delete } from '../../../../server_v2/tools/match/match_delete.js';
+import { match_update } from '../../../../server_v2/tools/match/match_update.js';
+import { createMockMatchHandle, createMockMatchService, createMockContext } from '../../utils/mock_factory.js';
 
 // Mock the MatchService module to override isMatchHandle
-vi.mock('../../services/MatchService.js', async (importOriginal) => {
+vi.mock('../../../../server_v2/services/MatchService.js', async (importOriginal) => {
     const actual = await importOriginal() as any;
     return {
         ...actual,

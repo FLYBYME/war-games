@@ -132,3 +132,41 @@ export const historyAggregateMetricsContract = defineContract({
     outputSchema: HistoryAggregateMetricsOutputSchema,
     rest: { method: 'GET', path: '/history/:batchId/metrics' }
 });
+
+// ─── history_get_entity_samples ─────────────────────────────────────────────
+
+export const HistoryGetEntitySamplesInputSchema = z.object({
+    batchId: z.string().describe("Batch/run identifier"),
+    entityId: z.string().describe("Entity ID to sample"),
+    sampleCount: z.number().describe("Number of samples to return")
+});
+
+export const HistoryGetEntitySamplesOutputSchema = z.object({
+    samples: z.array(z.object({
+        tick: z.number().describe("Sample tick"),
+        position: z.object({
+            x: z.number(),
+            y: z.number(),
+            z: z.number()
+        }).describe("3D position"),
+        speedKts: z.number().describe("Speed in knots"),
+        heading: z.number().describe("Heading in degrees"),
+        hp: z.number().describe("Health points"),
+        isDestroyed: z.boolean().describe("Whether the entity is destroyed"),
+        fuelPct: z.number().describe("Fuel percentage"),
+        mission: z.object({
+            type: z.string().optional(),
+            status: z.string().optional()
+        }).optional().describe("Mission state")
+    })).describe("Historical state samples"),
+    totalCount: z.number().describe("Total number of telemetry points available")
+});
+
+export const historyGetEntitySamplesContract = defineContract({
+    domain: 'history',
+    action: 'get_entity_samples',
+    description: 'Fetch detailed state samples for an entity over its lifetime.',
+    inputSchema: HistoryGetEntitySamplesInputSchema,
+    outputSchema: HistoryGetEntitySamplesOutputSchema,
+    rest: { method: 'GET', path: '/history/:batchId/telemetry/:entityId/samples' }
+});

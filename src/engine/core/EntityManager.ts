@@ -260,7 +260,7 @@ export class EntityManager {
         }));
 
         // 8. Telemetry History
-        entity.addComponent(new TelemetryComponent({ maxHistory: 500 }));
+        entity.addComponent(new TelemetryComponent());
 
         this.world.addEntity(entity);
         return entity;

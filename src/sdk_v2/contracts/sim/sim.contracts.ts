@@ -68,3 +68,25 @@ export const simUpdateContract = defineContract({
     outputSchema: SimUpdateOutputSchema,
     rest: { method: 'PATCH', path: '/matches/:matchId/simulation' }
 });
+// ─── sim_get_metrics ─────────────────────────────────────────────────────────
+
+export const SimGetMetricsInputSchema = z.object({});
+
+export const SimMetricsOutputSchema = z.object({
+    memory: z.object({
+        rss: z.number().describe("Resident Set Size in bytes"),
+        heapUsed: z.number().describe("Heap memory used in bytes"),
+        heapTotal: z.number().describe("Total heap allocated in bytes"),
+        external: z.number().describe("External memory (Buffers, etc) in bytes")
+    }),
+    uptime: z.number().describe("Process uptime in seconds")
+});
+
+export const simGetMetricsContract = defineContract({
+    domain: 'sim',
+    action: 'get_metrics',
+    description: 'Get real-time performance and memory metrics for the simulation server.',
+    inputSchema: SimGetMetricsInputSchema,
+    outputSchema: SimMetricsOutputSchema,
+    rest: { method: 'GET', path: '/simulation/metrics' }
+});

@@ -72,6 +72,18 @@ export * from './map/map.contracts.js';
 // ─── Worker Management ───────────────────────────────────────────────────────
 export * from './worker/worker.contracts.js';
 
+// ─── Datalink ────────────────────────────────────────────────────────────────
+export * from './datalink/datalink.contracts.js';
+
+// ─── Orbital ─────────────────────────────────────────────────────────────────
+export * from './orbital/orbital.contracts.js';
+
+// ─── Ministry ────────────────────────────────────────────────────────────────
+export * from './ministry/ministry.contracts.js';
+
+// ─── Automation ──────────────────────────────────────────────────────────────
+export * from './automation/automation.contracts.js';
+
 // ─── Bug Reporting ───────────────────────────────────────────────────────────
 export * from './bug/bug.contracts.js';
 

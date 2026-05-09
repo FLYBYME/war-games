@@ -1,5 +1,5 @@
 import { describe, it, expect, beforeEach, afterEach } from 'vitest';
-import { WorkerService } from './WorkerService.js';
+import { WorkerService } from '../../../server_v2/services/WorkerService.js';
 import path from 'path';
 import { fileURLToPath } from 'url';
 

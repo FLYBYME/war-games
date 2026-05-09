@@ -1,14 +1,14 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
-import { kinematics_get } from './kinematics_get.js';
-import { kinematics_update } from './kinematics_update.js';
-import { kinematics_set_position } from './kinematics_set_position.js';
-import { kinematics_apply_force } from './kinematics_apply_force.js';
-import { createMockMatchHandle, createMockMatchService, createMockContext, createMockEntity } from '../../test_utils/mock_factory.js';
-import { TransformComponent, KinematicsComponent } from '../../../engine/components/Physics.js';
-import { SetPositionCommand, SetSpeedCommand, ApplyForceCommand } from '../../../engine/core/Command.js';
+import { kinematics_get } from '../../../../server_v2/tools/kinematics/kinematics_get.js';
+import { kinematics_update } from '../../../../server_v2/tools/kinematics/kinematics_update.js';
+import { kinematics_set_position } from '../../../../server_v2/tools/kinematics/kinematics_set_position.js';
+import { kinematics_apply_force } from '../../../../server_v2/tools/kinematics/kinematics_apply_force.js';
+import { createMockMatchHandle, createMockMatchService, createMockContext, createMockEntity } from '../../utils/mock_factory.js';
+import { TransformComponent, KinematicsComponent } from '../../../../engine/components/Physics.js';
+import { SetPositionCommand, SetSpeedCommand, ApplyForceCommand } from '../../../../engine/core/Command.js';
 
 // Mock MatchService
-vi.mock('../../services/MatchService.js', async (importOriginal) => {
+vi.mock('../../../../server_v2/services/MatchService.js', async (importOriginal) => {
     const actual = await importOriginal() as any;
     return {
         ...actual,

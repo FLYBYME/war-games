@@ -1,13 +1,13 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
-import { env_get } from './env_get.js';
-import { env_update } from './env_update.js';
-import { env_sample_ocean } from './env_sample_ocean.js';
-import { env_set_time } from './env_set_time.js';
-import { createMockMatchHandle, createMockMatchService, createMockContext } from '../../test_utils/mock_factory.js';
-import { EnvironmentSystem } from '../../../engine/systems/EnvironmentSystem.js';
+import { env_get } from '../../../../server_v2/tools/env/env_get.js';
+import { env_update } from '../../../../server_v2/tools/env/env_update.js';
+import { env_sample_ocean } from '../../../../server_v2/tools/env/env_sample_ocean.js';
+import { env_set_time } from '../../../../server_v2/tools/env/env_set_time.js';
+import { createMockMatchHandle, createMockMatchService, createMockContext } from '../../utils/mock_factory.js';
+import { EnvironmentSystem } from '../../../../engine/systems/EnvironmentSystem.js';
 
 // Mock MatchService to return our mock handle
-vi.mock('../../services/MatchService.js', async (importOriginal) => {
+vi.mock('../../../../server_v2/services/MatchService.js', async (importOriginal) => {
     const actual = await importOriginal() as any;
     return {
         ...actual,

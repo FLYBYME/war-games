@@ -1,12 +1,12 @@
 import { describe, it, expect, vi, beforeEach, beforeAll } from 'vitest';
-import { bug_create } from './bug_create.js';
-import { bug_list } from './bug_list.js';
-import { bug_get } from './bug_get.js';
-import { bug_update } from './bug_update.js';
-import { bug_add_comment } from './bug_add_comment.js';
-import { createMockMatchService, createMockContext } from '../../test_utils/mock_factory.js';
-import { db, initDb } from '../../db/db.js';
-import { bugs, bugComments } from '../../db/schema.js';
+import { bug_create } from '../../../../server_v2/tools/bug/bug_create.js';
+import { bug_list } from '../../../../server_v2/tools/bug/bug_list.js';
+import { bug_get } from '../../../../server_v2/tools/bug/bug_get.js';
+import { bug_update } from '../../../../server_v2/tools/bug/bug_update.js';
+import { bug_add_comment } from '../../../../server_v2/tools/bug/bug_add_comment.js';
+import { createMockMatchService, createMockContext } from '../../utils/mock_factory.js';
+import { db, initDb } from '../../../../server_v2/db/db.js';
+import { bugs, bugComments } from '../../../../server_v2/db/schema.js';
 
 describe('Bug Reporting Tools Unit Tests', () => {
     

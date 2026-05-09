@@ -1,7 +1,7 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
-import { worker_list } from './worker_list.js';
-import { worker_get_stats } from './worker_get_stats.js';
-import { createMockMatchService, createMockContext } from '../../test_utils/mock_factory.js';
+import { worker_list } from '../../../../server_v2/tools/worker/worker_list.js';
+import { worker_get_stats } from '../../../../server_v2/tools/worker/worker_get_stats.js';
+import { createMockMatchService, createMockContext } from '../../utils/mock_factory.js';
 
 describe('Worker Tools Unit Tests', () => {
     

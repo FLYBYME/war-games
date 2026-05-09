@@ -1,12 +1,12 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
-import { map_calculate_distance } from './map_calculate_distance.js';
-import { map_convert } from './map_convert.js';
-import { map_get_los } from './map_get_los.js';
-import { map_get_elevation_profile } from './map_get_elevation_profile.js';
-import { createMockMatchHandle, createMockMatchService, createMockContext } from '../../test_utils/mock_factory.js';
+import { map_calculate_distance } from '../../../../server_v2/tools/map/map_calculate_distance.js';
+import { map_convert } from '../../../../server_v2/tools/map/map_convert.js';
+import { map_get_los } from '../../../../server_v2/tools/map/map_get_los.js';
+import { map_get_elevation_profile } from '../../../../server_v2/tools/map/map_get_elevation_profile.js';
+import { createMockMatchHandle, createMockMatchService, createMockContext } from '../../utils/mock_factory.js';
 
 // Mock MatchService to return our mock handle
-vi.mock('../../services/MatchService.js', async (importOriginal) => {
+vi.mock('../../../../server_v2/services/MatchService.js', async (importOriginal) => {
     const actual = await importOriginal() as any;
     return {
         ...actual,
@@ -128,9 +128,9 @@ describe('Map Tools Unit Tests', () => {
             const matchService = createMockMatchService([handle]);
             const ctx = createMockContext(matchService);
 
-            const { map_create_zone } = await import('./map_create_zone.js');
-            const { map_list_zones } = await import('./map_list_zones.js');
-            const { map_update_zone } = await import('./map_update_zone.js');
+            const { map_create_zone } = await import('../../../../server_v2/tools/map/map_create_zone.js');
+            const { map_list_zones } = await import('../../../../server_v2/tools/map/map_list_zones.js');
+            const { map_update_zone } = await import('../../../../server_v2/tools/map/map_update_zone.js');
 
             const z1 = await map_create_zone.call({
                 matchId: handle.id,

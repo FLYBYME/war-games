@@ -9,7 +9,12 @@ export const sim_step = defineTool(simStepContract, async (input, ctx) => {
     
     const ticks = input.ticks || 1;
     for (let i = 0; i < ticks; i++) {
-        await handle.world.tick(0.1); 
+        await handle.world.tick(0.1);
+        
+        // Yield every 100 ticks to allow metrics/polling requests to get through
+        if (i % 100 === 0) {
+            await new Promise(resolve => setImmediate(resolve));
+        }
     }
     
     return {

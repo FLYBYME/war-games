@@ -15,6 +15,7 @@ export const KinematicsStateSchema = z.object({
     altitudeM: z.number().describe("Current altitude in meters"),
     massKg: z.number().describe("Current mass in kilograms")
 }).describe("Full kinematics state");
+export type KinematicsState = z.infer<typeof KinematicsStateSchema>;
 
 // ─── kinematics_get ──────────────────────────────────────────────────────────
 
@@ -22,6 +23,7 @@ export const KinematicsGetInputSchema = z.object({
     matchId: z.string().describe("The match ID"),
     entityId: z.string().describe("The entity ID")
 });
+export type KinematicsGetInput = z.infer<typeof KinematicsGetInputSchema>;
 
 export const kinematicsGetContract = defineContract({
     domain: 'kinematics',
@@ -43,6 +45,7 @@ export const KinematicsUpdateInputSchema = z.object({
     speedKts: z.number().optional().describe("New speed in knots"),
     altitudeM: z.number().optional().describe("New altitude in meters")
 });
+export type KinematicsUpdateInput = z.infer<typeof KinematicsUpdateInputSchema>;
 
 export const kinematicsUpdateContract = defineContract({
     domain: 'kinematics',
@@ -60,6 +63,7 @@ export const KinematicsSetPositionInputSchema = z.object({
     entityId: z.string().describe("The entity ID"),
     position: Vector3Schema.describe("New position")
 });
+export type KinematicsSetPositionInput = z.infer<typeof KinematicsSetPositionInputSchema>;
 
 export const kinematicsSetPositionContract = defineContract({
     domain: 'kinematics',
@@ -77,10 +81,12 @@ export const KinematicsApplyForceInputSchema = z.object({
     entityId: z.string().describe("The entity ID"),
     force: Vector3Schema.describe("Force vector in Newtons")
 });
+export type KinematicsApplyForceInput = z.infer<typeof KinematicsApplyForceInputSchema>;
 
 export const KinematicsApplyForceOutputSchema = z.object({
     success: z.boolean().describe("Whether the force was applied")
 });
+export type KinematicsApplyForceOutput = z.infer<typeof KinematicsApplyForceOutputSchema>;
 
 export const kinematicsApplyForceContract = defineContract({
     domain: 'kinematics',

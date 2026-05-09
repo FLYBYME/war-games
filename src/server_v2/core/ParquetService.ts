@@ -21,7 +21,12 @@ export class ParquetService {
                 y: { type: 'DOUBLE' },
                 z: { type: 'DOUBLE' },
                 speedKts: { type: 'DOUBLE' },
-                heading: { type: 'DOUBLE' }
+                heading: { type: 'DOUBLE' },
+                hp: { type: 'DOUBLE' },
+                isDestroyed: { type: 'BOOLEAN' },
+                fuelPct: { type: 'DOUBLE' },
+                missionType: { type: 'UTF8', optional: true },
+                missionStatus: { type: 'UTF8', optional: true }
             });
         } else {
             this.schema = new parquet.ParquetSchema({

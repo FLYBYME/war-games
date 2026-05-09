@@ -5,6 +5,20 @@ import { WarGamesClientV2 } from '../../sdk_v2/generated/WarGamesClientV2.js';
 import { C } from '../core/Utils.js';
 
 export function registerGeneratedCommands(program: Command, client: WarGamesClientV2) {
+    let automation = program.commands.find(c => c.name() === 'automation');
+    if (!automation) automation = program.command('automation').description('AUTOMATION domain tools');
+    const automation_list_events = automation.command('list_events').description(`List all scripted events defined in the scenario.`).action(async (o) => {
+        try { const res = await client.api.automation.list_events(ZodToCliMapper.parseOptions(o, Contracts.AutomationListEventsInputSchema)); console.log(JSON.stringify(res, null, 2)); } catch (err: any) { console.error(`\n${C.red}${C.bold}✖ Error:${C.reset} ${err.message}`); process.exit(1); }
+    });
+    ZodToCliMapper.mapSchemaToOptions(automation_list_events, Contracts.AutomationListEventsInputSchema);
+    const automation_trigger_event = automation.command('trigger_event').description(`Force-trigger a scenario event, bypassing conditions.`).action(async (o) => {
+        try { const res = await client.api.automation.trigger_event(ZodToCliMapper.parseOptions(o, Contracts.AutomationTriggerEventInputSchema)); console.log(JSON.stringify(res, null, 2)); } catch (err: any) { console.error(`\n${C.red}${C.bold}✖ Error:${C.reset} ${err.message}`); process.exit(1); }
+    });
+    ZodToCliMapper.mapSchemaToOptions(automation_trigger_event, Contracts.AutomationTriggerEventInputSchema);
+    const automation_get_results = automation.command('get_results').description(`Retrieve pass/fail results for scenario assertions.`).action(async (o) => {
+        try { const res = await client.api.automation.get_results(ZodToCliMapper.parseOptions(o, Contracts.AutomationGetResultsInputSchema)); console.log(JSON.stringify(res, null, 2)); } catch (err: any) { console.error(`\n${C.red}${C.bold}✖ Error:${C.reset} ${err.message}`); process.exit(1); }
+    });
+    ZodToCliMapper.mapSchemaToOptions(automation_get_results, Contracts.AutomationGetResultsInputSchema);
     let bug = program.commands.find(c => c.name() === 'bug');
     if (!bug) bug = program.command('bug').description('BUG domain tools');
     const bug_list = bug.command('list').description(`Retrieve a list of all reported issues.`).action(async (o) => {
@@ -57,6 +71,20 @@ export function registerGeneratedCommands(program: Command, client: WarGamesClie
         try { const res = await client.api.combat.update_roe(ZodToCliMapper.parseOptions(o, Contracts.CombatUpdateROEInputSchema)); console.log(JSON.stringify(res, null, 2)); } catch (err: any) { console.error(`\n${C.red}${C.bold}✖ Error:${C.reset} ${err.message}`); process.exit(1); }
     });
     ZodToCliMapper.mapSchemaToOptions(combat_update_roe, Contracts.CombatUpdateROEInputSchema);
+    let datalink = program.commands.find(c => c.name() === 'datalink');
+    if (!datalink) datalink = program.command('datalink').description('DATALINK domain tools');
+    const datalink_get = datalink.command('get').description(`View latency, queue depth, and current network membership.`).action(async (o) => {
+        try { const res = await client.api.datalink.get(ZodToCliMapper.parseOptions(o, Contracts.DatalinkGetInputSchema)); console.log(JSON.stringify(res, null, 2)); } catch (err: any) { console.error(`\n${C.red}${C.bold}✖ Error:${C.reset} ${err.message}`); process.exit(1); }
+    });
+    ZodToCliMapper.mapSchemaToOptions(datalink_get, Contracts.DatalinkGetInputSchema);
+    const datalink_update_network = datalink.command('update_network').description(`Move an entity to a different tactical network.`).action(async (o) => {
+        try { const res = await client.api.datalink.update_network(ZodToCliMapper.parseOptions(o, Contracts.DatalinkUpdateNetworkInputSchema)); console.log(JSON.stringify(res, null, 2)); } catch (err: any) { console.error(`\n${C.red}${C.bold}✖ Error:${C.reset} ${err.message}`); process.exit(1); }
+    });
+    ZodToCliMapper.mapSchemaToOptions(datalink_update_network, Contracts.DatalinkUpdateNetworkInputSchema);
+    const datalink_set_emissions = datalink.command('set_emissions').description(`Manage datalink emission levels for stealth operations.`).action(async (o) => {
+        try { const res = await client.api.datalink.set_emissions(ZodToCliMapper.parseOptions(o, Contracts.DatalinkSetEmissionsInputSchema)); console.log(JSON.stringify(res, null, 2)); } catch (err: any) { console.error(`\n${C.red}${C.bold}✖ Error:${C.reset} ${err.message}`); process.exit(1); }
+    });
+    ZodToCliMapper.mapSchemaToOptions(datalink_set_emissions, Contracts.DatalinkSetEmissionsInputSchema);
     let db = program.commands.find(c => c.name() === 'db');
     if (!db) db = program.command('db').description('DB domain tools');
     const db_profile_list = db.command('profile_list').description(`List all available unit profiles.`).action(async (o) => {
@@ -223,6 +251,10 @@ export function registerGeneratedCommands(program: Command, client: WarGamesClie
         try { const res = await client.api.history.aggregate_metrics(ZodToCliMapper.parseOptions(o, Contracts.HistoryAggregateMetricsInputSchema)); console.log(JSON.stringify(res, null, 2)); } catch (err: any) { console.error(`\n${C.red}${C.bold}✖ Error:${C.reset} ${err.message}`); process.exit(1); }
     });
     ZodToCliMapper.mapSchemaToOptions(history_aggregate_metrics, Contracts.HistoryAggregateMetricsInputSchema);
+    const history_get_entity_samples = history.command('get_entity_samples').description(`Fetch detailed state samples for an entity over its lifetime.`).action(async (o) => {
+        try { const res = await client.api.history.get_entity_samples(ZodToCliMapper.parseOptions(o, Contracts.HistoryGetEntitySamplesInputSchema)); console.log(JSON.stringify(res, null, 2)); } catch (err: any) { console.error(`\n${C.red}${C.bold}✖ Error:${C.reset} ${err.message}`); process.exit(1); }
+    });
+    ZodToCliMapper.mapSchemaToOptions(history_get_entity_samples, Contracts.HistoryGetEntitySamplesInputSchema);
     let kinematics = program.commands.find(c => c.name() === 'kinematics');
     if (!kinematics) kinematics = program.command('kinematics').description('KINEMATICS domain tools');
     const kinematics_get = kinematics.command('get').description(`Retrieve high-fidelity position, velocity, and orientation data.`).action(async (o) => {
@@ -331,6 +363,16 @@ export function registerGeneratedCommands(program: Command, client: WarGamesClie
         try { const res = await client.api.match.get_win_state(ZodToCliMapper.parseOptions(o, Contracts.MatchWinStateInputSchema)); console.log(JSON.stringify(res, null, 2)); } catch (err: any) { console.error(`\n${C.red}${C.bold}✖ Error:${C.reset} ${err.message}`); process.exit(1); }
     });
     ZodToCliMapper.mapSchemaToOptions(match_get_win_state, Contracts.MatchWinStateInputSchema);
+    let ministry = program.commands.find(c => c.name() === 'ministry');
+    if (!ministry) ministry = program.command('ministry').description('MINISTRY domain tools');
+    const ministry_get_evaluation = ministry.command('get_evaluation').description(`Retrieve the DesiredState generated by an AI Ministry.`).action(async (o) => {
+        try { const res = await client.api.ministry.get_evaluation(ZodToCliMapper.parseOptions(o, Contracts.MinistryGetEvaluationInputSchema)); console.log(JSON.stringify(res, null, 2)); } catch (err: any) { console.error(`\n${C.red}${C.bold}✖ Error:${C.reset} ${err.message}`); process.exit(1); }
+    });
+    ZodToCliMapper.mapSchemaToOptions(ministry_get_evaluation, Contracts.MinistryGetEvaluationInputSchema);
+    const ministry_update_doctrine = ministry.command('update_doctrine').description(`Inject doctrine parameters to change Ministry behavior.`).action(async (o) => {
+        try { const res = await client.api.ministry.update_doctrine(ZodToCliMapper.parseOptions(o, Contracts.MinistryUpdateDoctrineInputSchema)); console.log(JSON.stringify(res, null, 2)); } catch (err: any) { console.error(`\n${C.red}${C.bold}✖ Error:${C.reset} ${err.message}`); process.exit(1); }
+    });
+    ZodToCliMapper.mapSchemaToOptions(ministry_update_doctrine, Contracts.MinistryUpdateDoctrineInputSchema);
     let mission = program.commands.find(c => c.name() === 'mission');
     if (!mission) mission = program.command('mission').description('MISSION domain tools');
     const mission_list = mission.command('list').description(`List all active and queued missions for a unit.`).action(async (o) => {
@@ -375,6 +417,20 @@ export function registerGeneratedCommands(program: Command, client: WarGamesClie
         try { const res = await client.api.nav.break_formation(ZodToCliMapper.parseOptions(o, Contracts.NavBreakFormationInputSchema)); console.log(JSON.stringify(res, null, 2)); } catch (err: any) { console.error(`\n${C.red}${C.bold}✖ Error:${C.reset} ${err.message}`); process.exit(1); }
     });
     ZodToCliMapper.mapSchemaToOptions(nav_break_formation, Contracts.NavBreakFormationInputSchema);
+    let orbital = program.commands.find(c => c.name() === 'orbital');
+    if (!orbital) orbital = program.command('orbital').description('ORBITAL domain tools');
+    const orbital_get_elements = orbital.command('get_elements').description(`Fetch the Keplerian orbital elements for a satellite.`).action(async (o) => {
+        try { const res = await client.api.orbital.get_elements(ZodToCliMapper.parseOptions(o, Contracts.OrbitalGetInputSchema)); console.log(JSON.stringify(res, null, 2)); } catch (err: any) { console.error(`\n${C.red}${C.bold}✖ Error:${C.reset} ${err.message}`); process.exit(1); }
+    });
+    ZodToCliMapper.mapSchemaToOptions(orbital_get_elements, Contracts.OrbitalGetInputSchema);
+    const orbital_update_elements = orbital.command('update_elements').description(`Manually adjust a satellite\'s orbit (Station Keeping).`).action(async (o) => {
+        try { const res = await client.api.orbital.update_elements(ZodToCliMapper.parseOptions(o, Contracts.OrbitalUpdateInputSchema)); console.log(JSON.stringify(res, null, 2)); } catch (err: any) { console.error(`\n${C.red}${C.bold}✖ Error:${C.reset} ${err.message}`); process.exit(1); }
+    });
+    ZodToCliMapper.mapSchemaToOptions(orbital_update_elements, Contracts.OrbitalUpdateInputSchema);
+    const orbital_predict_pass = orbital.command('predict_pass').description(`Predict when a satellite will have LOS over a specific region.`).action(async (o) => {
+        try { const res = await client.api.orbital.predict_pass(ZodToCliMapper.parseOptions(o, Contracts.OrbitalPredictInputSchema)); console.log(JSON.stringify(res, null, 2)); } catch (err: any) { console.error(`\n${C.red}${C.bold}✖ Error:${C.reset} ${err.message}`); process.exit(1); }
+    });
+    ZodToCliMapper.mapSchemaToOptions(orbital_predict_pass, Contracts.OrbitalPredictInputSchema);
     let propulsion = program.commands.find(c => c.name() === 'propulsion');
     if (!propulsion) propulsion = program.command('propulsion').description('PROPULSION domain tools');
     const propulsion_get = propulsion.command('get').description(`Fetch real-time throttle, thrust, and engine state.`).action(async (o) => {

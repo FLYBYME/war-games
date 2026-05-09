@@ -1,8 +1,8 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
-import { env_sample_terrain } from './env_sample_terrain.js';
-import { env_prefetch_terrain } from './env_prefetch_terrain.js';
-import { env_get_cache_stats } from './env_get_cache_stats.js';
-import { createMockMatchService, createMockContext } from '../../test_utils/mock_factory.js';
+import { env_sample_terrain } from '../../../../server_v2/tools/env/env_sample_terrain.js';
+import { env_prefetch_terrain } from '../../../../server_v2/tools/env/env_prefetch_terrain.js';
+import { env_get_cache_stats } from '../../../../server_v2/tools/env/env_get_cache_stats.js';
+import { createMockMatchService, createMockContext } from '../../utils/mock_factory.js';
 
 describe('Terrain Tools Unit Tests', () => {
     

@@ -1,6 +1,9 @@
 import { ISystem, IWorldView, SystemPhase } from '../core/ISystem.js';
 import { Command } from '../core/Command.js';
 import { TransformComponent, KinematicsComponent, SideComponent } from '../components/Physics.js';
+import { HealthComponent } from '../components/Health.js';
+import { FuelComponent } from '../components/Propulsion.js';
+import { MissionComponent } from '../components/Missions.js';
 import { TelemetryComponent, KinematicSnapshot } from '../components/Telemetry.js';
 import { VectorMath } from '../math/VectorMath.js';
 import { SimulationEvent, Side } from '../core/Types.js';
@@ -51,15 +54,26 @@ export class TelemetrySystem implements ISystem {
             const tel = entity.getComponent(TelemetryComponent);
             const transform = entity.getComponent(TransformComponent);
             const kin = entity.getComponent(KinematicsComponent);
+            const health = entity.getComponent(HealthComponent);
+            const fuel = entity.getComponent(FuelComponent);
+            const mission = entity.getComponent(MissionComponent);
 
             if (tel && transform) {
                 const speed = kin ? (VectorMath.magnitude(kin.velocity) * 1.94384) : 0; // m/s to knots
+                const fuelPct = (fuel && fuel.maxKg > 0) ? (fuel.currentKg / fuel.maxKg) : 1.0;
                 
                 tel.history.push({
                     tick: world.currentTick,
                     pos: { ...transform.position },
                     speedKts: speed,
-                    altM: transform.position.z
+                    altM: transform.position.z,
+                    hp: health?.hp ?? 100,
+                    isDestroyed: health?.isDestroyed ?? false,
+                    fuelPct,
+                    mission: mission ? {
+                        type: mission.missionType,
+                        status: mission.status
+                    } : undefined
                 });
 
                 if (tel.history.length > tel.maxHistory) {
@@ -70,12 +84,17 @@ export class TelemetrySystem implements ISystem {
                     this.externalWriter.writeTelemetry({
                         tick: world.currentTick,
                         entityId: entity.id,
-                        side: entity.getComponent(SideComponent)?.side || 'Neutral', // Need SideComponent
+                        side: entity.getComponent(SideComponent)?.side || 'Neutral',
                         x: transform.position.x,
                         y: transform.position.y,
                         z: transform.position.z,
                         speedKts: speed,
-                        heading: transform.heading
+                        heading: transform.heading,
+                        hp: health?.hp ?? 100,
+                        isDestroyed: health?.isDestroyed ?? false,
+                        fuelPct,
+                        missionType: mission?.missionType,
+                        missionStatus: mission?.status
                     }).catch(console.error);
                 }
             }

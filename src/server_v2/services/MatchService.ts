@@ -3,6 +3,7 @@ import { World } from '../../engine/core/World.js';
 import { ScenarioLoader } from '../../engine/core/ScenarioLoader.js';
 import { EntityManager } from '../../engine/core/EntityManager.js';
 import { db } from '../db/db.js';
+import * as dbSchema from '../db/schema.js';
 import { scenarios, matches } from '../db/schema.js';
 import { eq } from 'drizzle-orm';
 import { randomUUID } from 'crypto';
@@ -40,6 +41,7 @@ import { TrackManagementSystem } from '../../engine/systems/TrackManagementSyste
 import { WaypointSystem } from '../../engine/systems/WaypointSystem.js';
 import { WeaponStageSystem } from '../../engine/systems/WeaponStageSystem.js';
 import { WRAExecutorSystem } from '../../engine/systems/WRAExecutorSystem.js';
+import { ParquetService } from '../core/ParquetService.js';
 
 /**
  * MatchHandle: Concrete implementation of a live simulation match.
@@ -47,6 +49,8 @@ import { WRAExecutorSystem } from '../../engine/systems/WRAExecutorSystem.js';
 export class MatchHandle implements IMatchHandle {
     public readonly world: World;
     public readonly zones = new Map<string, any>(); // id -> zone
+    public telemetryWriter?: ParquetService;
+    public eventWriter?: ParquetService;
 
     constructor(
         public readonly id: string,
@@ -77,7 +81,19 @@ export class MatchHandle implements IMatchHandle {
         this.world.addSystem(new MissileHomingSystem());
         this.world.addSystem(new WRAExecutorSystem(this.world.weaponProfiles));
         this.world.addSystem(new CombatSystem(this.world.weaponProfiles));
-        this.world.addSystem(new TelemetrySystem());
+        
+        const telemetry = new TelemetrySystem();
+        this.world.addSystem(telemetry);
+
+        // Initialize writers
+        this.telemetryWriter = new ParquetService(this.id, 'telemetry');
+        this.eventWriter = new ParquetService(this.id, 'events');
+
+        telemetry.externalWriter = {
+            writeTelemetry: (data) => this.telemetryWriter!.writeRow(data),
+            writeEvent: (event) => this.eventWriter!.writeRow(event)
+        };
+
         this.world.addSystem(new AeroSystem());
         this.world.addSystem(new WeaponStageSystem());
         this.world.addSystem(new PhysicsSystem());
@@ -143,6 +159,17 @@ export class MatchService implements IMatchService {
         const matchId = randomUUID();
         const handle = new MatchHandle(matchId, name, scenarioId, this.terrainService);
 
+        // Hydrate Registries from DB
+        const allProfiles = db.select().from(dbSchema.profiles).all();
+        for (const p of allProfiles) {
+            handle.world.profileRegistry.register(p.id, p.data as any);
+        }
+
+        const allWeapons = db.select().from(dbSchema.weapons).all();
+        for (const w of allWeapons) {
+            handle.world.weaponProfiles.register(w.id, w.data as any);
+        }
+
         const entityMgr = new EntityManager(handle.world, handle.world.profileRegistry);
         const loader = new ScenarioLoader(entityMgr);
         
@@ -164,6 +191,11 @@ export class MatchService implements IMatchService {
     }
 
     public deleteMatch(matchId: string): boolean {
+        const handle = this.activeMatches.get(matchId);
+        if (handle) {
+            void handle.telemetryWriter?.close();
+            void handle.eventWriter?.close();
+        }
         const deleted = this.activeMatches.delete(matchId);
         if (deleted) {
             db.update(matches)

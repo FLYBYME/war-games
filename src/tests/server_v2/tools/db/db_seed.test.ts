@@ -1,8 +1,8 @@
 import { describe, it, expect, vi, beforeAll } from 'vitest';
-import { db_seed } from './db_seed.js';
-import { createMockMatchService, createMockContext } from '../../test_utils/mock_factory.js';
-import { db, initDb } from '../../db/db.js';
-import { profiles, weapons, scenarios } from '../../db/schema.js';
+import { db_seed } from '../../../../server_v2/tools/db/db_seed.js';
+import { createMockMatchService, createMockContext } from '../../utils/mock_factory.js';
+import { db, initDb } from '../../../../server_v2/db/db.js';
+import { profiles, weapons, scenarios } from '../../../../server_v2/db/schema.js';
 
 describe('Database Seeding Tool Unit Tests', () => {
     

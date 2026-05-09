@@ -19,6 +19,11 @@ export class WarGamesClientV2 {
     }
 
     public readonly api = {
+        automation: {
+            list_events: async (args: z.infer<typeof Contracts.AutomationListEventsInputSchema>): Promise<z.infer<typeof Contracts.AutomationListEventsOutputSchema>> => this.request('GET', `/matches/${args.matchId}/automation/events`, args),
+            trigger_event: async (args: z.infer<typeof Contracts.AutomationTriggerEventInputSchema>): Promise<z.infer<typeof Contracts.AutomationTriggerEventOutputSchema>> => this.request('POST', `/matches/${args.matchId}/automation/events/${args.eventId}/trigger`, args),
+            get_results: async (args: z.infer<typeof Contracts.AutomationGetResultsInputSchema>): Promise<z.infer<typeof Contracts.AutomationGetResultsOutputSchema>> => this.request('GET', `/matches/${args.matchId}/automation/assertions`, args),
+        },
         bug: {
             list: async (args: z.infer<typeof Contracts.BugListInputSchema>): Promise<z.infer<typeof Contracts.BugListOutputSchema>> => this.request('GET', `/bugs`, args),
             create: async (args: z.infer<typeof Contracts.BugCreateInputSchema>): Promise<z.infer<typeof Contracts.BugReportSchema>> => this.request('POST', `/bugs`, args),
@@ -34,6 +39,11 @@ export class WarGamesClientV2 {
             get_wra: async (args: z.infer<typeof Contracts.CombatGetWRAInputSchema>): Promise<z.infer<typeof Contracts.CombatGetWRAOutputSchema>> => this.request('GET', `/matches/${args.matchId}/entities/${args.entityId}/combat/wra`, args),
             update_wra: async (args: z.infer<typeof Contracts.CombatUpdateWRAInputSchema>): Promise<z.infer<typeof Contracts.CombatGetWRAOutputSchema>> => this.request('PATCH', `/matches/${args.matchId}/entities/${args.entityId}/combat/wra`, args),
             update_roe: async (args: z.infer<typeof Contracts.CombatUpdateROEInputSchema>): Promise<z.infer<typeof Contracts.CombatUpdateROEOutputSchema>> => this.request('PATCH', `/matches/${args.matchId}/entities/${args.entityId}/combat/roe`, args),
+        },
+        datalink: {
+            get: async (args: z.infer<typeof Contracts.DatalinkGetInputSchema>): Promise<z.infer<typeof Contracts.DatalinkStateSchema>> => this.request('GET', `/matches/${args.matchId}/entities/${args.entityId}/datalink`, args),
+            update_network: async (args: z.infer<typeof Contracts.DatalinkUpdateNetworkInputSchema>): Promise<z.infer<typeof Contracts.DatalinkStateSchema>> => this.request('PATCH', `/matches/${args.matchId}/entities/${args.entityId}/datalink/network`, args),
+            set_emissions: async (args: z.infer<typeof Contracts.DatalinkSetEmissionsInputSchema>): Promise<z.infer<typeof Contracts.DatalinkStateSchema>> => this.request('PATCH', `/matches/${args.matchId}/entities/${args.entityId}/datalink/emissions`, args),
         },
         db: {
             profile_list: async (args: z.infer<typeof Contracts.DBProfileListInputSchema>): Promise<z.infer<typeof Contracts.DBProfileListOutputSchema>> => this.request('GET', `/db/profiles`, args),
@@ -86,6 +96,7 @@ export class WarGamesClientV2 {
             list_events: async (args: z.infer<typeof Contracts.HistoryListEventsInputSchema>): Promise<z.infer<typeof Contracts.HistoryListEventsOutputSchema>> => this.request('GET', `/history/${args.batchId}/events`, args),
             get_losses: async (args: z.infer<typeof Contracts.HistoryGetLossesInputSchema>): Promise<z.infer<typeof Contracts.HistoryGetLossesOutputSchema>> => this.request('GET', `/history/${args.batchId}/losses`, args),
             aggregate_metrics: async (args: z.infer<typeof Contracts.HistoryAggregateMetricsInputSchema>): Promise<z.infer<typeof Contracts.HistoryAggregateMetricsOutputSchema>> => this.request('GET', `/history/${args.batchId}/metrics`, args),
+            get_entity_samples: async (args: z.infer<typeof Contracts.HistoryGetEntitySamplesInputSchema>): Promise<z.infer<typeof Contracts.HistoryGetEntitySamplesOutputSchema>> => this.request('GET', `/history/${args.batchId}/telemetry/${args.entityId}/samples`, args),
         },
         kinematics: {
             get: async (args: z.infer<typeof Contracts.KinematicsGetInputSchema>): Promise<z.infer<typeof Contracts.KinematicsStateSchema>> => this.request('GET', `/matches/${args.matchId}/entities/${args.entityId}/kinematics`, args),
@@ -120,6 +131,10 @@ export class WarGamesClientV2 {
             delete: async (args: z.infer<typeof Contracts.MatchDeleteInputSchema>): Promise<z.infer<typeof Contracts.MatchDeleteOutputSchema>> => this.request('DELETE', `/matches/${args.matchId}`, args),
             get_win_state: async (args: z.infer<typeof Contracts.MatchWinStateInputSchema>): Promise<z.infer<typeof Contracts.MatchWinStateOutputSchema>> => this.request('GET', `/matches/${args.matchId}/win-state`, args),
         },
+        ministry: {
+            get_evaluation: async (args: z.infer<typeof Contracts.MinistryGetEvaluationInputSchema>): Promise<z.infer<typeof Contracts.DesiredStateSchema>> => this.request('GET', `/matches/${args.matchId}/ministries/${args.side}/evaluation`, args),
+            update_doctrine: async (args: z.infer<typeof Contracts.MinistryUpdateDoctrineInputSchema>): Promise<z.infer<typeof Contracts.MinistryUpdateDoctrineOutputSchema>> => this.request('PATCH', `/matches/${args.matchId}/ministries/${args.side}/doctrine`, args),
+        },
         mission: {
             list: async (args: z.infer<typeof Contracts.MissionListInputSchema>): Promise<z.infer<typeof Contracts.MissionListOutputSchema>> => this.request('GET', `/matches/${args.matchId}/entities/${args.entityId}/missions`, args),
             create: async (args: z.infer<typeof Contracts.MissionCreateInputSchema>): Promise<z.infer<typeof Contracts.MissionSchema>> => this.request('POST', `/matches/${args.matchId}/entities/${args.entityId}/missions`, args),
@@ -133,6 +148,11 @@ export class WarGamesClientV2 {
             clear_waypoints: async (args: z.infer<typeof Contracts.NavClearWaypointsInputSchema>): Promise<z.infer<typeof Contracts.NavClearWaypointsOutputSchema>> => this.request('DELETE', `/matches/${args.matchId}/entities/${args.entityId}/navigation/waypoints`, args),
             join_formation: async (args: z.infer<typeof Contracts.NavJoinFormationInputSchema>): Promise<z.infer<typeof Contracts.NavigationStateSchema>> => this.request('POST', `/matches/${args.matchId}/entities/${args.entityId}/navigation/formation`, args),
             break_formation: async (args: z.infer<typeof Contracts.NavBreakFormationInputSchema>): Promise<z.infer<typeof Contracts.NavBreakFormationOutputSchema>> => this.request('DELETE', `/matches/${args.matchId}/entities/${args.entityId}/navigation/formation`, args),
+        },
+        orbital: {
+            get_elements: async (args: z.infer<typeof Contracts.OrbitalGetInputSchema>): Promise<z.infer<typeof Contracts.OrbitalStateSchema>> => this.request('GET', `/matches/${args.matchId}/entities/${args.entityId}/orbital`, args),
+            update_elements: async (args: z.infer<typeof Contracts.OrbitalUpdateInputSchema>): Promise<z.infer<typeof Contracts.OrbitalStateSchema>> => this.request('PATCH', `/matches/${args.matchId}/entities/${args.entityId}/orbital`, args),
+            predict_pass: async (args: z.infer<typeof Contracts.OrbitalPredictInputSchema>): Promise<z.infer<typeof Contracts.OrbitalPredictOutputSchema>> => this.request('GET', `/matches/${args.matchId}/entities/${args.entityId}/orbital/passes`, args),
         },
         propulsion: {
             get: async (args: z.infer<typeof Contracts.PropulsionGetInputSchema>): Promise<z.infer<typeof Contracts.PropulsionStateSchema>> => this.request('GET', `/matches/${args.matchId}/entities/${args.entityId}/propulsion`, args),
@@ -160,6 +180,7 @@ export class WarGamesClientV2 {
             get: async (args: z.infer<typeof Contracts.SimGetInputSchema>): Promise<z.infer<typeof Contracts.SimGetOutputSchema>> => this.request('GET', `/matches/${args.matchId}/simulation`, args),
             step: async (args: z.infer<typeof Contracts.SimStepInputSchema>): Promise<z.infer<typeof Contracts.SimStepOutputSchema>> => this.request('POST', `/matches/${args.matchId}/simulation/step`, args),
             update: async (args: z.infer<typeof Contracts.SimUpdateInputSchema>): Promise<z.infer<typeof Contracts.SimUpdateOutputSchema>> => this.request('PATCH', `/matches/${args.matchId}/simulation`, args),
+            get_metrics: async (args: z.infer<typeof Contracts.SimGetMetricsInputSchema>): Promise<z.infer<typeof Contracts.SimMetricsOutputSchema>> => this.request('GET', `/simulation/metrics`, args),
         },
         track: {
             list: async (args: z.infer<typeof Contracts.TrackListInputSchema>): Promise<z.infer<typeof Contracts.TrackListOutputSchema>> => this.request('GET', `/matches/${args.matchId}/tracks`, args),

@@ -361,7 +361,7 @@ export class SpawnEntityCommand extends Command {
 }
 
 export class SetIntentCommand extends Command {
-    constructor(public readonly intent: ScenarioIntent) {
+    constructor(public readonly intent: ScenarioIntent & { aggressiveness?: number, riskTolerance?: number }) {
         super('GLOBAL', 70);
     }
 }
