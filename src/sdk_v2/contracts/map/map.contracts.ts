@@ -168,3 +168,47 @@ export const mapCreateZoneContract = defineContract({
     outputSchema: TacticalZoneSchema,
     rest: { method: 'POST', path: '/matches/:matchId/map/zones' }
 });
+
+// ─── map_get_elevation_profile ───────────────────────────────────────────────
+
+export const MapGetElevationProfileInputSchema = z.object({
+    matchId: z.string().describe("The match ID"),
+    from: Vector3Schema.describe("Start position"),
+    to: Vector3Schema.describe("End position"),
+    samples: z.number().default(20).describe("Number of sampling points")
+});
+
+export const MapGetElevationProfileOutputSchema = z.object({
+    profile: z.array(z.number()).describe("Array of elevation values in meters")
+});
+
+export const mapGetElevationProfileContract = defineContract({
+    domain: 'map',
+    action: 'get_elevation_profile',
+    description: 'Returns a sample array of elevation points between two coordinates.',
+    inputSchema: MapGetElevationProfileInputSchema,
+    outputSchema: MapGetElevationProfileOutputSchema,
+    rest: { method: 'GET', path: '/matches/:matchId/map/elevation-profile' }
+});
+
+// ─── map_convert_coordinates ─────────────────────────────────────────────────
+
+export const MapConvertCoordinatesInputSchema = z.object({
+    from: z.enum(['LLA', 'ECEF', 'ENU']).describe("Source coordinate system"),
+    to: z.enum(['LLA', 'ECEF', 'ENU']).describe("Target coordinate system"),
+    position: z.any().describe("Coordinate object to convert"),
+    origin: LlaSchema.optional().describe("Origin for ENU conversions")
+});
+
+export const MapConvertCoordinatesOutputSchema = z.object({ 
+    position: z.any() 
+}).describe("The converted coordinate object");
+
+export const mapConvertCoordinatesContract = defineContract({
+    domain: 'map',
+    action: 'convert',
+    description: 'Utility to convert between Geodetic (LLA), ECEF, and Local Tangent Plane (ENU).',
+    inputSchema: MapConvertCoordinatesInputSchema,
+    outputSchema: MapConvertCoordinatesOutputSchema,
+    rest: { method: 'POST', path: '/map/convert' }
+});

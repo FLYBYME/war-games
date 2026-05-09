@@ -5,3 +5,5 @@ export * from './map_calculate_distance.js';
 export * from './map_list_zones.js';
 export * from './map_update_zone.js';
 export * from './map_create_zone.js';
+export * from './map_get_elevation_profile.js';
+export * from './map_convert.js';

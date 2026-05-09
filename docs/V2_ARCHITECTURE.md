@@ -20,6 +20,21 @@ This approach ensures total parity between the REST API, the SDK, the UI, and AI
     * **Hot Path (In-Memory)**: The Live ECS state runs entirely in RAM via `EntityManager` and `SpatialGrid` for maximum tick performance.
     * **Analytics (Parquet + DuckDB)**: `Tracer` and `TelemetrySystem` stream output directly to local `.parquet` files. The API queries these files at memory-speed using an embedded DuckDB engine.
 6. **Domain-Action Naming**: Tools follow a strict `domain_action_subaction` convention for discoverability.
+7. **Decoupled Terrain Engine (Workers)**: High-latency geospatial tasks (tile fetching, decompression, LOS math) are offloaded to a pool of background `TerrainWorkers`. The API remains non-blocking while processing global SRTM data.
+
+---
+
+## Terrain & Geospatial Engine (V2)
+
+To support global simulation without stalling the main tick loop, the V2 architecture utilizes a dedicated service layer for terrain:
+
+*   **TerrainService**: Manages a pool of Node.js `worker_threads`.
+*   **TerrainWorker**: A specialized worker (`terrain.worker.ts`) that:
+    1.  Fetches SRTM (HGT) tiles from AWS Skadi S3.
+    2.  Decompresses GZIP streams on-the-fly.
+    3.  Samples data at multiple resolutions (1201x1201 for Engine, 256x256 for UI).
+    4.  Encodes into `WgtFormat` for fast simulation access.
+*   **WgtCache**: An LRU (Least Recently Used) cache for processed terrain tiles to minimize AWS egress and latency.
 
 ---
 
@@ -432,7 +447,7 @@ Based on `engine/components/Logistics.ts`, `engine/components/Health.ts`, and th
 
 ### 12. Environment (`env_`)
 
-Based on `engine/components/Environment.ts` and `engine/systems/EnvironmentSystem.ts`. Manages world-state variables.
+Based on `engine/components/Environment.ts` and the `TerrainService`. Manages world-state variables and physical terrain data.
 
 * **`env_get`**: `GET /api/v2/matches/:matchId/environment`
 * *Why:* Retrieve global environmental data (Time of day, Sea state, Wind).
@@ -440,11 +455,26 @@ Based on `engine/components/Environment.ts` and `engine/systems/EnvironmentSyste
 * **`env_update`**: `PATCH /api/v2/matches/:matchId/environment`
 * *Why:* Modify global conditions dynamically.
 
-* **`env_update_local`**: `PATCH /api/v2/matches/:matchId/environment/local/:entityId`
-* *Why:* Override environmental conditions for a specific unit (e.g., localized jamming/chaff cloud).
-
 * **`env_sample_terrain`**: `GET /api/v2/matches/:matchId/environment/terrain`
 * *Why:* Query terrain elevation or type at a specific coordinate.
+
+* **`env_prefetch_terrain`**: `POST /api/v2/env/terrain/prefetch`
+* *Why:* Command workers to cache tiles for a bounding box before a match starts.
+
+* **`env_get_cache_stats`**: `GET /api/v2/env/terrain/cache`
+* *Why:* Monitor disk/RAM usage of processed terrain tiles.
+
+* **`env_clear_cache`**: `DELETE /api/v2/env/terrain/cache`
+* *Why:* Force-refresh terrain data.
+
+* **`env_sample_atmosphere`**: `GET /api/v2/env/atmosphere`
+* *Why:* Query air density and wind vectors for flight modeling.
+
+* **`env_create_layer`**: `POST /api/v2/matches/:matchId/env/layers`
+* *Why:* Define dynamic areas like weather fronts or localized jamming clouds.
+
+* **`env_update_layer`**: `PATCH /api/v2/matches/:matchId/env/layers/:layerId`
+* *Why:* Move or resize dynamic environmental layers.
 
 * **`env_get_borders`**: `GET /api/v2/matches/:matchId/environment/borders`
 * *Why:* Fetch geopolitical boundaries and restricted zones.
@@ -693,10 +723,10 @@ Based on `engine/systems/ScenarioAutomationSystem.ts`. This domain allows extern
 
 ### 25. Map & Geospatial (`map_`)
 
-Based on `src/math/GeoProjection.ts` and the `sdk/schemas/domain.ts` geospatial types. This domain provides utility tools for mapping and spatial analysis.
+Based on `src/math/GeoProjection.ts` and the `TerrainService`. Provides utility tools for mapping and spatial analysis.
 
 * **`map_list_regions`**: `GET /api/v2/map/regions`
-* *Why:* List all pre-defined geographic theaters (e.g., "South China Sea", "Eastern Europe") and their WGS84 bounds.
+* *Why:* List all pre-defined geographic theaters and their WGS84 bounds.
 
 * **`map_get_overlay`**: `GET /api/v2/map/overlays/:overlayId`
 * *Why:* Fetch GeoJSON data for custom map layers (cities, airfields, political boundaries).
@@ -704,14 +734,29 @@ Based on `src/math/GeoProjection.ts` and the `sdk/schemas/domain.ts` geospatial 
 * **`map_get_los`**: `GET /api/v2/matches/:matchId/map/los`
 * *Why:* Calculate Line-of-Sight (LOS) between two coordinates, accounting for terrain masking.
 
+* **`map_get_elevation_profile`**: `GET /api/v2/map/elevation-profile`
+* *Why:* Returns a sample array of elevation points between two coordinates (for TFR/Cruise missiles).
+
+* **`map_convert_coordinates`**: `POST /api/v2/map/convert`
+* *Why:* Utility to convert between Geodetic (LLA), ECEF, and Local Tangent Plane (ENU).
+
+* **`map_check_visibility`**: `POST /api/v2/map/visibility-matrix`
+* *Why:* Batch calculate LOS between a group of entities.
+
 * **`map_calculate_distance`**: `GET /api/v2/map/distance`
-* *Why:* Utility to compute geodesic distance and bearing between two LLH (Latitude/Longitude/Height) points.
+* *Why:* Utility to compute geodesic distance and bearing between two LLH points.
 
 * **`map_list_zones`**: `GET /api/v2/matches/:matchId/map/zones`
-* *Why:* List active No-Fly Zones (NFZ), Weapon Engagement Zones (WEZ), or inclusion/exclusion areas.
+* *Why:* List active tactical zones (NFZ, WEZ, Inclusion/Exclusion).
+
+* **`map_create_zone`**: `POST /api/v2/matches/:matchId/map/zones`
+* *Why:* Programmatically define new tactical polygons.
 
 * **`map_update_zone`**: `PATCH /api/v2/matches/:matchId/map/zones/:zoneId`
-* *Why:* Dynamically resize or move tactical zones as the simulation progresses.
+* *Why:* Dynamically resize or move tactical zones.
+
+* **`map_get_units_in_zone`**: `GET /api/v2/matches/:matchId/map/zones/:zoneId/entities`
+* *Why:* Spatial query to find all entities inside a specific tactical zone.
 
 
 ---
@@ -720,9 +765,10 @@ Based on `src/math/GeoProjection.ts` and the `sdk/schemas/domain.ts` geospatial 
 
 1. **Setup V2 Core Folders**: Create `src/sdk_v2/contracts`, `src/server_v2/tools`, and `src/server_v2/core`.
 2. **Implement Split Contract Architecture**: Move all Zod schemas and REST path definitions into the SDK contracts folder.
-3. **Configure Persistence**:
+3. **Configure Persistence & Terrain**:
 * Setup SQLite + Drizzle ORM for `db_` tools.
 * Setup embedded DuckDB in the server instance for `history_` tools.
+* **Setup TerrainService and Worker Pool** to handle background tile processing.
 * Update `Tracer` / `TelemetrySystem` to stream batch output to `.parquet` locally.
 
 

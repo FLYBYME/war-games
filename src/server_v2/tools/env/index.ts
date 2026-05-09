@@ -4,3 +4,5 @@ export * from './env_sample_terrain.js';
 export * from './env_sample_ocean.js';
 export * from './env_get_borders.js';
 export * from './env_set_time.js';
+export * from './env_prefetch_terrain.js';
+export * from './env_get_cache_stats.js';

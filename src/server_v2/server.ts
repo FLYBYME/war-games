@@ -4,15 +4,21 @@ import { generateRoutes, createHandler } from './core/route_generator.js';
 import { IMatchService } from './core/tool_builder.js';
 
 import { MatchService } from './services/MatchService.js';
+import { TerrainService } from './services/TerrainService.js';
+import { WorkerService } from './services/WorkerService.js';
 import { initDb } from './db/db.js';
 
 export async function createServer() {
     await initDb();
     const matchService = new MatchService();
+    const workerService = new WorkerService();
+    const terrainService = new TerrainService(workerService);
 
     const serverContext = {
         app: {
-            matchService
+            matchService,
+            terrainService,
+            workerService
         }
     };
     const app = fastify({ logger: true });

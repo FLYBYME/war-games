@@ -155,3 +155,43 @@ export const envSetTimeContract = defineContract({
     outputSchema: EnvSetTimeOutputSchema,
     rest: { method: 'PUT', path: '/matches/:matchId/environment/time' }
 });
+
+// ─── env_prefetch_terrain ────────────────────────────────────────────────────
+
+export const EnvPrefetchTerrainInputSchema = z.object({
+    matchId: z.string().describe("The match ID"),
+    latMin: z.number().describe("Minimum latitude"),
+    latMax: z.number().describe("Maximum latitude"),
+    lonMin: z.number().describe("Minimum longitude"),
+    lonMax: z.number().describe("Maximum longitude")
+});
+
+export const EnvPrefetchTerrainOutputSchema = z.object({
+    queuedCount: z.number().describe("Number of tiles queued for fetching")
+});
+
+export const envPrefetchTerrainContract = defineContract({
+    domain: 'env',
+    action: 'prefetch_terrain',
+    description: 'Command workers to cache terrain tiles for a bounding box.',
+    inputSchema: EnvPrefetchTerrainInputSchema,
+    outputSchema: EnvPrefetchTerrainOutputSchema,
+    rest: { method: 'POST', path: '/matches/:matchId/environment/terrain/prefetch' }
+});
+
+// ─── env_get_cache_stats ─────────────────────────────────────────────────────
+
+export const EnvGetCacheStatsInputSchema = z.object({});
+export const EnvGetCacheStatsOutputSchema = z.object({
+    cachedTiles: z.number().describe("Number of tiles in RAM cache"),
+    activeJobs: z.number().describe("Number of worker jobs in progress")
+});
+
+export const envGetCacheStatsContract = defineContract({
+    domain: 'env',
+    action: 'get_cache_stats',
+    description: 'Monitor disk/RAM usage of processed terrain tiles.',
+    inputSchema: EnvGetCacheStatsInputSchema,
+    outputSchema: EnvGetCacheStatsOutputSchema,
+    rest: { method: 'GET', path: '/env/terrain/cache' }
+});

@@ -105,6 +105,14 @@ export function registerGeneratedCommands(program: Command, client: WarGamesClie
         try { const res = await client.api.env.set_time(ZodToCliMapper.parseOptions(o, Contracts.EnvSetTimeInputSchema)); console.log(JSON.stringify(res, null, 2)); } catch (err: any) { console.error(`\n${C.red}${C.bold}✖ Error:${C.reset} ${err.message}`); process.exit(1); }
     });
     ZodToCliMapper.mapSchemaToOptions(env_set_time, Contracts.EnvSetTimeInputSchema);
+    const env_prefetch_terrain = env.command('prefetch_terrain').description(`Command workers to cache terrain tiles for a bounding box.`).action(async (o) => {
+        try { const res = await client.api.env.prefetch_terrain(ZodToCliMapper.parseOptions(o, Contracts.EnvPrefetchTerrainInputSchema)); console.log(JSON.stringify(res, null, 2)); } catch (err: any) { console.error(`\n${C.red}${C.bold}✖ Error:${C.reset} ${err.message}`); process.exit(1); }
+    });
+    ZodToCliMapper.mapSchemaToOptions(env_prefetch_terrain, Contracts.EnvPrefetchTerrainInputSchema);
+    const env_get_cache_stats = env.command('get_cache_stats').description(`Monitor disk/RAM usage of processed terrain tiles.`).action(async (o) => {
+        try { const res = await client.api.env.get_cache_stats(ZodToCliMapper.parseOptions(o, Contracts.EnvGetCacheStatsInputSchema)); console.log(JSON.stringify(res, null, 2)); } catch (err: any) { console.error(`\n${C.red}${C.bold}✖ Error:${C.reset} ${err.message}`); process.exit(1); }
+    });
+    ZodToCliMapper.mapSchemaToOptions(env_get_cache_stats, Contracts.EnvGetCacheStatsInputSchema);
     const ew = program.command('ew').description('EW domain tools');
     const ew_get_jammer = ew.command('get_jammer').description(`Fetch current jammer power, frequency, and beam settings.`).action(async (o) => {
         try { const res = await client.api.ew.get_jammer(ZodToCliMapper.parseOptions(o, Contracts.EWGetJammerInputSchema)); console.log(JSON.stringify(res, null, 2)); } catch (err: any) { console.error(`\n${C.red}${C.bold}✖ Error:${C.reset} ${err.message}`); process.exit(1); }
@@ -248,6 +256,14 @@ export function registerGeneratedCommands(program: Command, client: WarGamesClie
         try { const res = await client.api.map.create_zone(ZodToCliMapper.parseOptions(o, Contracts.MapCreateZoneInputSchema)); console.log(JSON.stringify(res, null, 2)); } catch (err: any) { console.error(`\n${C.red}${C.bold}✖ Error:${C.reset} ${err.message}`); process.exit(1); }
     });
     ZodToCliMapper.mapSchemaToOptions(map_create_zone, Contracts.MapCreateZoneInputSchema);
+    const map_get_elevation_profile = map.command('get_elevation_profile').description(`Returns a sample array of elevation points between two coordinates.`).action(async (o) => {
+        try { const res = await client.api.map.get_elevation_profile(ZodToCliMapper.parseOptions(o, Contracts.MapGetElevationProfileInputSchema)); console.log(JSON.stringify(res, null, 2)); } catch (err: any) { console.error(`\n${C.red}${C.bold}✖ Error:${C.reset} ${err.message}`); process.exit(1); }
+    });
+    ZodToCliMapper.mapSchemaToOptions(map_get_elevation_profile, Contracts.MapGetElevationProfileInputSchema);
+    const map_convert = map.command('convert').description(`Utility to convert between Geodetic (LLA), ECEF, and Local Tangent Plane (ENU).`).action(async (o) => {
+        try { const res = await client.api.map.convert(ZodToCliMapper.parseOptions(o, Contracts.MapConvertCoordinatesInputSchema)); console.log(JSON.stringify(res, null, 2)); } catch (err: any) { console.error(`\n${C.red}${C.bold}✖ Error:${C.reset} ${err.message}`); process.exit(1); }
+    });
+    ZodToCliMapper.mapSchemaToOptions(map_convert, Contracts.MapConvertCoordinatesInputSchema);
     const match = program.command('match').description('MATCH domain tools');
     const match_list = match.command('list').description(`Retrieve a paginated list of matches with optional filtering.`).action(async (o) => {
         try { const res = await client.api.match.list(ZodToCliMapper.parseOptions(o, Contracts.MatchListInputSchema)); console.log(JSON.stringify(res, null, 2)); } catch (err: any) { console.error(`\n${C.red}${C.bold}✖ Error:${C.reset} ${err.message}`); process.exit(1); }
@@ -398,4 +414,13 @@ export function registerGeneratedCommands(program: Command, client: WarGamesClie
         try { const res = await client.api.track.delete(ZodToCliMapper.parseOptions(o, Contracts.TrackDeleteInputSchema)); console.log(JSON.stringify(res, null, 2)); } catch (err: any) { console.error(`\n${C.red}${C.bold}✖ Error:${C.reset} ${err.message}`); process.exit(1); }
     });
     ZodToCliMapper.mapSchemaToOptions(track_delete, Contracts.TrackDeleteInputSchema);
+    const worker = program.command('worker').description('WORKER domain tools');
+    const worker_list = worker.command('list').description(`List all active worker pools and their high-level status.`).action(async (o) => {
+        try { const res = await client.api.worker.list(ZodToCliMapper.parseOptions(o, Contracts.WorkerListInputSchema)); console.log(JSON.stringify(res, null, 2)); } catch (err: any) { console.error(`\n${C.red}${C.bold}✖ Error:${C.reset} ${err.message}`); process.exit(1); }
+    });
+    ZodToCliMapper.mapSchemaToOptions(worker_list, Contracts.WorkerListInputSchema);
+    const worker_get_stats = worker.command('get_stats').description(`Get detailed performance metrics for a specific worker pool.`).action(async (o) => {
+        try { const res = await client.api.worker.get_stats(ZodToCliMapper.parseOptions(o, Contracts.WorkerGetStatsInputSchema)); console.log(JSON.stringify(res, null, 2)); } catch (err: any) { console.error(`\n${C.red}${C.bold}✖ Error:${C.reset} ${err.message}`); process.exit(1); }
+    });
+    ZodToCliMapper.mapSchemaToOptions(worker_get_stats, Contracts.WorkerGetStatsInputSchema);
 }

@@ -69,6 +69,9 @@ export * from './env/env.contracts.js';
 // ─── Map & Geospatial ────────────────────────────────────────────────────────
 export * from './map/map.contracts.js';
 
+// ─── Worker Management ───────────────────────────────────────────────────────
+export * from './worker/worker.contracts.js';
+
 // ─── Global Registry (DB) ────────────────────────────────────────────────────
 export * from './db/db.contracts.js';
 

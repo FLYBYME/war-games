@@ -2,9 +2,31 @@ import { IMatchService, IMatchHandle, ToolContext, IServerApp } from '../core/to
 import { vi } from 'vitest';
 
 /**
+ * Creates a mock Entity.
+ */
+export function createMockEntity(id: string, side: string = 'Blue'): any {
+    const components = new Map<string, any>();
+    
+    return {
+        id,
+        side,
+        profileId: 'mock-profile',
+        addComponent: vi.fn((c: any) => {
+            components.set(c.type, c);
+        }),
+        getComponent: vi.fn((ctor: any) => {
+            return components.get(ctor.name);
+        }),
+        getAllComponents: vi.fn(() => Array.from(components.values()))
+    };
+}
+
+/**
  * Creates a mock MatchHandle.
  */
 export function createMockMatchHandle(overrides: Partial<IMatchHandle> = {}): IMatchHandle {
+    const entities = new Map<string, any>();
+    
     const handle = {
         id: 'mock-match-id',
         name: 'Mock Match',
@@ -21,6 +43,17 @@ export function createMockMatchHandle(overrides: Partial<IMatchHandle> = {}): IM
             blue: 0,
             red: 0,
             munitionsExpended: 0
+        },
+        profileRegistry: {
+            get: vi.fn(() => ({ id: 'mock-profile', type: 'Aircraft', health: { maxHp: 100 } }))
+        },
+        addEntity: vi.fn((e: any) => {
+            entities.set(e.id, e);
+        }),
+        getEntity: vi.fn((id: string) => entities.get(id)),
+        getEntities: vi.fn(() => entities.values()),
+        random: {
+            integer: vi.fn(() => Math.floor(Math.random() * 1000000))
         }
     };
     
@@ -50,7 +83,23 @@ export function createMockMatchService(matches: IMatchHandle[] = []): IMatchServ
  */
 export function createMockContext(matchService: IMatchService): ToolContext {
     const app: IServerApp = {
-        matchService
+        matchService,
+        terrainService: {
+            getElevation: vi.fn(async () => 100),
+            getTile: vi.fn(async () => ({ resolution: 1201, data: new Float32Array(1201 * 1201) })),
+            getCacheStats: vi.fn(() => ({ cachedTiles: 0, activeJobs: 0 })),
+            clearCache: vi.fn(),
+            shutdown: vi.fn()
+        } as any,
+        workerService: {
+            createPool: vi.fn(),
+            getPool: vi.fn(() => ({ 
+                execute: vi.fn(async () => ({})),
+                getStats: vi.fn(() => ({ poolName: 'mock', workerCount: 0, activeJobs: 0, queuedJobs: 0, workers: [] }))
+            })),
+            listPools: vi.fn(() => []),
+            shutdown: vi.fn()
+        } as any
     };
     return {
         app

@@ -66,11 +66,16 @@ export interface IMatchHandle {
     readonly timeCompression: number;
 }
 
+import { TerrainService } from '../services/TerrainService.js';
+import { WorkerService } from '../services/WorkerService.js';
+
 /**
  * IServerApp: The application context available to all server tool handlers.
  */
 export interface IServerApp {
     readonly matchService: IMatchService;
+    readonly terrainService: TerrainService;
+    readonly workerService: WorkerService;
 }
 
 /**

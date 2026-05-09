@@ -19,3 +19,4 @@ export * from './signature/index.js';
 export * from './cm/index.js';
 export * from './sim/index.js';
 export * from './track/index.js';
+export * from './worker/index.js';

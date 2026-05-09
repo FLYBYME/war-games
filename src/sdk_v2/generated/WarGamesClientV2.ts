@@ -50,6 +50,8 @@ export class WarGamesClientV2 {
             sample_ocean: async (args: z.infer<typeof Contracts.EnvSampleOceanInputSchema>): Promise<z.infer<typeof Contracts.EnvSampleOceanOutputSchema>> => this.request('GET', `/matches/${args.matchId}/environment/ocean`, args),
             get_borders: async (args: z.infer<typeof Contracts.EnvGetBordersInputSchema>): Promise<z.infer<typeof Contracts.EnvGetBordersOutputSchema>> => this.request('GET', `/matches/${args.matchId}/environment/borders`, args),
             set_time: async (args: z.infer<typeof Contracts.EnvSetTimeInputSchema>): Promise<z.infer<typeof Contracts.EnvSetTimeOutputSchema>> => this.request('PUT', `/matches/${args.matchId}/environment/time`, args),
+            prefetch_terrain: async (args: z.infer<typeof Contracts.EnvPrefetchTerrainInputSchema>): Promise<z.infer<typeof Contracts.EnvPrefetchTerrainOutputSchema>> => this.request('POST', `/matches/${args.matchId}/environment/terrain/prefetch`, args),
+            get_cache_stats: async (args: z.infer<typeof Contracts.EnvGetCacheStatsInputSchema>): Promise<z.infer<typeof Contracts.EnvGetCacheStatsOutputSchema>> => this.request('GET', `/env/terrain/cache`, args),
         },
         ew: {
             get_jammer: async (args: z.infer<typeof Contracts.EWGetJammerInputSchema>): Promise<z.infer<typeof Contracts.JammerStateSchema>> => this.request('GET', `/matches/${args.matchId}/entities/${args.entityId}/ew/jammer`, args),
@@ -98,6 +100,8 @@ export class WarGamesClientV2 {
             list_zones: async (args: z.infer<typeof Contracts.MapListZonesInputSchema>): Promise<z.infer<typeof Contracts.MapListZonesOutputSchema>> => this.request('GET', `/matches/${args.matchId}/map/zones`, args),
             update_zone: async (args: z.infer<typeof Contracts.MapUpdateZoneInputSchema>): Promise<z.infer<typeof Contracts.TacticalZoneSchema>> => this.request('PATCH', `/matches/${args.matchId}/map/zones/${args.zoneId}`, args),
             create_zone: async (args: z.infer<typeof Contracts.MapCreateZoneInputSchema>): Promise<z.infer<typeof Contracts.TacticalZoneSchema>> => this.request('POST', `/matches/${args.matchId}/map/zones`, args),
+            get_elevation_profile: async (args: z.infer<typeof Contracts.MapGetElevationProfileInputSchema>): Promise<z.infer<typeof Contracts.MapGetElevationProfileOutputSchema>> => this.request('GET', `/matches/${args.matchId}/map/elevation-profile`, args),
+            convert: async (args: z.infer<typeof Contracts.MapConvertCoordinatesInputSchema>): Promise<z.infer<typeof Contracts.MapConvertCoordinatesOutputSchema>> => this.request('POST', `/map/convert`, args),
         },
         match: {
             list: async (args: z.infer<typeof Contracts.MatchListInputSchema>): Promise<z.infer<typeof Contracts.MatchListOutputSchema>> => this.request('GET', `/matches`, args),
@@ -153,6 +157,10 @@ export class WarGamesClientV2 {
             get: async (args: z.infer<typeof Contracts.TrackGetInputSchema>): Promise<z.infer<typeof Contracts.TrackSchema>> => this.request('GET', `/matches/${args.matchId}/tracks/${args.trackId}`, args),
             update: async (args: z.infer<typeof Contracts.TrackUpdateInputSchema>): Promise<z.infer<typeof Contracts.TrackSchema>> => this.request('PATCH', `/matches/${args.matchId}/tracks/${args.trackId}`, args),
             delete: async (args: z.infer<typeof Contracts.TrackDeleteInputSchema>): Promise<z.infer<typeof Contracts.TrackDeleteOutputSchema>> => this.request('DELETE', `/matches/${args.matchId}/tracks/${args.trackId}`, args),
+        },
+        worker: {
+            list: async (args: z.infer<typeof Contracts.WorkerListInputSchema>): Promise<z.infer<typeof Contracts.WorkerListOutputSchema>> => this.request('GET', `/workers`, args),
+            get_stats: async (args: z.infer<typeof Contracts.WorkerGetStatsInputSchema>): Promise<z.infer<typeof Contracts.WorkerPoolStatsSchema>> => this.request('GET', `/workers/${args.poolName}`, args),
         },
     };
 }
