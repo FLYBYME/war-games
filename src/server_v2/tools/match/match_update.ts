@@ -1,14 +1,23 @@
 import { defineTool } from '../../core/tool_builder.js';
 import { matchUpdateContract } from '../../../sdk_v2/contracts/index.js'; // Verify import path
-
+import { db } from '../../db/db.js';
+import { matches } from '../../db/schema.js';
+import { eq } from 'drizzle-orm';
 import { isMatchHandle } from '../../services/MatchService.js';
 
 export const match_update = defineTool(matchUpdateContract, async (input, ctx) => {
     const handle = ctx.app.matchService.getMatch(input.matchId);
     if (!isMatchHandle(handle)) throw new Error("Internal error: Handle is not a concrete MatchHandle");
     
-    // Update metadata (in a real app, update DB too)
-    // For now we just return the updated record representation
+    // Update metadata in DB
+    db.update(matches)
+        .set({
+            name: input.name || handle.name,
+            maxTurns: input.maxTurns || 10000,
+            updatedAt: new Date()
+        })
+        .where(eq(matches.id, input.matchId))
+        .run();
     
     return {
         id: handle.id,
