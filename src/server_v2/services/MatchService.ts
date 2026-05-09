@@ -12,10 +12,12 @@ import { TerrainServiceAdapter } from './TerrainServiceAdapter.js';
 import { TerrainOracle } from '../../engine/environment/TerrainOracle.js';
 import { GeoProjection } from '../../engine/math/GeoProjection.js';
 
-// Import Systems
 import { AeroSystem } from '../../engine/systems/AeroSystem.js';
+import { BoardingSystem } from '../../engine/systems/BoardingSystem.js';
 import { CollisionSystem } from '../../engine/systems/CollisionSystem.js';
 import { CombatSystem } from '../../engine/systems/CombatSystem.js';
+import { CommissarSystem } from '../../engine/systems/CommissarSystem.js';
+import { ControlSystem } from '../../engine/systems/ControlSystem.js';
 import { DamageDegradationSystem } from '../../engine/systems/DamageDegradationSystem.js';
 import { DatalinkSystem } from '../../engine/systems/DatalinkSystem.js';
 import { DoctrineSystem } from '../../engine/systems/DoctrineSystem.js';
@@ -23,11 +25,17 @@ import { EnvironmentSystem } from '../../engine/systems/EnvironmentSystem.js';
 import { FormationSystem } from '../../engine/systems/FormationSystem.js';
 import { GuidanceSystem } from '../../engine/systems/GuidanceSystem.js';
 import { HealthSystem } from '../../engine/systems/HealthSystem.js';
+import { LogisticsSystem } from '../../engine/systems/LogisticsSystem.js';
+import { MineTriggerSystem } from '../../engine/systems/MineTriggerSystem.js';
+import { MissileHomingSystem } from '../../engine/systems/MissileHomingSystem.js';
 import { MissionSystem } from '../../engine/systems/MissionSystem.js';
 import { PhysicsSystem } from '../../engine/systems/PhysicsSystem.js';
 import { PropulsionSystem } from '../../engine/systems/PropulsionSystem.js';
+import { ScenarioAutomationSystem } from '../../engine/systems/ScenarioAutomationSystem.js';
 import { SensorSystem } from '../../engine/systems/SensorSystem.js';
+import { TaskReconcilerSystem } from '../../engine/systems/TaskReconcilerSystem.js';
 import { TelemetrySystem } from '../../engine/systems/TelemetrySystem.js';
+import { ThreatMapSystem } from '../../engine/systems/ThreatMapSystem.js';
 import { TrackManagementSystem } from '../../engine/systems/TrackManagementSystem.js';
 import { WaypointSystem } from '../../engine/systems/WaypointSystem.js';
 import { WeaponStageSystem } from '../../engine/systems/WeaponStageSystem.js';
@@ -38,6 +46,8 @@ import { WRAExecutorSystem } from '../../engine/systems/WRAExecutorSystem.js';
  */
 export class MatchHandle implements IMatchHandle {
     public readonly world: World;
+    public readonly zones = new Map<string, any>(); // id -> zone
+
     constructor(
         public readonly id: string,
         public readonly name: string,
@@ -59,29 +69,33 @@ export class MatchHandle implements IMatchHandle {
 
         // Registry the core perception/action loop
         this.world.addSystem(new EnvironmentSystem(oracle, projection));
-        this.world.addSystem(new DoctrineSystem());
-        this.world.addSystem(new MissionSystem());
-        this.world.addSystem(new WaypointSystem());
-        this.world.addSystem(new FormationSystem());
-        
         this.world.addSystem(new SensorSystem(oracle, projection));
-        this.world.addSystem(new TrackManagementSystem());
-        this.world.addSystem(new DatalinkSystem());
-        
-        this.world.addSystem(new PropulsionSystem());
-        this.world.addSystem(new AeroSystem());
+        this.world.addSystem(new DoctrineSystem());
+        this.world.addSystem(new BoardingSystem());
+        this.world.addSystem(new MineTriggerSystem());
         this.world.addSystem(new GuidanceSystem());
+        this.world.addSystem(new MissileHomingSystem());
+        this.world.addSystem(new WRAExecutorSystem(this.world.weaponProfiles));
+        this.world.addSystem(new CombatSystem(this.world.weaponProfiles));
+        this.world.addSystem(new TelemetrySystem());
+        this.world.addSystem(new AeroSystem());
         this.world.addSystem(new WeaponStageSystem());
         this.world.addSystem(new PhysicsSystem());
-        
+        this.world.addSystem(new TrackManagementSystem());
+        this.world.addSystem(new WaypointSystem());
+        this.world.addSystem(new FormationSystem());
+        this.world.addSystem(new CommissarSystem());
+        this.world.addSystem(new MissionSystem());
+        this.world.addSystem(new DatalinkSystem());
+        this.world.addSystem(new TaskReconcilerSystem());
+        this.world.addSystem(new PropulsionSystem());
+        this.world.addSystem(new LogisticsSystem());
+        this.world.addSystem(new ControlSystem());
+        this.world.addSystem(new ThreatMapSystem(this.world.weaponProfiles));
+        this.world.addSystem(new ScenarioAutomationSystem());
         this.world.addSystem(new CollisionSystem(this.world.grid));
         this.world.addSystem(new HealthSystem());
         this.world.addSystem(new DamageDegradationSystem());
-        
-        this.world.addSystem(new CombatSystem(this.world.weaponProfiles));
-        this.world.addSystem(new WRAExecutorSystem(this.world.weaponProfiles));
-        
-        this.world.addSystem(new TelemetrySystem());
     }
 
     public get isPaused(): boolean { return this.world.isPaused; }

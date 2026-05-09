@@ -2,7 +2,6 @@ import { Command } from 'commander';
 import { CommandRegistry } from './core/CommandRegistry.js';
 import { StartServerCommand } from './commands/StartServerCommand.js';
 import { GenerateCommand } from './commands/GenerateCommand.js';
-import { SeedCommand } from './commands/SeedCommand.js';
 import { WarGamesClientV2 } from '../sdk_v2/generated/WarGamesClientV2.js';
 import { C } from './core/Utils.js';
 import fs from 'fs';
@@ -14,7 +13,6 @@ const registry = new CommandRegistry();
 // Register Commands
 registry.register(new StartServerCommand());
 registry.register(new GenerateCommand());
-registry.register(new SeedCommand());
 
 program
     .name('war-games')

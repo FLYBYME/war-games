@@ -19,6 +19,13 @@ export class WarGamesClientV2 {
     }
 
     public readonly api = {
+        bug: {
+            list: async (args: z.infer<typeof Contracts.BugListInputSchema>): Promise<z.infer<typeof Contracts.BugListOutputSchema>> => this.request('GET', `/bugs`, args),
+            create: async (args: z.infer<typeof Contracts.BugCreateInputSchema>): Promise<z.infer<typeof Contracts.BugReportSchema>> => this.request('POST', `/bugs`, args),
+            get: async (args: z.infer<typeof Contracts.BugGetInputSchema>): Promise<z.infer<typeof Contracts.BugReportSchema>> => this.request('GET', `/bugs/${args.id}`, args),
+            update: async (args: z.infer<typeof Contracts.BugUpdateInputSchema>): Promise<z.infer<typeof Contracts.BugReportSchema>> => this.request('PATCH', `/bugs/${args.id}`, args),
+            add_comment: async (args: z.infer<typeof Contracts.BugAddCommentInputSchema>): Promise<z.infer<typeof Contracts.BugCommentSchema>> => this.request('POST', `/bugs/${args.bugId}/comments`, args),
+        },
         combat: {
             get: async (args: z.infer<typeof Contracts.CombatGetInputSchema>): Promise<z.infer<typeof Contracts.CombatStateSchema>> => this.request('GET', `/matches/${args.matchId}/entities/${args.entityId}/combat`, args),
             fire: async (args: z.infer<typeof Contracts.CombatFireInputSchema>): Promise<z.infer<typeof Contracts.CombatFireOutputSchema>> => this.request('POST', `/matches/${args.matchId}/entities/${args.entityId}/combat/fire`, args),
@@ -36,6 +43,7 @@ export class WarGamesClientV2 {
             weapon_get: async (args: z.infer<typeof Contracts.DBWeaponGetInputSchema>): Promise<z.infer<typeof Contracts.WeaponProfileSchema>> => this.request('GET', `/db/weapons/${args.id}`, args),
             scenario_list: async (args: z.infer<typeof Contracts.DBScenarioListInputSchema>): Promise<z.infer<typeof Contracts.DBScenarioListOutputSchema>> => this.request('GET', `/db/scenarios`, args),
             scenario_get: async (args: z.infer<typeof Contracts.DBScenarioGetInputSchema>): Promise<z.infer<typeof Contracts.ScenarioManifestSchema>> => this.request('GET', `/db/scenarios/${args.id}`, args),
+            seed: async (args: z.infer<typeof Contracts.DBSeedInputSchema>): Promise<z.infer<typeof Contracts.DBSeedOutputSchema>> => this.request('POST', `/db/seed`, args),
         },
         entity: {
             list: async (args: z.infer<typeof Contracts.EntityListInputSchema>): Promise<z.infer<typeof Contracts.EntityListOutputSchema>> => this.request('GET', `/matches/${args.matchId}/entities`, args),

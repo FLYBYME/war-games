@@ -86,6 +86,7 @@ export function createMockContext(matchService: IMatchService): ToolContext {
         matchService,
         terrainService: {
             getElevation: vi.fn(async () => 100),
+            getElevationProfile: vi.fn(async (_sLat: number, _sLon: number, _eLat: number, _eLon: number, points: number) => new Array(points).fill(100)),
             getTile: vi.fn(async () => ({ resolution: 1201, data: new Float32Array(1201 * 1201) })),
             getCacheStats: vi.fn(() => ({ cachedTiles: 0, activeJobs: 0 })),
             clearCache: vi.fn(),

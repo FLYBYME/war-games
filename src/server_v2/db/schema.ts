@@ -37,3 +37,25 @@ export const matches = sqliteTable('matches', {
     createdAt: integer('created_at', { mode: 'timestamp' }).notNull(),
     updatedAt: integer('updated_at', { mode: 'timestamp' }).notNull()
 });
+
+export const bugs = sqliteTable('bugs', {
+    id: text('id').primaryKey(),
+    matchId: text('match_id'),
+    side: text('side'),
+    title: text('title').notNull(),
+    description: text('description').notNull(),
+    severity: text('severity').notNull(), // 'Low', 'Medium', 'High', 'Critical'
+    status: text('status').notNull(),   // 'Open', 'InProgress', 'Resolved', 'Closed'
+    suggestedFix: text('suggested_fix'),
+    worldState: text('world_state', { mode: 'json' }),
+    createdAt: integer('created_at', { mode: 'timestamp' }).notNull(),
+    updatedAt: integer('updated_at', { mode: 'timestamp' }).notNull()
+});
+
+export const bugComments = sqliteTable('bug_comments', {
+    id: text('id').primaryKey(),
+    bugId: text('bug_id').notNull().references(() => bugs.id),
+    author: text('author').notNull(),
+    text: text('text').notNull(),
+    createdAt: integer('created_at', { mode: 'timestamp' }).notNull()
+});

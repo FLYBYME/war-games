@@ -113,7 +113,35 @@ npm run cli -- entity get --matchId <match-id> --entityId <entity-id>
 
 ---
 
-## 4. Worker Management (`worker`)
+## 4. Bug Reporting (`bug`)
+
+Report and track issues found in the simulation.
+
+### Report a Bug
+```bash
+npm run cli -- bug create \
+  --title "F-35 Crashed on Launch" \
+  --description "Entity plummeted immediately after spawn" \
+  --severity Critical \
+  --matchId <match-id>
+```
+
+### List Reported Issues
+```bash
+npm run cli -- bug list --severity Critical
+```
+
+### Add a Comment
+```bash
+npm run cli -- bug add_comment \
+  --bugId <bug-id> \
+  --author "DevTeam" \
+  --text "Investigating propulsion logic"
+```
+
+---
+
+## 5. Worker Management (`worker`)
 
 Monitor background processing threads (Terrain, Analytics).
 

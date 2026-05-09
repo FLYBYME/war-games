@@ -51,11 +51,13 @@ export interface ToolContract<
 /**
  * defineContract: Type-safe factory for creating tool contracts.
  * Ensures all contracts are structurally identical and inferred correctly.
+ * Automatically registers the contract in the globalContractRegistry.
  */
 export function defineContract<
     TInput extends z.ZodTypeAny,
     TOutput extends z.ZodTypeAny
 >(contract: ToolContract<TInput, TOutput>): ToolContract<TInput, TOutput> {
+    globalContractRegistry.register(contract);
     return contract;
 }
 
@@ -82,7 +84,7 @@ export class ContractRegistry {
     public register(contract: ToolContract): void {
         const key = toolKey(contract);
         if (this.contracts.has(key)) {
-            throw new Error(`Duplicate tool contract: ${key}`);
+            return;
         }
         this.contracts.set(key, contract);
     }

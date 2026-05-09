@@ -51,13 +51,22 @@ export class EntityManager {
 
     public spawn(params: SpawnParams): Entity {
         const id = params.id || `entity-${this.world.random.integer(0, 0xFFFFFFFF).toString(16)}`;
-        const profile = params.profile || (params.profileId ? this.profiles.get(params.profileId) : undefined);
+        let profileId = params.profileId;
+        const profile = params.profile || (profileId ? this.profiles.get(profileId) : undefined);
 
         if (!profile) {
-            throw new Error(`Profile not found: ${params.profileId || 'No profile provided'}`);
+            throw new Error(`Profile not found: ${profileId || 'No profile provided'}`);
         }
 
-        const entity = new Entity(id, params.side, undefined, params.profileId || profile.platformClass || profile.type || 'custom');
+        // If it's an inline profile without an ID, register it so systems can find it
+        if (params.profile && !profileId) {
+            profileId = profile.platformClass || profile.type || `inline-${id}`;
+            if (!this.profiles.get(profileId)) {
+                this.profiles.register(profileId, profile);
+            }
+        }
+
+        const entity = new Entity(id, params.side, undefined, profileId);
 
         // Normalize position
         let position: Vector3;

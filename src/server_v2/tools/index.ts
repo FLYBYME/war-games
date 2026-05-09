@@ -1,3 +1,4 @@
+export * from './bug/index.js';
 export * from './combat/index.js';
 export * from './db/index.js';
 export * from './entity/index.js';

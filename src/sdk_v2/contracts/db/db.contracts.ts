@@ -146,3 +146,24 @@ export const dbScenarioGetContract = defineContract({
     outputSchema: ScenarioManifestSchema,
     rest: { method: 'GET', path: '/db/scenarios/:id' }
 });
+
+// ─── db_seed ─────────────────────────────────────────────────────────────────
+
+export const DBSeedInputSchema = z.object({
+    clearExisting: z.boolean().optional().default(false).describe("Whether to purge existing registry data before seeding")
+});
+
+export const DBSeedOutputSchema = z.object({
+    profilesCount: z.number().describe("Number of profiles seeded"),
+    weaponsCount: z.number().describe("Number of weapons seeded"),
+    scenariosCount: z.number().describe("Number of scenarios seeded")
+});
+
+export const dbSeedContract = defineContract({
+    domain: 'db',
+    action: 'seed',
+    description: 'Populate the SQLite registry with baseline simulation data.',
+    inputSchema: DBSeedInputSchema,
+    outputSchema: DBSeedOutputSchema,
+    rest: { method: 'POST', path: '/db/seed' }
+});

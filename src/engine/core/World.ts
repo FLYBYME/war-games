@@ -86,8 +86,6 @@ export class World implements IWorldView {
     ) {
         this.seed = seed;
         this.random = new DeterministicRandom(seed);
-        this.addSystem(new LogisticsSystem());
-        this.addSystem(new ThreatMapSystem(this.weaponProfiles));
         this.registerDefaultHandlers();
         this.initAdvancedState();
     }

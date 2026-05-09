@@ -5,6 +5,28 @@ import { WarGamesClientV2 } from '../../sdk_v2/generated/WarGamesClientV2.js';
 import { C } from '../core/Utils.js';
 
 export function registerGeneratedCommands(program: Command, client: WarGamesClientV2) {
+    let bug = program.commands.find(c => c.name() === 'bug');
+    if (!bug) bug = program.command('bug').description('BUG domain tools');
+    const bug_list = bug.command('list').description(`Retrieve a list of all reported issues.`).action(async (o) => {
+        try { const res = await client.api.bug.list(ZodToCliMapper.parseOptions(o, Contracts.BugListInputSchema)); console.log(JSON.stringify(res, null, 2)); } catch (err: any) { console.error(`\n${C.red}${C.bold}✖ Error:${C.reset} ${err.message}`); process.exit(1); }
+    });
+    ZodToCliMapper.mapSchemaToOptions(bug_list, Contracts.BugListInputSchema);
+    const bug_create = bug.command('create').description(`Report a new issue found in the simulation.`).action(async (o) => {
+        try { const res = await client.api.bug.create(ZodToCliMapper.parseOptions(o, Contracts.BugCreateInputSchema)); console.log(JSON.stringify(res, null, 2)); } catch (err: any) { console.error(`\n${C.red}${C.bold}✖ Error:${C.reset} ${err.message}`); process.exit(1); }
+    });
+    ZodToCliMapper.mapSchemaToOptions(bug_create, Contracts.BugCreateInputSchema);
+    const bug_get = bug.command('get').description(`Retrieve detailed information for a specific issue.`).action(async (o) => {
+        try { const res = await client.api.bug.get(ZodToCliMapper.parseOptions(o, Contracts.BugGetInputSchema)); console.log(JSON.stringify(res, null, 2)); } catch (err: any) { console.error(`\n${C.red}${C.bold}✖ Error:${C.reset} ${err.message}`); process.exit(1); }
+    });
+    ZodToCliMapper.mapSchemaToOptions(bug_get, Contracts.BugGetInputSchema);
+    const bug_update = bug.command('update').description(`Modify an existing bug report (e.g., change status or severity).`).action(async (o) => {
+        try { const res = await client.api.bug.update(ZodToCliMapper.parseOptions(o, Contracts.BugUpdateInputSchema)); console.log(JSON.stringify(res, null, 2)); } catch (err: any) { console.error(`\n${C.red}${C.bold}✖ Error:${C.reset} ${err.message}`); process.exit(1); }
+    });
+    ZodToCliMapper.mapSchemaToOptions(bug_update, Contracts.BugUpdateInputSchema);
+    const bug_add_comment = bug.command('add_comment').description(`Add a new comment or update to an issue discussion.`).action(async (o) => {
+        try { const res = await client.api.bug.add_comment(ZodToCliMapper.parseOptions(o, Contracts.BugAddCommentInputSchema)); console.log(JSON.stringify(res, null, 2)); } catch (err: any) { console.error(`\n${C.red}${C.bold}✖ Error:${C.reset} ${err.message}`); process.exit(1); }
+    });
+    ZodToCliMapper.mapSchemaToOptions(bug_add_comment, Contracts.BugAddCommentInputSchema);
     let combat = program.commands.find(c => c.name() === 'combat');
     if (!combat) combat = program.command('combat').description('COMBAT domain tools');
     const combat_get = combat.command('get').description(`View current engagement targets, weapon status, and ammo counts.`).action(async (o) => {
@@ -65,6 +87,10 @@ export function registerGeneratedCommands(program: Command, client: WarGamesClie
         try { const res = await client.api.db.scenario_get(ZodToCliMapper.parseOptions(o, Contracts.DBScenarioGetInputSchema)); console.log(JSON.stringify(res, null, 2)); } catch (err: any) { console.error(`\n${C.red}${C.bold}✖ Error:${C.reset} ${err.message}`); process.exit(1); }
     });
     ZodToCliMapper.mapSchemaToOptions(db_scenario_get, Contracts.DBScenarioGetInputSchema);
+    const db_seed = db.command('seed').description(`Populate the SQLite registry with baseline simulation data.`).action(async (o) => {
+        try { const res = await client.api.db.seed(ZodToCliMapper.parseOptions(o, Contracts.DBSeedInputSchema)); console.log(JSON.stringify(res, null, 2)); } catch (err: any) { console.error(`\n${C.red}${C.bold}✖ Error:${C.reset} ${err.message}`); process.exit(1); }
+    });
+    ZodToCliMapper.mapSchemaToOptions(db_seed, Contracts.DBSeedInputSchema);
     let entity = program.commands.find(c => c.name() === 'entity');
     if (!entity) entity = program.command('entity').description('ENTITY domain tools');
     const entity_list = entity.command('list').description(`List all entities in the match with optional filtering.`).action(async (o) => {

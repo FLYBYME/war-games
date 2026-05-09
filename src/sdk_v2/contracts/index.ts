@@ -72,6 +72,9 @@ export * from './map/map.contracts.js';
 // ─── Worker Management ───────────────────────────────────────────────────────
 export * from './worker/worker.contracts.js';
 
+// ─── Bug Reporting ───────────────────────────────────────────────────────────
+export * from './bug/bug.contracts.js';
+
 // ─── Global Registry (DB) ────────────────────────────────────────────────────
 export * from './db/db.contracts.js';
 

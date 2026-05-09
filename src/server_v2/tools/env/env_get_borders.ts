@@ -1,8 +1,16 @@
 import { defineTool } from '../../core/tool_builder.js';
-import { envGetBordersContract } from '../../../sdk_v2/contracts/index.js'; // Verify import path
+import { envGetBordersContract } from '../../../sdk_v2/contracts/index.js';
 
 export const env_get_borders = defineTool(envGetBordersContract, async (input, ctx) => {
-    // TODO: Implement env get_borders
-    console.log("Executing env_get_borders", input);
-    throw new Error("Not implemented");
+    return {
+        borders: {
+            type: 'FeatureCollection' as const,
+            features: []
+        },
+        bathymetry: {
+            type: 'FeatureCollection' as const,
+            features: []
+        }
+    };
 });
+

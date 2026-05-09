@@ -44,6 +44,27 @@ export async function initDb() {
             updated_at INTEGER NOT NULL,
             FOREIGN KEY (scenario_id) REFERENCES scenarios(id)
         );
+        CREATE TABLE IF NOT EXISTS bugs (
+            id TEXT PRIMARY KEY,
+            match_id TEXT,
+            side TEXT,
+            title TEXT NOT NULL,
+            description TEXT NOT NULL,
+            severity TEXT NOT NULL,
+            status TEXT NOT NULL,
+            suggested_fix TEXT,
+            world_state TEXT,
+            created_at INTEGER NOT NULL,
+            updated_at INTEGER NOT NULL
+        );
+        CREATE TABLE IF NOT EXISTS bug_comments (
+            id TEXT PRIMARY KEY,
+            bug_id TEXT NOT NULL,
+            author TEXT NOT NULL,
+            text TEXT NOT NULL,
+            created_at INTEGER NOT NULL,
+            FOREIGN KEY (bug_id) REFERENCES bugs(id)
+        );
     `);
     console.log('Database initialized with tables');
 }
