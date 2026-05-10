@@ -14,7 +14,7 @@ export interface TraceLog {
  */
 export class Tracer {
     private readonly logs: TraceLog[] = [];
-    private maxCapacity: number = 10000;
+    private maxCapacity: number = 1000;
     public isEnabled: boolean = true;
 
     public get size(): number { return this.logs.length; }

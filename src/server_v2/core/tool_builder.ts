@@ -53,6 +53,8 @@ export interface IMatchService {
     deleteMatch(matchId: string): boolean;
 }
 
+import { IWorldView } from '../../engine/core/ISystem.js';
+
 /**
  * IMatchHandle: A reference to a live, in-memory simulation match.
  * Tools use this to access the ECS world and command dispatcher.
@@ -64,10 +66,12 @@ export interface IMatchHandle {
     readonly isPaused: boolean;
     readonly currentTick: number;
     readonly timeCompression: number;
+    readonly world: IWorldView;
 }
 
 import { TerrainService } from '../services/TerrainService.js';
 import { WorkerService } from '../services/WorkerService.js';
+import { AgentService } from '../services/AgentService.js';
 
 /**
  * IServerApp: The application context available to all server tool handlers.
@@ -76,6 +80,8 @@ export interface IServerApp {
     readonly matchService: IMatchService;
     readonly terrainService: TerrainService;
     readonly workerService: WorkerService;
+    readonly agentService: AgentService;
+    readonly log: any;
 }
 
 /**
@@ -83,13 +89,14 @@ export interface IServerApp {
  */
 export interface ToolContext {
     readonly app: IServerApp;
+    readonly signal?: AbortSignal;
 }
 
 // ─── Server Tool Definition ──────────────────────────────────────────────────
 
 /**
  * ServerTool: Combines a shared contract with a server-side handler implementation.
- * The handler receives validated input and a ToolContext, and returns typed output.
+ * The base type uses a union for the call return type.
  */
 export interface ServerTool<
     TInput extends z.ZodTypeAny = z.ZodTypeAny,
@@ -98,21 +105,54 @@ export interface ServerTool<
     /** The shared contract (input/output schemas + REST metadata) */
     readonly contract: ToolContract<TInput, TOutput>;
     /** The server-side implementation */
+    readonly call: (
+        input: z.infer<TInput>, 
+        ctx: ToolContext
+    ) => Promise<z.infer<TOutput>> | AsyncIterable<z.infer<TOutput>>;
+}
+
+/**
+ * StandardServerTool: A tool that returns a single Promise result.
+ */
+export interface StandardServerTool<
+    TInput extends z.ZodTypeAny = z.ZodTypeAny,
+    TOutput extends z.ZodTypeAny = z.ZodTypeAny
+> extends ServerTool<TInput, TOutput> {
     readonly call: (input: z.infer<TInput>, ctx: ToolContext) => Promise<z.infer<TOutput>>;
 }
 
 /**
+ * StreamingServerTool: A tool that returns an AsyncIterable (SSE).
+ */
+export interface StreamingServerTool<
+    TInput extends z.ZodTypeAny = z.ZodTypeAny,
+    TOutput extends z.ZodTypeAny = z.ZodTypeAny
+> extends ServerTool<TInput, TOutput> {
+    readonly call: (input: z.infer<TInput>, ctx: ToolContext) => AsyncIterable<z.infer<TOutput>>;
+}
+
+/**
  * defineTool: Type-safe factory for creating server tool implementations.
- * Ensures the handler signature matches the contract's schemas.
- * Automatically registers the tool in the globalServerToolRegistry.
+ * Overloaded to return either a StandardServerTool or a StreamingServerTool
+ * based on the contract's isStream flag.
  */
 export function defineTool<
     TInput extends z.ZodTypeAny,
-    TOutput extends z.ZodTypeAny
+    TOutput extends z.ZodTypeAny,
+    TContract extends ToolContract<TInput, TOutput>
 >(
-    contract: ToolContract<TInput, TOutput>,
-    handler: (input: z.infer<TInput>, ctx: ToolContext) => Promise<z.infer<TOutput>>
-): ServerTool<TInput, TOutput> {
+    contract: TContract,
+    handler: (
+        input: z.infer<TInput>, 
+        ctx: ToolContext
+    ) => TContract['rest'] extends { isStream: true } 
+        ? AsyncIterable<z.infer<TOutput>> 
+        : Promise<z.infer<TOutput>>
+): TContract['rest'] extends { isStream: true } 
+    ? StreamingServerTool<TInput, TOutput> 
+    : StandardServerTool<TInput, TOutput>;
+
+export function defineTool(contract: any, handler: any): any {
     const tool = { contract, call: handler };
     globalServerToolRegistry.register(tool);
     return tool;

@@ -6,22 +6,28 @@ import { IMatchService } from './core/tool_builder.js';
 import { MatchService } from './services/MatchService.js';
 import { TerrainService } from './services/TerrainService.js';
 import { WorkerService } from './services/WorkerService.js';
+import { AgentService } from './services/AgentService.js';
 import { initDb } from './db/db.js';
 
 export async function createServer() {
     await initDb();
+    
+    const app = fastify({ logger: true });
+
     const workerService = new WorkerService();
     const terrainService = new TerrainService(workerService);
     const matchService = new MatchService(terrainService);
+    const agentService = new AgentService(process.env.OLLAMA_HOST);
 
     const serverContext = {
         app: {
             matchService,
             terrainService,
-            workerService
+            workerService,
+            agentService,
+            log: app.log
         }
     };
-    const app = fastify({ logger: true });
 
     // Import all tools to ensure they are registered
     await import('./tools/index.js');
@@ -40,13 +46,32 @@ export async function createServer() {
             url: route.url,
             handler: async (request: FastifyRequest, reply: FastifyReply) => {
                 try {
+                    const ac = new AbortController();
+                    request.raw.on('close', () => ac.abort());
+
                     const reqObj = {
                         params: (request.params as Record<string, string>) || {},
                         query: (request.query as Record<string, string>) || {},
-                        body: (request.body as Record<string, any>) || {}
+                        body: (request.body as Record<string, any>) || {},
+                        signal: ac.signal
                     };
+
                     const result = await handler(reqObj);
-                    return reply.send(result);
+
+                    if (route.isStream) {
+                        reply.raw.setHeader('Content-Type', 'text/event-stream');
+                        reply.raw.setHeader('Cache-Control', 'no-cache');
+                        reply.raw.setHeader('Connection', 'keep-alive');
+
+                        const iterable = result as AsyncIterable<any>;
+                        for await (const chunk of iterable) {
+                            reply.raw.write(`data: ${JSON.stringify(chunk)}\n\n`);
+                        }
+                        reply.raw.end();
+                        return reply;
+                    }
+
+                    return await reply.send(result);
                 } catch (err: any) {
                     app.log.error(err);
                     return reply.status(400).send({ error: err.message });
@@ -54,29 +79,6 @@ export async function createServer() {
             }
         });
     }
-
-    // Special Route: sim_get_stream (SSE)
-    app.get('/api/v2/matches/:matchId/simulation/stream', (request: FastifyRequest, reply: FastifyReply) => {
-        const { matchId } = request.params as { matchId: string };
-        
-        reply.raw.setHeader('Content-Type', 'text/event-stream');
-        reply.raw.setHeader('Cache-Control', 'no-cache');
-        reply.raw.setHeader('Connection', 'keep-alive');
-        
-        const interval = setInterval(() => {
-            const data = JSON.stringify({
-                type: 'tick',
-                matchId,
-                tick: Math.floor(Date.now() / 100), // Mock tick
-                timestamp: Date.now()
-            });
-            reply.raw.write(`data: ${data}\n\n`);
-        }, 100);
-
-        request.raw.on('close', () => {
-            clearInterval(interval);
-        });
-    });
 
     return app;
 }

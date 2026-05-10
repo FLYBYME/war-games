@@ -10,7 +10,8 @@ export enum SensorType {
     Sonar = 'Sonar',
     Visual = 'Visual',
     ESM = 'ESM',
-    IRST = 'IRST'
+    IRST = 'IRST',
+    EO = 'EO'
 }
 export const SensorTypeSchema = z.nativeEnum(SensorType).describe("Physical detection modality of a sensor");
 

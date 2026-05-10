@@ -42,7 +42,7 @@ export class SetHeadingHandler implements CommandHandler<SetHeadingCommand> {
         const taskComp = entity.getComponent(TaskGraphComponent);
         const missionComp = entity.getComponent(MissionComponent);
 
-        if (navigation) {
+        if (navigation && !cmd.forceImmediate) {
             navigation.desiredHeadingDeg = cmd.heading;
             if (cmd.isExternal) navigation.navState = NavState.None; // Manual override
         } else if (transform) {

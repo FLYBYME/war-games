@@ -116,10 +116,8 @@ export class WRAExecutorSystem implements ISystem {
                         const maxEffectiveRange = maxRange * maxRangePct;
 
                         if (dist >= minRange && dist <= maxEffectiveRange) {
-                            // 5. Alignment Check
-                            // We need to ensure the mount is pointed at the target before firing
-                            
-                            // Calculate required angles
+                            // 5. Arc Check (Test 65)
+                            // azimuthDegWorld is calculated above
                             const vToTarget = VectorMath.subtract(track.position, transform.position);
                             const azimuthDegWorld = (Math.atan2(vToTarget.y, vToTarget.x) * (180 / Math.PI) + 360) % 360;
                             const groundDist = Math.sqrt(vToTarget.x * vToTarget.x + vToTarget.y * vToTarget.y);
@@ -131,7 +129,18 @@ export class WRAExecutorSystem implements ISystem {
                             while (relativeAz < -180) relativeAz += 360;
                             const relativeEl = elevationDegWorld - transform.pitch;
 
-                            // Check alignment
+                            // Check if within mount arcs
+                            const isInAzArc = mount.minAzimuth === undefined || mount.maxAzimuth === undefined || 
+                                (mount.minAzimuth < mount.maxAzimuth ? 
+                                    (relativeAz >= mount.minAzimuth && relativeAz <= mount.maxAzimuth) : 
+                                    (relativeAz >= mount.minAzimuth || relativeAz <= mount.maxAzimuth));
+                            
+                            const isInElArc = mount.minElevation === undefined || mount.maxElevation === undefined ||
+                                (relativeEl >= mount.minElevation && relativeEl <= mount.maxElevation);
+
+                            if (!isInAzArc || !isInElArc) continue;
+
+                            // 6. Alignment Check
                             let azDiff = relativeAz - (mount.currentAzimuth || 0);
                             while (azDiff > 180) azDiff -= 360;
                             while (azDiff < -180) azDiff += 360;
@@ -149,34 +158,50 @@ export class WRAExecutorSystem implements ISystem {
                                 continue;
                             }
 
-                            // 6. Salvo/Quantity Check (Prevent Over-Engagement)
+                            // Verify true entity still exists before continuing
+                            if (!world.getEntity(track.trueEntityId)) {
+                                logger.debug(`WRAExecutorSystem skipping engagement: true entity ${track.trueEntityId} for track ${track.id} no longer exists.`);
+                                continue;
+                            }
+
+                            // 7. Salvo/Quantity Check (Prevent Over-Engagement)
+                            // We need to account for what we've ALREADY commanded this tick
+                            const commandedThisTick = commands.filter(c => 
+                                (c instanceof FireWeaponCommand || c instanceof FireSalvoCommand) && 
+                                c.targetId === track.trueEntityId
+                            ).reduce((sum, c) => sum + (c instanceof FireSalvoCommand ? c.quantity : 1), 0);
+
                             const inFlightCount = [...world.getEntities()].filter(e => {
                                 const g = e.getComponent(GuidanceComponent) as GuidanceComponent;
                                 return g && g.targetId === track.trueEntityId;
-                            }).length;
+                            }).length + commandedThisTick;
 
                             const requiredQty = rule.quantity !== undefined ? rule.quantity : 1;
                             
                             if (inFlightCount >= requiredQty) continue; 
 
-                            // 6. Check Reload & Fire
+                            // 8. Check Reload & Fire
                             const reloadElapsed = world.currentTick - mount.lastFireTick;
                             if (reloadElapsed >= mount.reloadTicks) {
-                                const firingQty = Math.max(0, requiredQty - inFlightCount);
+                                let firingQty = Math.min(magazine.currentCount, requiredQty - inFlightCount);
+                                
                                 if (firingQty > 0) {
                                     logger.info(`WRA triggering engagement: ${entity.id} -> ${track.id} [${track.classification}]`, { weapon: magazine.weaponProfileId, dist: Math.round(dist), qty: firingQty });
 
                                     if (weaponProfile.type === 'Gun' && firingQty > 1) {
                                         commands.push(new FireSalvoCommand(entity.id, i, track.trueEntityId, firingQty));
                                     } else {
-                                        for (let s = 0; s < firingQty; s++) {
-                                            if (magazine.currentCount > 0) {
-                                                commands.push(new FireWeaponCommand(entity.id, i, track.trueEntityId));
-                                            }
+                                        // For missiles, usually fire 1 per tick or per mount
+                                        const count = weaponProfile.type === 'Missile' ? 1 : firingQty;
+                                        for (let s = 0; s < count; s++) {
+                                            commands.push(new FireWeaponCommand(entity.id, i, track.trueEntityId));
                                         }
                                     }
                                     usedMounts.add(i);
-                                    break; 
+                                    
+                                    // If we still need more rounds, DON'T break, let the next mount try
+                                    const totalNow = inFlightCount + (weaponProfile.type === 'Missile' ? 1 : firingQty);
+                                    if (totalNow >= requiredQty) break; 
                                 }
                             }
                         }

@@ -4,7 +4,7 @@ import { TransformComponent, KinematicsComponent } from '../components/Physics.j
 import { SensorComponent, DetectionComponent } from '../components/Sensors.js';
 import type { ESMBearing } from '../components/Sensors.js';
 import { SensorType, Vector3, EMBand, EMCONState } from '../core/Types.js';
-import { RCSComponent } from '../components/Signatures.js';
+import { RCSComponent, IRSignatureComponent } from '../components/Signatures.js';
 import { JammerComponent, JammerType, JammerMode } from '../components/ElectronicWarfare.js';
 import { AcousticSignatureComponent } from '../components/Subsurface.js';
 import { EnvironmentComponent } from '../components/Environment.js';
@@ -143,6 +143,17 @@ export class SensorSystem implements ISystem {
                                 const targetEnv = target.getComponent(EnvironmentComponent);
                                 const sl = target.getComponent(AcousticSignatureComponent)?.baseSL || 100;
                                 isDetected = this.calculateSonarDetection(transform.position.z, targetTransform.position.z, env, targetEnv, dist, sl, world);
+                            } else if (isType(SensorType.IRST) || isType(SensorType.EO) || isType(SensorType.Visual)) {
+                                const irComp = target.getComponent(IRSignatureComponent);
+                                if (irComp) {
+                                    const baseIR = irComp.baseIR;
+                                    const effectiveMaxRange = sensor.maxRangeM * Math.sqrt(baseIR / 10.0);
+                                    const cloudPenalty = env?.cloudCover || 0;
+                                    isDetected = dist <= (effectiveMaxRange * (1.0 - cloudPenalty));
+                                } else {
+                                    const cloudPenalty = env?.cloudCover || 0;
+                                    isDetected = dist <= (sensor.maxRangeM * (1.0 - cloudPenalty));
+                                }
                             } else {
                                 const cloudPenalty = env?.cloudCover || 0;
                                 isDetected = dist <= (sensor.maxRangeM * (1.0 - cloudPenalty));
@@ -208,6 +219,18 @@ export class SensorSystem implements ISystem {
                                 const targetEnv = target.getComponent(EnvironmentComponent);
                                 const sl = target.getComponent(AcousticSignatureComponent)?.baseSL || 100;
                                 stillDetectable = this.calculateSonarDetection(transform.position.z, targetTransform.position.z, env, targetEnv, dist, sl, world);
+                            } else if (isType(SensorType.IRST) || isType(SensorType.EO) || isType(SensorType.Visual)) {
+                                const irComp = target.getComponent(IRSignatureComponent);
+                                if (irComp) {
+                                    const baseIR = irComp.baseIR;
+                                    // Range scales with sqrt of IR intensity (Simplified Inverse Square Law for detection)
+                                    const effectiveMaxRange = sensor.maxRangeM * Math.sqrt(baseIR / 10.0);
+                                    const cloudPenalty = env?.cloudCover || 0;
+                                    stillDetectable = dist <= (effectiveMaxRange * (1.0 - cloudPenalty));
+                                } else {
+                                    const cloudPenalty = env?.cloudCover || 0;
+                                    stillDetectable = dist <= (sensor.maxRangeM * (1.0 - cloudPenalty));
+                                }
                             } else {
                                 const cloudPenalty = env?.cloudCover || 0;
                                 stillDetectable = dist <= (sensor.maxRangeM * (1.0 - cloudPenalty));

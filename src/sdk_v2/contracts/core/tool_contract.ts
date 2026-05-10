@@ -17,6 +17,8 @@ export interface RestMeta {
     readonly method: HttpMethod;
     /** URL path pattern with :param placeholders */
     readonly path: string;
+    /** Whether this tool returns an event stream (SSE) */
+    readonly isStream?: boolean;
 }
 
 // ─── Tool Contract ───────────────────────────────────────────────────────────
@@ -55,8 +57,9 @@ export interface ToolContract<
  */
 export function defineContract<
     TInput extends z.ZodTypeAny,
-    TOutput extends z.ZodTypeAny
->(contract: ToolContract<TInput, TOutput>): ToolContract<TInput, TOutput> {
+    TOutput extends z.ZodTypeAny,
+    TContract extends ToolContract<TInput, TOutput>
+>(contract: TContract): TContract {
     globalContractRegistry.register(contract);
     return contract;
 }

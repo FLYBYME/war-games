@@ -13,6 +13,7 @@ export interface RouteConfig {
     readonly toolKey: string;
     readonly inputSchema: z.ZodTypeAny;
     readonly outputSchema: z.ZodTypeAny;
+    readonly isStream?: boolean;
 }
 
 // ─── Route Generator ─────────────────────────────────────────────────────────
@@ -38,7 +39,8 @@ export function generateRoutes(
             url: `${apiPrefix}${contract.rest.path}`,
             toolKey: key,
             inputSchema: contract.inputSchema,
-            outputSchema: contract.outputSchema
+            outputSchema: contract.outputSchema,
+            isStream: contract.rest.isStream
         });
     }
 
@@ -54,6 +56,11 @@ export interface RequestParams {
     readonly params: Record<string, string>;
     readonly query: Record<string, string>;
     readonly body: Record<string, string | number | boolean>;
+    readonly signal?: AbortSignal;
+}
+
+function getTypeName(schema: z.ZodTypeAny): string {
+    return (schema._def as any).typeName;
 }
 
 /**
@@ -75,11 +82,11 @@ export function createHandler(
         };
 
         // 2. Apply Type Coercion
-        // Since URL params and Query params are always strings, 
-        // we coerce them if the schema expects a number or boolean.
         const inputSchema = tool.contract.inputSchema;
-        if (inputSchema instanceof z.ZodObject) {
-            const shape = inputSchema.shape;
+        const schemaTypeName = getTypeName(inputSchema);
+
+        if (schemaTypeName === 'ZodObject') {
+            const shape = (inputSchema as any).shape;
             for (const [key, value] of Object.entries(rawInput)) {
                 if (typeof value !== 'string') continue;
                 
@@ -87,13 +94,20 @@ export function createHandler(
                 if (!fieldSchema) continue;
 
                 const unwrapped = unwrapZod(fieldSchema);
+                const typeName = getTypeName(unwrapped);
 
-                if (unwrapped instanceof z.ZodNumber) {
+                if (typeName === 'ZodNumber') {
                     const num = parseFloat(value);
                     if (!isNaN(num)) rawInput[key] = num;
-                } else if (unwrapped instanceof z.ZodBoolean) {
+                } else if (typeName === 'ZodBoolean') {
                     if (value === 'true' || value === '1') rawInput[key] = true;
                     else if (value === 'false' || value === '0') rawInput[key] = false;
+                } else if (value.trim().startsWith('{') || value.trim().startsWith('[')) {
+                    try {
+                        rawInput[key] = JSON.parse(value);
+                    } catch {
+                        // Ignore parse errors, let Zod handle validation
+                    }
                 }
             }
         }
@@ -101,10 +115,21 @@ export function createHandler(
         // 3. Validate against the contract's input schema
         const validatedInput = tool.contract.inputSchema.parse(rawInput);
 
-        // 4. Execute the tool handler
-        const result = await tool.call(validatedInput, ctx);
+        // 4. Create tool-specific context with signal
+        const toolCtx: ToolContext = {
+            ...ctx,
+            signal: request.signal
+        };
 
-        // 5. Validate output (development-time safety net)
+        // 5. Execute the tool handler
+        const result = await tool.call(validatedInput, toolCtx);
+
+        // 6. Validate output (development-time safety net)
+        // If it's a stream, we return the AsyncIterable without top-level Zod parsing.
+        if (tool.contract.rest.isStream) {
+            return result;
+        }
+
         return tool.contract.outputSchema.parse(result);
     };
 }
@@ -115,12 +140,15 @@ export function createHandler(
  */
 function unwrapZod(schema: z.ZodTypeAny): z.ZodTypeAny {
     let current = schema;
-    while (
-        current instanceof z.ZodOptional ||
-        current instanceof z.ZodNullable ||
-        current instanceof z.ZodDefault
-    ) {
-        current = (current._def as any).innerType;
+    while (true) {
+        const typeName = getTypeName(current);
+        if (typeName === 'ZodOptional' || typeName === 'ZodNullable' || typeName === 'ZodDefault') {
+            current = (current._def as any).innerType;
+        } else if (typeName === 'ZodEffects') {
+            current = (current._def as any).schema;
+        } else {
+            break;
+        }
     }
     return current;
 }

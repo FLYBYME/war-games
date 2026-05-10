@@ -1,5 +1,5 @@
 import { ISystem, IWorldView, SystemPhase } from '../core/ISystem.js';
-import { Command, SetThrottleCommand, SetPitchCommand } from '../core/Command.js';
+import { Command, SetThrottleCommand, SetPitchCommand, SetHeadingCommand } from '../core/Command.js';
 import { NavigationComponent } from '../components/Navigation.js';
 import { TransformComponent, KinematicsComponent } from '../components/Physics.js';
 import { PropulsionComponent } from '../components/Propulsion.js';
@@ -17,7 +17,7 @@ export class ControlSystem implements ISystem {
     readonly phase = SystemPhase.Decision;
     readonly dependencies = ['WaypointSystem', 'FormationSystem'];
 
-    public async process(world: IWorldView, _dt: number): Promise<Command[]> {
+    public async process(world: IWorldView, dt: number): Promise<Command[]> {
         const commands: Command[] = [];
 
         for (const entity of world.getEntities()) {
@@ -31,10 +31,23 @@ export class ControlSystem implements ISystem {
             const profileRegistry = world.profileRegistry as ProfileRegistry;
             const profile = profileRegistry.get(entity.profileId || '') as EntityProfile | undefined;
 
-            // 1. Heading Control (Simple immediate rotation for now, ideally bank-to-turn)
+            // 1. Heading Control (Test 4)
             if (nav.desiredHeadingDeg !== undefined) {
-                // In a pro sim, we would calculate a required turn rate and bank angle
-                // commands.push(new SetHeadingCommand(entity.id, nav.desiredHeadingDeg));
+                const maxTurnRate = profile?.kinematics?.turnRateDegS || 10; // Default 10 deg/s
+                
+                let delta = nav.desiredHeadingDeg - transform.rotation;
+                while (delta > 180) delta -= 360;
+                while (delta < -180) delta += 360;
+
+                const maxDelta = maxTurnRate * dt;
+                if (Math.abs(delta) > maxDelta) {
+                    delta = Math.sign(delta) * maxDelta;
+                }
+
+                const nextHeading = (transform.rotation + delta + 360) % 360;
+                if (Math.abs(delta) > 0.001) {
+                    commands.push(new SetHeadingCommand(entity.id, nextHeading, true));
+                }
             }
 
             // 2. Speed Control (Auto-Throttle)

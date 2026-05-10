@@ -92,3 +92,9 @@ export * from './db/db.contracts.js';
 
 // ─── History & Analytics ─────────────────────────────────────────────────────
 export * from './history/history.contracts.js';
+
+// ─── Agent Service ───────────────────────────────────────────────────────────
+export * from './agent/agent.contracts.js';
+
+// ─── QA & Diagnostic Tools ───────────────────────────────────────────────────
+export * from './qa/qa.contracts.js';

@@ -1,4 +1,5 @@
 import { IMatchService, IMatchHandle, ToolContext, IServerApp } from '../../../server_v2/core/tool_builder.js';
+import { IWorldView } from '../../../engine/core/ISystem.js';
 import { vi } from 'vitest';
 
 /**
@@ -27,34 +28,54 @@ export function createMockEntity(id: string, side: string = 'Blue'): any {
 export function createMockMatchHandle(overrides: Partial<IMatchHandle> = {}): IMatchHandle {
     const entities = new Map<string, any>();
     
-    const handle = {
-        id: 'mock-match-id',
-        name: 'Mock Match',
-        scenarioId: 'mock-scenario-id',
-        isPaused: false,
+    const world: IWorldView = {
         currentTick: 0,
-        timeCompression: 1,
-        ...overrides
-    };
-    
-    // Add a mock world for tools that expect it on concrete handles
-    (handle as any).world = {
+        timestamp: 0,
+        isPaused: false,
         stats: {
             blue: 0,
             red: 0,
             munitionsExpended: 0
         },
         profileRegistry: {
-            get: vi.fn(() => ({ id: 'mock-profile', type: 'Aircraft', health: { maxHp: 100 } }))
-        },
-        addEntity: vi.fn((e: any) => {
-            entities.set(e.id, e);
-        }),
+            get: vi.fn(() => ({ id: 'mock-profile', type: 'Aircraft', health: { maxHp: 100 } })),
+            register: vi.fn()
+        } as any,
+        weaponProfiles: {
+            get: vi.fn()
+        } as any,
+        events: {
+            emit: vi.fn(),
+            on: vi.fn()
+        } as any,
         getEntity: vi.fn((id: string) => entities.get(id)),
         getEntities: vi.fn(() => entities.values()),
+        getNearbyEntities: vi.fn(() => []),
+        addEntity: vi.fn((e: any) => entities.set(e.id, e)),
+        removeEntity: vi.fn((id: string) => entities.delete(id)),
+        getSystem: vi.fn(() => ({
+            getProjection: vi.fn(() => ({
+                project: vi.fn((pos: any) => ({ lat: pos.x, lon: pos.y })),
+                unproject: vi.fn((lat: number, lon: number) => ({ x: lat, y: lon, z: 0 }))
+            }))
+        })) as any,
+        recordEvent: vi.fn(),
         random: {
             integer: vi.fn(() => Math.floor(Math.random() * 1000000))
-        }
+        } as any,
+        getTracerSize: vi.fn(() => 0),
+        getOctreeNodeCount: vi.fn(() => 0)
+    };
+
+    const handle: IMatchHandle = {
+        id: 'mock-match-id',
+        name: 'Mock Match',
+        scenarioId: 'mock-scenario-id',
+        isPaused: false,
+        currentTick: 0,
+        timeCompression: 1,
+        world,
+        ...overrides
     };
     
     return handle;
@@ -100,8 +121,22 @@ export function createMockContext(matchService: IMatchService): ToolContext {
             })),
             listPools: vi.fn(() => []),
             shutdown: vi.fn()
-        } as any
+        } as any,
+        agentService: {
+            createAgent: vi.fn(),
+            listAgents: vi.fn(),
+            createThread: vi.fn(),
+            getThreadHistory: vi.fn(),
+            runAgentStream: vi.fn()
+        } as any,
+        log: {
+            info: vi.fn(),
+            error: vi.fn(),
+            warn: vi.fn(),
+            debug: vi.fn()
+        }
     };
+
     return {
         app
     };

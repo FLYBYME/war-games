@@ -1,3 +1,4 @@
+export * from './agent/index.js';
 export * from './automation/index.js';
 export * from './bug/index.js';
 export * from './combat/index.js';
@@ -18,6 +19,7 @@ export * from './mission/index.js';
 export * from './nav/index.js';
 export * from './orbital/index.js';
 export * from './propulsion/index.js';
+export * from './qa/index.js';
 export * from './sensor/index.js';
 export * from './side/index.js';
 export * from './signature/index.js';

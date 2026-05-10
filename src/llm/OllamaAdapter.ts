@@ -72,7 +72,7 @@ export class OllamaAdapter extends EventEmitter {
      * Chat: Sends a prompt to the LLM and returns the assistant's response.
      * Supports streaming thinking/content and tool call detection.
      */
-    public async chat(prompt: string, toolContracts: ToolContract[] = []): Promise<AssistantResponse> {
+    public async *chatStream(prompt: string, toolContracts: ToolContract[] = []): AsyncIterable<AssistantResponse & { type: 'thinking' | 'content' | 'tool_calls' | 'finished' }> {
         this.addMessage({ role: 'user', content: prompt });
         this.emit('chat:started', { prompt });
 
@@ -95,23 +95,34 @@ export class OllamaAdapter extends EventEmitter {
                 const text = chunk.message.thinking;
                 fullMessage.thinking = (fullMessage.thinking || '') + text;
                 this.emit('chat:thinking', text);
+                yield { type: 'thinking', thinking: text, content: '' };
             }
 
             if (chunk.message.content) {
                 const text = chunk.message.content;
                 fullMessage.content += text;
                 this.emit('chat:content', text);
+                yield { type: 'content', content: text };
             }
 
             if (chunk.message.tool_calls && chunk.message.tool_calls.length > 0) {
                 fullMessage.tool_calls = chunk.message.tool_calls;
+                yield {
+                    type: 'tool_calls',
+                    content: '',
+                    toolCalls: chunk.message.tool_calls.map(tc => ({
+                        name: tc.function.name,
+                        arguments: tc.function.arguments
+                    }))
+                };
             }
         }
 
         this.addMessage(fullMessage);
         this.emit('chat:finished', fullMessage.content);
-
-        return {
+        
+        yield {
+            type: 'finished',
             content: fullMessage.content,
             thinking: fullMessage.thinking,
             toolCalls: fullMessage.tool_calls?.map(tc => ({
@@ -119,6 +130,20 @@ export class OllamaAdapter extends EventEmitter {
                 arguments: tc.function.arguments
             }))
         };
+    }
+
+    public async chat(prompt: string, toolContracts: ToolContract[] = []): Promise<AssistantResponse> {
+        let finalResponse: AssistantResponse = { content: '' };
+        for await (const chunk of this.chatStream(prompt, toolContracts)) {
+            if (chunk.type === 'finished') {
+                finalResponse = {
+                    content: chunk.content,
+                    thinking: chunk.thinking,
+                    toolCalls: chunk.toolCalls
+                };
+            }
+        }
+        return finalResponse;
     }
 }
 

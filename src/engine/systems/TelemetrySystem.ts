@@ -43,7 +43,11 @@ export class TelemetrySystem implements ISystem {
             world.events.on('WeaponFired', () => {
                 this.munitionsExpended++;
                 if (this.externalWriter) {
-                    this.externalWriter.writeEvent({ type: 'WeaponFired', tick: world.currentTick, data: {} });
+                    this.externalWriter.writeEvent({ 
+                        type: 'WeaponFired', 
+                        tick: world.currentTick, 
+                        data: JSON.stringify({}) 
+                    } as any);
                 }
             });
             this.subscribed = true;
@@ -84,7 +88,7 @@ export class TelemetrySystem implements ISystem {
                     this.externalWriter.writeTelemetry({
                         tick: world.currentTick,
                         entityId: entity.id,
-                        side: entity.getComponent(SideComponent)?.side || 'Neutral',
+                        side: entity.getComponent(SideComponent)?.side || entity.side || 'Neutral',
                         x: transform.position.x,
                         y: transform.position.y,
                         z: transform.position.z,
@@ -113,11 +117,8 @@ export class TelemetrySystem implements ISystem {
         this.events.push(event);
 
         if (event.type === 'EntityRemoved' && event.entityId && world) {
-            const entity = world.getEntity(event.entityId);
-            const tel = entity?.getComponent(TelemetryComponent);
-            if (tel) {
-                this.tombstones.set(event.entityId, [...tel.history]);
-            }
+            // We no longer hoard history in memory. 
+            // The Parquet database on disk is the source of truth for destroyed units.
         }
         
         // Handle side losses (e.g. from EntityDestroyed)
@@ -129,7 +130,7 @@ export class TelemetrySystem implements ISystem {
             this.sideLosses.set(side, current + value);
         }
 
-        if (this.events.length > 1000) {
+        if (this.events.length > 500) {
             this.events.shift();
         }
 

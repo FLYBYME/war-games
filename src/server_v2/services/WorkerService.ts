@@ -27,7 +27,7 @@ export interface PoolStats {
  * WorkerPool: Manages a pool of worker threads for a specific task type.
  */
 class WorkerPool extends EventEmitter {
-    private readonly workers: Array<{ worker: Worker, stats: WorkerStats }> = [];
+    private readonly workers: Array<{ worker: Worker, stats: WorkerStats, currentJob: any }> = [];
     private readonly jobQueue: Array<{ job: any, resolve: Function, reject: Function }> = [];
 
     constructor(
@@ -45,6 +45,7 @@ class WorkerPool extends EventEmitter {
                 execArgv: process.execArgv
             });
             const stats: WorkerStats = { id: i, busy: false, jobsProcessed: 0, errors: 0 };
+            const workerHandle = { worker, stats, currentJob: null as any };
             
             worker.on('message', (msg) => {
                 // If message contains performance data, update stats
@@ -57,7 +58,8 @@ class WorkerPool extends EventEmitter {
 
                 // If it's a job result (not just a stats heartbeat)
                 if (msg.success !== undefined || msg.result !== undefined) {
-                    const activeJob = this.jobQueue.shift();
+                    const activeJob = workerHandle.currentJob;
+                    workerHandle.currentJob = null;
                     stats.busy = false;
                     stats.jobsProcessed++;
                     if (activeJob) activeJob.resolve(msg);
@@ -68,13 +70,14 @@ class WorkerPool extends EventEmitter {
             worker.on('error', (err) => {
                 stats.errors++;
                 console.error(`WorkerPool [${this.poolName}] Worker ${i} Error:`, err);
-                const activeJob = this.jobQueue.shift();
+                const activeJob = workerHandle.currentJob;
+                workerHandle.currentJob = null;
                 if (activeJob) activeJob.reject(err);
                 stats.busy = false;
                 this.processNext();
             });
 
-            this.workers.push({ worker, stats });
+            this.workers.push(workerHandle);
         }
     }
 
@@ -88,9 +91,12 @@ class WorkerPool extends EventEmitter {
     private processNext() {
         const availableWorker = this.workers.find(w => !w.stats.busy);
         if (availableWorker && this.jobQueue.length > 0) {
-            const next = this.jobQueue[0];
-            availableWorker.stats.busy = true;
-            availableWorker.worker.postMessage(next.job);
+            const next = this.jobQueue.shift(); 
+            if (next) {
+                availableWorker.stats.busy = true;
+                availableWorker.currentJob = next;
+                availableWorker.worker.postMessage(next.job);
+            }
         }
     }
 

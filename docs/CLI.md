@@ -158,7 +158,49 @@ npm run cli -- worker get_stats --poolName terrain
 
 ---
 
-## 5. Advanced Geospatial & Env (`env`, `map`)
+## 6. Agent Intelligence (`agent`)
+
+Manage AI agents and interactive simulation analysis.
+
+### Create an Agent
+```bash
+npm run cli -- agent create \
+  --name "Strategic Analyst" \
+  --systemPrompt "You are a military analyst..." \
+  --model "qwen3.5:2b"
+```
+
+### List Agents
+```bash
+npm run cli -- agent list
+```
+
+### Create a Thread
+```bash
+# Link a conversation to a specific match
+npm run cli -- agent thread_create \
+  --agentId <agent-id> \
+  --matchId <match-id> \
+  --name "Mission Planning"
+```
+
+### Run Streaming Analysis
+```bash
+# Get real-time analysis with tool-calling capabilities
+npm run cli -- agent run_stream \
+  --threadId <thread-id> \
+  --prompt "Analyze the current blue side status." \
+  --allowedTools "entity_list,sim_get"
+```
+
+### View Thread History
+```bash
+npm run cli -- agent thread_history --threadId <thread-id>
+```
+
+---
+
+## 7. Advanced Geospatial & Env (`env`, `map`)
 
 High-performance terrain and environment queries.
 
@@ -188,7 +230,7 @@ npm run cli -- env sample_terrain --matchId <match-id> --position "1000,1000,0"
 
 ---
 
-## 6. Developer Tools (`generate`)
+## 8. Developer Tools (`generate`)
 
 Synchronize the CLI and SDK with contract changes.
 

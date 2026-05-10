@@ -22,7 +22,7 @@ export class SetPositionCommand extends Command {
 }
 
 export class SetHeadingCommand extends Command {
-    constructor(entityId: EntityId, public readonly heading: number) {
+    constructor(entityId: EntityId, public readonly heading: number, public readonly forceImmediate: boolean = false) {
         super(entityId, 10);
     }
 }

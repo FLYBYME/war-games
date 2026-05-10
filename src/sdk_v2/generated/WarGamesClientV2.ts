@@ -9,7 +9,10 @@ export class WarGamesClientV2 {
         const options: RequestInit = { method, headers: { 'Content-Type': 'application/json' } };
         if (method === 'GET') {
             const queryParams = new URLSearchParams();
-            for (const [key, value] of Object.entries(args)) if (value !== undefined) queryParams.append(key, String(value));
+            for (const [key, value] of Object.entries(args)) {
+                if (value === undefined) continue;
+                queryParams.append(key, typeof value === 'object' ? JSON.stringify(value) : String(value));
+            }
             const qs = queryParams.toString();
             if (qs) url += '?' + qs;
         } else options.body = JSON.stringify(args);
@@ -18,7 +21,54 @@ export class WarGamesClientV2 {
         return response.json();
     }
 
-    public readonly api = {
+    private async *stream<TOut>(method: string, path: string, args: any): AsyncIterable<TOut> {
+        let url = this.baseUrl + path;
+        const options: RequestInit = { method, headers: { 'Content-Type': 'application/json' } };
+        
+        if (method === 'GET') {
+            const queryParams = new URLSearchParams();
+            for (const [key, value] of Object.entries(args)) {
+                if (value === undefined) continue;
+                queryParams.append(key, typeof value === 'object' ? JSON.stringify(value) : String(value));
+            }
+            const qs = queryParams.toString();
+            if (qs) url += '?' + qs;
+        } else {
+            options.body = JSON.stringify(args);
+        }
+
+        const response = await fetch(url, options);
+        if (!response.ok) throw new Error(`Stream failed: ${response.status} - ${await response.text()}`);
+        if (!response.body) throw new Error('Response body is empty');
+
+        const reader = response.body.getReader();
+        const decoder = new TextDecoder();
+        let buffer = '';
+
+        while (true) {
+            const { done, value } = await reader.read();
+            if (done) break;
+            buffer += decoder.decode(value, { stream: true });
+            const lines = buffer.split('\n');
+            buffer = lines.pop() || '';
+            for (const line of lines) {
+                if (line.startsWith('data: ')) {
+                    try { yield JSON.parse(line.substring(6)); } catch (e) {} 
+                }
+            }
+        }
+    }
+
+    public api = {
+        agent: {
+            create: async (args: z.infer<typeof Contracts.AgentCreateInputSchema>): Promise<z.infer<typeof Contracts.AgentSchema>> => this.request('POST', `/agents`, args),
+            list: async (args: z.infer<typeof Contracts.AgentListInputSchema>): Promise<z.infer<typeof Contracts.AgentListOutputSchema>> => this.request('GET', `/agents`, args),
+            delete: async (args: z.infer<typeof Contracts.AgentDeleteInputSchema>): Promise<z.infer<typeof Contracts.AgentDeleteOutputSchema>> => this.request('DELETE', `/agents/${args.agentId}`, args),
+            seed: async (args: z.infer<typeof Contracts.AgentSeedInputSchema>): Promise<z.infer<typeof Contracts.AgentSeedOutputSchema>> => this.request('POST', `/agents/seed`, args),
+            thread_create: async (args: z.infer<typeof Contracts.ThreadCreateInputSchema>): Promise<z.infer<typeof Contracts.ThreadSchema>> => this.request('POST', `/agents/${args.agentId}/threads`, args),
+            thread_history: async (args: z.infer<typeof Contracts.ThreadHistoryInputSchema>): Promise<z.infer<typeof Contracts.ThreadHistoryOutputSchema>> => this.request('GET', `/threads/${args.threadId}/history`, args),
+            run_stream: (args: z.infer<typeof Contracts.AgentRunStreamInputSchema>): AsyncIterable<z.infer<typeof Contracts.AgentEventSchema>> => this.stream('POST', `/threads/${args.threadId}/run`, args),
+        },
         automation: {
             list_events: async (args: z.infer<typeof Contracts.AutomationListEventsInputSchema>): Promise<z.infer<typeof Contracts.AutomationListEventsOutputSchema>> => this.request('GET', `/matches/${args.matchId}/automation/events`, args),
             trigger_event: async (args: z.infer<typeof Contracts.AutomationTriggerEventInputSchema>): Promise<z.infer<typeof Contracts.AutomationTriggerEventOutputSchema>> => this.request('POST', `/matches/${args.matchId}/automation/events/${args.eventId}/trigger`, args),
@@ -159,10 +209,14 @@ export class WarGamesClientV2 {
             update: async (args: z.infer<typeof Contracts.PropulsionUpdateInputSchema>): Promise<z.infer<typeof Contracts.PropulsionStateSchema>> => this.request('PATCH', `/matches/${args.matchId}/entities/${args.entityId}/propulsion`, args),
             set_state: async (args: z.infer<typeof Contracts.PropulsionSetStateInputSchema>): Promise<z.infer<typeof Contracts.PropulsionStateSchema>> => this.request('PUT', `/matches/${args.matchId}/entities/${args.entityId}/propulsion/state`, args),
         },
+        qa: {
+            test_weapon: async (args: z.infer<typeof Contracts.TestWeaponInputSchema>): Promise<z.infer<typeof Contracts.TestWeaponOutputSchema>> => this.request('POST', `/qa/test-weapon`, args),
+        },
         sensor: {
             list: async (args: z.infer<typeof Contracts.SensorListInputSchema>): Promise<z.infer<typeof Contracts.SensorListOutputSchema>> => this.request('GET', `/matches/${args.matchId}/entities/${args.entityId}/sensors`, args),
             update: async (args: z.infer<typeof Contracts.SensorUpdateInputSchema>): Promise<z.infer<typeof Contracts.SensorStateSchema>> => this.request('PATCH', `/matches/${args.matchId}/entities/${args.entityId}/sensors/${args.index}`, args),
             set_emcon: async (args: z.infer<typeof Contracts.SensorSetEmconInputSchema>): Promise<z.infer<typeof Contracts.SensorSetEmconOutputSchema>> => this.request('PATCH', `/matches/${args.matchId}/entities/${args.entityId}/sensors/emcon`, args),
+            add_detection: async (args: z.infer<typeof Contracts.SensorAddDetectionInputSchema>): Promise<z.infer<typeof Contracts.SensorAddDetectionOutputSchema>> => this.request('POST', `/matches/${args.matchId}/entities/${args.entityId}/detections`, args),
         },
         side: {
             get_roe: async (args: z.infer<typeof Contracts.SideGetROEInputSchema>): Promise<z.infer<typeof Contracts.SideGetROEOutputSchema>> => this.request('GET', `/matches/${args.matchId}/sides/${args.side}/roe`, args),
@@ -181,6 +235,7 @@ export class WarGamesClientV2 {
             step: async (args: z.infer<typeof Contracts.SimStepInputSchema>): Promise<z.infer<typeof Contracts.SimStepOutputSchema>> => this.request('POST', `/matches/${args.matchId}/simulation/step`, args),
             update: async (args: z.infer<typeof Contracts.SimUpdateInputSchema>): Promise<z.infer<typeof Contracts.SimUpdateOutputSchema>> => this.request('PATCH', `/matches/${args.matchId}/simulation`, args),
             get_metrics: async (args: z.infer<typeof Contracts.SimGetMetricsInputSchema>): Promise<z.infer<typeof Contracts.SimMetricsOutputSchema>> => this.request('GET', `/simulation/metrics`, args),
+            get_stream: (args: z.infer<typeof Contracts.SimGetInputSchema>): AsyncIterable<z.infer<typeof Contracts.SimulationEventSchema>> => this.stream('GET', `/matches/${args.matchId}/simulation/stream`, args),
         },
         track: {
             list: async (args: z.infer<typeof Contracts.TrackListInputSchema>): Promise<z.infer<typeof Contracts.TrackListOutputSchema>> => this.request('GET', `/matches/${args.matchId}/tracks`, args),

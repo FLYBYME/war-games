@@ -7,7 +7,7 @@ import {
 import { World } from '../World.js';
 import { CombatComponent, SalvoComponent } from '../../components/Combat.js';
 import { TransformComponent, KinematicsComponent } from '../../components/Physics.js';
-import { HealthComponent } from '../../components/Health.js';
+import { HealthComponent, SubsystemType } from '../../components/Health.js';
 import { WeaponStageComponent } from '../../components/WeaponStages.js';
 import { CollisionComponent } from '../../components/Collision.js';
 import { Side, SensorType, EMBand, SensorMode, MountingType, MissionType } from '../Types.js';
@@ -270,6 +270,20 @@ export class ApplySubsystemDamageHandler implements CommandHandler<ApplySubsyste
                         remainingHp: sub.hp
                     }
                 });
+
+                // Magazine Explosion Chance (Test 115)
+                if (sub.type === SubsystemType.Combat && sub.hp <= 0) {
+                    if (world.random.next() < 0.2) { // 20% chance on destruction
+                        logger.warn(`MAGAZINE EXPLOSION on ${cmd.entityId}!`);
+                        world.queueExternalCommand(new ApplyDamageCommand(cmd.entityId, 5000));
+                        world.events.emit({
+                            type: 'Detonation',
+                            tick: world.currentTick,
+                            entityId: cmd.entityId,
+                            data: { position: { x: 0, y: 0, z: 0 }, radius: 50, damage: 5000 }
+                        });
+                    }
+                }
             }
         }
     }

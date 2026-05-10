@@ -11,6 +11,7 @@ import { FireControl } from '../../engine/math/FireControl';
 import { WRAExecutorSystem } from '../../engine/systems/WRAExecutorSystem';
 import { TrackComponent } from '../../engine/components/Track';
 import { DoctrineComponent } from '../../engine/components/Doctrine';
+import { GuidanceComponent } from '../../engine/components/Guidance';
 
 describe('Combat & Fire Control Unit Tests (Tests 61-80)', () => {
     let world: World;
@@ -247,7 +248,10 @@ describe('Combat & Fire Control Unit Tests (Tests 61-80)', () => {
         // @ts-ignore
         const mockWorld = {
             getEntities: vi.fn().mockReturnValue([shooter]),
-            getEntity: vi.fn().mockImplementation((id: string) => undefined), 
+            getEntity: vi.fn().mockImplementation((id: string) => {
+                if (id === 'm1' || id === 'm2') return { id };
+                return undefined;
+            }), 
             timestamp: 0,
             currentTick: world.currentTick,
             random: world.random,
@@ -259,5 +263,172 @@ describe('Combat & Fire Control Unit Tests (Tests 61-80)', () => {
         const fireCmd = commands.find(c => c.constructor.name === 'FireWeaponCommand') as any;
         expect(fireCmd).toBeDefined();
         expect(fireCmd.targetId).toBe('m2');
+    });
+
+    it('should respect mount limits (Test 65)', async () => {
+        const wraExecutor = new WRAExecutorSystem(world.weaponProfiles);
+        const shooter = setupShooter('ship', Side.Blue);
+        const doctrine = new DoctrineComponent();
+        shooter.addComponent(doctrine);
+
+        const mount = shooter.getComponent(CombatComponent)!.mounts[0];
+        mount.minAzimuth = -90;
+        mount.maxAzimuth = 90; // Forward arc only
+
+        const tracks = shooter.getComponent(TrackComponent)!;
+        // Target at 180 degrees (Behind)
+        tracks.tracks.set('TGT-BEHIND', {
+            id: 'TGT-BEHIND', trueEntityId: 't1', position: { x: -10000, y: 0, z: 0 }, 
+            velocity: { x: 0, y: 0, z: 0 }, cepM: 0, firstSeenTick: 0, lastSeenTick: world.currentTick,
+            status: TrackStatus.Active, classification: 'Surface', identification: IdentificationStatus.HOSTILE, confidence: 1.0
+        });
+
+        // @ts-ignore
+        const mockWorld = {
+            getEntities: vi.fn().mockReturnValue([shooter]),
+            getEntity: vi.fn().mockImplementation((id: string) => id === 't1' ? { id } : undefined),
+            currentTick: 0,
+            random: world.random,
+            profileRegistry: world.profileRegistry
+        };
+
+        const commands = await wraExecutor.process(mockWorld as any, 0.1);
+        expect(commands.length).toBe(0); // Should not fire at target behind
+    });
+
+    it('should prevent over-engagement based on WRA quantity (Test 67)', async () => {
+        const wraExecutor = new WRAExecutorSystem(world.weaponProfiles);
+        const shooter = setupShooter('ship', Side.Blue);
+        const doctrine = new DoctrineComponent();
+        doctrine.wraRules.push({ targetType: 'Surface', weaponType: 'Any', quantity: 2 });
+        shooter.addComponent(doctrine);
+
+        const tracks = shooter.getComponent(TrackComponent)!;
+        tracks.tracks.set('TGT', {
+            id: 'TGT', trueEntityId: 't1', position: { x: 10000, y: 0, z: 0 }, 
+            velocity: { x: 0, y: 0, z: 0 }, cepM: 0, firstSeenTick: 0, lastSeenTick: world.currentTick,
+            status: TrackStatus.Active, classification: 'Surface', identification: IdentificationStatus.HOSTILE, confidence: 1.0
+        });
+
+        // Mock 1 missile already in flight
+        const missile = new Entity('m1', Side.Blue);
+        missile.addComponent(new GuidanceComponent({ targetId: 't1' }));
+
+        // @ts-ignore
+        const mockWorld = {
+            getEntities: vi.fn().mockReturnValue([shooter, missile]),
+            getEntity: vi.fn().mockImplementation((id: string) => (id === 't1' || id === 'm1') ? { id } : undefined),
+            currentTick: 100,
+            random: world.random,
+            profileRegistry: world.profileRegistry
+        };
+
+        const commands = await wraExecutor.process(mockWorld as any, 0.1);
+        // Should only fire 1 more (since 1 is in flight and required is 2)
+        const fireCmds = commands.filter(c => c.constructor.name === 'FireWeaponCommand');
+        expect(fireCmds.length).toBe(1);
+    });
+
+    it('should respect weapon range limits (Test 72)', async () => {
+        const wraExecutor = new WRAExecutorSystem(world.weaponProfiles);
+        const shooter = setupShooter('ship', Side.Blue);
+        const doctrine = new DoctrineComponent();
+        shooter.addComponent(doctrine);
+
+        const tracks = shooter.getComponent(TrackComponent)!;
+        // Target too far (150km, AIM-120 max is 100km)
+        tracks.tracks.set('TGT-FAR', {
+            id: 'TGT-FAR', trueEntityId: 't-far', position: { x: 150000, y: 0, z: 0 }, 
+            velocity: { x: 0, y: 0, z: 0 }, cepM: 0, firstSeenTick: 0, lastSeenTick: world.currentTick,
+            status: TrackStatus.Active, classification: 'Air-High', identification: IdentificationStatus.HOSTILE, confidence: 1.0
+        });
+
+        // @ts-ignore
+        const mockWorld = {
+            getEntities: vi.fn().mockReturnValue([shooter]),
+            getEntity: vi.fn().mockImplementation((id: string) => id === 't-far' ? { id } : undefined),
+            currentTick: 0,
+            random: world.random,
+            profileRegistry: world.profileRegistry
+        };
+
+        const commands = await wraExecutor.process(mockWorld as any, 0.1);
+        expect(commands.length).toBe(0);
+    });
+
+    it('should engage weapons within CIWS threshold (Test 76)', async () => {
+        const wraExecutor = new WRAExecutorSystem(world.weaponProfiles);
+        const shooter = setupShooter('ship', Side.Blue);
+        shooter.addComponent(new DoctrineComponent()); 
+
+        const tracks = shooter.getComponent(TrackComponent)!;
+        
+        // Weapon at 10km (Outside 20% CIWS threshold of 15km = 3km)
+        tracks.tracks.set('WPN-FAR', {
+            id: 'WPN-FAR', trueEntityId: 'w1', position: { x: 10000, y: 0, z: 0 }, 
+            velocity: { x: -500, y: 0, z: 0 }, cepM: 0, firstSeenTick: 0, lastSeenTick: world.currentTick,
+            status: TrackStatus.Active, classification: 'Weapon', identification: IdentificationStatus.HOSTILE, confidence: 1.0
+        });
+
+        // Weapon at 2km (Inside threshold)
+        tracks.tracks.set('WPN-NEAR', {
+            id: 'WPN-NEAR', trueEntityId: 'w2', position: { x: 2000, y: 0, z: 0 }, 
+            velocity: { x: -500, y: 0, z: 0 }, cepM: 0, firstSeenTick: 0, lastSeenTick: world.currentTick,
+            status: TrackStatus.Active, classification: 'Weapon', identification: IdentificationStatus.HOSTILE, confidence: 1.0
+        });
+
+        const combat = shooter.getComponent(CombatComponent)!;
+        combat.magazines[0].weaponProfileId = '76mm-shell';
+        combat.mounts[0].currentAzimuth = 0;
+
+        // @ts-ignore
+        const mockWorld = {
+            getEntities: vi.fn().mockReturnValue([shooter]),
+            getEntity: vi.fn().mockImplementation((id: string) => (id === 'w1' || id === 'w2') ? { id } : undefined),
+            currentTick: 100,
+            random: world.random,
+            profileRegistry: world.profileRegistry
+        };
+
+        const commands = await wraExecutor.process(mockWorld as any, 0.1);
+        const fireCmds = commands.filter(c => c.constructor.name === 'FireWeaponCommand') as any[];
+        expect(fireCmds.length).toBe(1);
+        expect(fireCmds[0].targetId).toBe('w2');
+    });
+
+    it('should coordinate multiple mounts for a single target (Test 80)', async () => {
+        const wraExecutor = new WRAExecutorSystem(world.weaponProfiles);
+        const shooter = setupShooter('ship', Side.Blue);
+        const doctrine = new DoctrineComponent();
+        doctrine.wraRules.push({ targetType: 'Surface', weaponType: 'Any', quantity: 2 });
+        shooter.addComponent(doctrine);
+
+        const combat = shooter.getComponent(CombatComponent)!;
+        // Add a second mount
+        combat.mounts.push({ ...combat.mounts[0], name: 'Mount 2' });
+        combat.magazines[0].currentCount = 10;
+
+        const tracks = shooter.getComponent(TrackComponent)!;
+        tracks.tracks.set('TGT', {
+            id: 'TGT', trueEntityId: 't1', position: { x: 10000, y: 0, z: 0 }, 
+            velocity: { x: 0, y: 0, z: 0 }, cepM: 0, firstSeenTick: 0, lastSeenTick: world.currentTick,
+            status: TrackStatus.Active, classification: 'Surface', identification: IdentificationStatus.HOSTILE, confidence: 1.0
+        });
+
+        // @ts-ignore
+        const mockWorld = {
+            getEntities: vi.fn().mockReturnValue([shooter]),
+            getEntity: vi.fn().mockImplementation((id: string) => id === 't1' ? { id } : undefined),
+            currentTick: 100,
+            random: world.random,
+            profileRegistry: world.profileRegistry
+        };
+
+        const commands = await wraExecutor.process(mockWorld as any, 0.1);
+        // Should fire 1 from each mount (total 2)
+        const fireCmds = commands.filter(c => c.constructor.name === 'FireWeaponCommand') as any[];
+        expect(fireCmds.length).toBe(2);
+        expect(fireCmds[0].mountIndex).toBe(0);
+        expect(fireCmds[1].mountIndex).toBe(1);
     });
 });

@@ -137,6 +137,57 @@ describe('Tracking & Fusion Unit Tests', () => {
             track = Array.from(trackComp.tracks.values())[0];
             expect(track.status).toBe(TrackStatus.Coasting);
         });
+
+        it('should drop track after timeout (Test 53)', async () => {
+            const observer = setupObserver('obs', Side.Blue);
+            const trackComp = observer.getComponent(TrackComponent)!;
+            const track: Track = {
+                id: 'TRK-1',
+                trueEntityId: 'tgt-1',
+                position: { x: 0, y: 0, z: 0 },
+                velocity: { x: 0, y: 0, z: 0 },
+                firstSeenTick: 0,
+                lastSeenTick: 10,
+                cepM: 10,
+                status: TrackStatus.Active,
+                classification: 'Unknown',
+                identification: IdentificationStatus.HOSTILE,
+                confidence: 1.0
+            };
+            trackComp.tracks.set(track.id, track);
+
+            mockWorld.getEntities.mockReturnValue([observer]);
+            
+            // At tick 100, still there (diff = 90 < 200)
+            mockWorld.currentTick = 100;
+            await tms.process(mockWorld, 0.1);
+            expect(trackComp.tracks.has('TRK-1')).toBe(true);
+
+            // At tick 300, should be dropped (diff = 290 > 200)
+            mockWorld.currentTick = 300;
+            await tms.process(mockWorld, 0.1);
+            expect(trackComp.tracks.has('TRK-1')).toBe(false);
+        });
+
+        it('should handle ghost tracks from deceptive jamming (Test 59)', async () => {
+            const observer = setupObserver('obs', Side.Blue);
+            const detection = observer.getComponent(DetectionComponent)!;
+            
+            // Add a ghost detection (no real entity)
+            detection.detectedEntityIds.add('GHOST-1');
+
+            mockWorld.getEntities.mockReturnValue([observer]);
+            mockWorld.getEntity.mockReturnValue(undefined); // No truth data
+
+            await tms.process(mockWorld, 0.1);
+
+            const trackComp = observer.getComponent(TrackComponent)!;
+            const tracks = Array.from(trackComp.tracks.values());
+            const ghostTrack = tracks.find(t => t.trueEntityId === 'GHOST-1');
+            
+            expect(ghostTrack).toBeDefined();
+            expect(ghostTrack?.identification).toBe(IdentificationStatus.SUSPECT);
+        });
     });
 
     describe('Sensor Fusion & Datalink (Tests 47, 48, 53, 58)', () => {

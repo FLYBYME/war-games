@@ -21,7 +21,36 @@ export class WaypointSystem implements ISystem {
             const nav = entity.getComponent(NavigationComponent);
             const transform = entity.getComponent(TransformComponent);
 
-            if (!nav || !transform || nav.navState !== NavState.Waypoint) continue;
+            if (!nav || !transform) continue;
+            if (nav.navState === NavState.Loiter && nav.waypoints.length > 0) {
+                const target = nav.waypoints[nav.activeWaypointIndex] || nav.waypoints[0];
+                const vToTarget = VectorMath.subtract(target.position, transform.position);
+                const dist = VectorMath.magnitude(vToTarget);
+                const loiterRadius = 2000; // 2km orbit
+
+                let desiredHeading;
+                if (dist > loiterRadius * 1.5) {
+                    // Too far, intercept
+                    desiredHeading = (Math.atan2(vToTarget.y, vToTarget.x) * Physics.RAD_TO_DEG + 360) % 360;
+                } else {
+                    // Orbiting: Radial + Tangential
+                    const angleToCenter = Math.atan2(vToTarget.y, vToTarget.x);
+                    const tangAngle = angleToCenter + Math.PI / 2; // Counter-clockwise
+                    
+                    // Correction factor to pull back to radius
+                    const radialCorrection = (dist - loiterRadius) / loiterRadius;
+                    const finalAngle = tangAngle - radialCorrection * 0.5;
+
+                    desiredHeading = (finalAngle * Physics.RAD_TO_DEG + 360) % 360;
+                }
+
+                commands.push(new SetHeadingCommand(entity.id, desiredHeading));
+                commands.push(new SetSpeedCommand(entity.id, target.speedKts || 250));
+                commands.push(new SetPitchCommand(entity.id, 0));
+                continue;
+            }
+
+            if (nav.navState !== NavState.Waypoint) continue;
             if (nav.waypoints.length === 0 || nav.activeWaypointIndex >= nav.waypoints.length) continue;
 
             const target = nav.waypoints[nav.activeWaypointIndex];

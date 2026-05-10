@@ -2,7 +2,16 @@ import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { env_sample_terrain } from '../../../../server_v2/tools/env/env_sample_terrain.js';
 import { env_prefetch_terrain } from '../../../../server_v2/tools/env/env_prefetch_terrain.js';
 import { env_get_cache_stats } from '../../../../server_v2/tools/env/env_get_cache_stats.js';
-import { createMockMatchService, createMockContext } from '../../utils/mock_factory.js';
+import { createMockMatchHandle, createMockMatchService, createMockContext } from '../../utils/mock_factory.js';
+
+// Mock the MatchService module to override isMatchHandle
+vi.mock('../../../../server_v2/services/MatchService.js', async (importOriginal) => {
+    const actual = await importOriginal() as any;
+    return {
+        ...actual,
+        isMatchHandle: vi.fn(() => true) // Always return true for mocks in these tests
+    };
+});
 
 describe('Terrain Tools Unit Tests', () => {
     
@@ -12,7 +21,8 @@ describe('Terrain Tools Unit Tests', () => {
 
     describe('env_sample_terrain', () => {
         it('should return elevation for a coordinate', async () => {
-            const matchService = createMockMatchService();
+            const handle = createMockMatchHandle({ id: 'm1' });
+            const matchService = createMockMatchService([handle]);
             const ctx = createMockContext(matchService);
 
             vi.spyOn(ctx.app.terrainService, 'getElevation').mockResolvedValue(450);
@@ -30,7 +40,8 @@ describe('Terrain Tools Unit Tests', () => {
 
     describe('env_prefetch_terrain', () => {
         it('should queue tiles for prefetching', async () => {
-            const matchService = createMockMatchService();
+            const handle = createMockMatchHandle({ id: 'm1' });
+            const matchService = createMockMatchService([handle]);
             const ctx = createMockContext(matchService);
 
             const result = await env_prefetch_terrain.call({

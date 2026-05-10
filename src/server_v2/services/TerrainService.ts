@@ -18,7 +18,7 @@ export class TerrainService {
     private readonly activeJobs = new Map<string, Promise<TerrainTile>>();
 
     constructor(private readonly workerService: WorkerService) {
-        this.workerService.createPool('terrain', WORKER_PATH, 4);
+        this.workerService.createPool('terrain', WORKER_PATH, 2);
     }
 
     public async getTile(lat: number, lon: number): Promise<TerrainTile> {

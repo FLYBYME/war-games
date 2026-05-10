@@ -77,11 +77,14 @@ async function fetchFromAws(lat: number, lon: number, targetRes: number): Promis
     const response = await fetch(url);
     if (!response.ok) {
         if (response.status === 403 || response.status === 404) {
+            console.log(`[TERRAIN-WORKER] Tile not found (returning ocean/zero): ${url}`);
             // Fill with 0 for water or missing data
             return new Float32Array(targetRes * targetRes).fill(0);
         }
         throw new Error(`Failed to fetch AWS tile ${url}: ${response.status}`);
     }
+
+    console.log(`[TERRAIN-WORKER] Successfully downloaded tile: ${url}`);
 
     const ds = new DecompressionStream('gzip');
     const decompressedStream = response.body!.pipeThrough(ds);

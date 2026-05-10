@@ -7,11 +7,33 @@ import {
     scenarios as scenariosTable,
     matches as matchesTable,
     bugs as bugsTable,
-    bugComments as bugCommentsTable
+    bugComments as bugCommentsTable,
+    mapRegions as mapRegionsTable
 } from '../../db/schema.js';
 import { profiles } from '../../../../dump/data/profiles.js';
 import { weaponProfiles } from '../../../../dump/data/weapons.js';
 import { scenarios } from '../../../../dump/data/scenarios.js';
+
+const SEEDED_REGIONS = [
+    {
+        id: 'scs',
+        name: 'South China Sea',
+        description: 'Primary maritime theater for littoral and blue-water operations.',
+        minLat: 10, maxLat: 25, minLon: 110, maxLon: 125
+    },
+    {
+        id: 'ee',
+        name: 'Eastern Europe',
+        description: 'Continental theater for high-latitude terrain and missile defense studies.',
+        minLat: 45, maxLat: 55, minLon: 25, maxLon: 40
+    },
+    {
+        id: 'pg',
+        name: 'Persian Gulf',
+        description: 'Strategic choke-point and maritime interdiction theater.',
+        minLat: 23, maxLat: 31, minLon: 47, maxLon: 57
+    }
+];
 
 export const db_seed = defineTool(dbSeedContract, async (input, ctx) => {
     if (input.clearExisting) {
@@ -22,6 +44,7 @@ export const db_seed = defineTool(dbSeedContract, async (input, ctx) => {
         db.delete(profilesTable).run();
         db.delete(weaponsTable).run();
         db.delete(scenariosTable).run();
+        db.delete(mapRegionsTable).run();
     }
 
     const now = new Date();
@@ -77,9 +100,24 @@ export const db_seed = defineTool(dbSeedContract, async (input, ctx) => {
         scenariosCount++;
     }
 
+    // 4. Seed Regions
+    let regionsCount = 0;
+    for (const region of SEEDED_REGIONS) {
+        db.insert(mapRegionsTable).values({
+            ...region,
+            createdAt: now,
+            updatedAt: now
+        }).onConflictDoUpdate({
+            target: mapRegionsTable.id,
+            set: { ...region, updatedAt: now }
+        }).run();
+        regionsCount++;
+    }
+
     return {
         profilesCount,
         weaponsCount,
-        scenariosCount
+        scenariosCount,
+        regionsCount
     };
 });

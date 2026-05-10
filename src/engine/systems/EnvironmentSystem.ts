@@ -139,4 +139,33 @@ export class EnvironmentSystem implements ISystem {
     public setOrigin(lat: number, lon: number): void {
         this.projection.setOrigin(lat, lon);
     }
+
+    /**
+     * prefetch: Ensures terrain data is loaded for all entities currently in the world.
+     * Returns a promise that resolves when all required initial tiles are cached.
+     */
+    public async prefetch(world: IWorldView): Promise<void> {
+        const uniqueTiles = new Set<string>();
+        const pending = [];
+
+        for (const entity of world.getEntities()) {
+            const transform = entity.getComponent(TransformComponent);
+            if (transform) {
+                const geo = this.projection.project(transform.position);
+                const tileKey = `${Math.floor(geo.lat)},${Math.floor(geo.lon)}`;
+                
+                if (!uniqueTiles.has(tileKey)) {
+                    uniqueTiles.add(tileKey);
+                    // Triggering a sample will force the TerrainService to fetch and cache the tile
+                    pending.push(this.terrain.getElevation(geo.lat, geo.lon));
+                }
+            }
+        }
+
+        if (pending.length > 0) {
+            console.log(`[ENVIRONMENT] Prefetching ${pending.length} terrain tiles...`);
+            await Promise.all(pending);
+            console.log(`[ENVIRONMENT] Prefetch complete.`);
+        }
+    }
 }

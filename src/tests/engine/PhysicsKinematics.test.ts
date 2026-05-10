@@ -7,6 +7,12 @@ import { KinematicsComponent, TransformComponent } from '../../engine/components
 import { FuelComponent } from '../../engine/components/Propulsion';
 import { EnvironmentSystem } from '../../engine/systems/EnvironmentSystem';
 import { TerrainOracle } from '../../engine/environment/TerrainOracle';
+import { ControlSystem } from '../../engine/systems/ControlSystem';
+import { Entity } from '../../engine/core/Entity';
+import { NavigationComponent } from '../../engine/components/Navigation';
+import { PropulsionComponent } from '../../engine/components/Propulsion';
+import { SetHeadingCommand } from '../../engine/core/Command';
+import { Side } from '../../engine/core/Types';
 
 describe('Physics & Kinematics Unit Tests', () => {
     
@@ -238,21 +244,39 @@ describe('Physics & Kinematics Unit Tests', () => {
             expect(pos.z).toBe(0);
         });
 
-        it('should respect max turn rate (Test 4 - Partial Implementation)', () => {
-            const currentHeading = 0;
-            const desiredHeading = 90;
-            const maxTurnRate = 10; // deg/s
-            const dt = 1.0;
+        it('should respect max turn rate (Test 4)', async () => {
+            const controlSystem = new ControlSystem();
+            const entity = new Entity('plane', Side.Blue);
+            const nav = new NavigationComponent();
+            const transform = new TransformComponent({ position: { x: 0, y: 0, z: 0 }, rotation: 0 });
+            const kinematics = new KinematicsComponent({ velocity: { x: 0, y: 0, z: 0 }, massKg: 10000 });
+            const propulsion = new PropulsionComponent({ maxThrustDryN: 50000 });
             
-            let nextHeading = currentHeading;
-            const diff = desiredHeading - currentHeading;
-            if (Math.abs(diff) > maxTurnRate * dt) {
-                nextHeading += Math.sign(diff) * maxTurnRate * dt;
-            } else {
-                nextHeading = desiredHeading;
-            }
+            entity.addComponent(nav);
+            entity.addComponent(transform);
+            entity.addComponent(kinematics);
+            entity.addComponent(propulsion);
             
-            expect(nextHeading).toBe(10);
+            nav.desiredHeadingDeg = 90;
+            const turnRate = 10; // deg/s
+            // Mock profile registry
+            const mockWorld = {
+                getEntities: () => [entity],
+                profileRegistry: {
+                    get: () => ({ kinematics: { turnRateDegS: turnRate } })
+                }
+            };
+
+            const dt = 1.0; // 1s
+            // ControlSystem uses 0.1s internally for its calc? 
+            // Wait, I should pass dt to process. 
+            // The implementation I wrote uses 0.1 hardcoded. I should fix that too.
+            const commands = await controlSystem.process(mockWorld as any, dt);
+            const hdgCmd = commands.find(c => c instanceof SetHeadingCommand) as any;
+            
+            expect(hdgCmd).toBeDefined();
+            // 0 + 10 * 1.0 = 10
+            expect(hdgCmd.heading).toBe(10); 
         });
     });
 });

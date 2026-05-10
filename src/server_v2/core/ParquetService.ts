@@ -38,14 +38,36 @@ export class ParquetService {
         }
     }
 
+    private rowCount: number = 0;
+
     async init() {
         const filePath = path.resolve(`./data/runs/${this.runId}/${this.type}.parquet`);
         this.writer = await parquet.ParquetWriter.openFile(this.schema, filePath);
+        // Set rowGroupSize to 2000 to encourage more frequent flushes to disk
+        this.writer.setRowGroupSize(2000);
     }
 
     async writeRow(row: any) {
-        if (!this.writer) await this.init();
-        await this.writer.appendRow(row);
+        try {
+            if (!this.writer) await this.init();
+            
+            // Defensive serialization: Ensure all fields expected to be strings are strings
+            const sanitizedRow = { ...row };
+            for (const [key, value] of Object.entries(sanitizedRow)) {
+                const columnSchema = this.schema.fields[key];
+                if (columnSchema && columnSchema.type === 'BYTE_ARRAY' && typeof value === 'object' && value !== null) {
+                    // BYTE_ARRAY is used for UTF8 in parquetjs
+                    sanitizedRow[key] = JSON.stringify(value);
+                }
+            }
+
+            await this.writer.appendRow(sanitizedRow);
+            this.rowCount++;
+        } catch (err: any) {
+            console.error(`[ParquetService] Error writing ${this.type} row:`, err);
+            console.error(`[ParquetService] Mismatched row data:`, JSON.stringify(row, null, 2));
+            throw err;
+        }
     }
 
     async close() {

@@ -68,9 +68,12 @@ export const simUpdateContract = defineContract({
     outputSchema: SimUpdateOutputSchema,
     rest: { method: 'PATCH', path: '/matches/:matchId/simulation' }
 });
+
 // ─── sim_get_metrics ─────────────────────────────────────────────────────────
 
-export const SimGetMetricsInputSchema = z.object({});
+export const SimGetMetricsInputSchema = z.object({
+    matchId: z.string().optional().describe("Optional match ID to get specific metrics for")
+});
 
 export const SimMetricsOutputSchema = z.object({
     memory: z.object({
@@ -79,7 +82,9 @@ export const SimMetricsOutputSchema = z.object({
         heapTotal: z.number().describe("Total heap allocated in bytes"),
         external: z.number().describe("External memory (Buffers, etc) in bytes")
     }),
-    uptime: z.number().describe("Process uptime in seconds")
+    uptime: z.number().describe("Process uptime in seconds"),
+    tracerSize: z.number().optional().describe("Number of logs in the tracer for the specified match"),
+    octreeNodeCount: z.number().optional().describe("Number of nodes in the octree for the specified match")
 });
 
 export const simGetMetricsContract = defineContract({
@@ -89,4 +94,21 @@ export const simGetMetricsContract = defineContract({
     inputSchema: SimGetMetricsInputSchema,
     outputSchema: SimMetricsOutputSchema,
     rest: { method: 'GET', path: '/simulation/metrics' }
+});
+
+// ─── sim_get_stream ─────────────────────────────────────────────────────────
+
+import { SimulationEventSchema } from '../domain/events.schema.js';
+
+export const simGetStreamContract = defineContract({
+    domain: 'sim',
+    action: 'get_stream',
+    description: 'Open a real-time SSE stream for simulation events (ticks, combat, etc.) for a specific match.',
+    inputSchema: SimGetInputSchema,
+    outputSchema: SimulationEventSchema,
+    rest: { 
+        method: 'GET', 
+        path: '/matches/:matchId/simulation/stream',
+        isStream: true 
+    }
 });

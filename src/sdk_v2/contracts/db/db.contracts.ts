@@ -156,7 +156,8 @@ export const DBSeedInputSchema = z.object({
 export const DBSeedOutputSchema = z.object({
     profilesCount: z.number().describe("Number of profiles seeded"),
     weaponsCount: z.number().describe("Number of weapons seeded"),
-    scenariosCount: z.number().describe("Number of scenarios seeded")
+    scenariosCount: z.number().describe("Number of scenarios seeded"),
+    regionsCount: z.number().describe("Number of regions seeded")
 });
 
 export const dbSeedContract = defineContract({

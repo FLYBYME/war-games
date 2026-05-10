@@ -65,6 +65,44 @@ export async function initDb() {
             created_at INTEGER NOT NULL,
             FOREIGN KEY (bug_id) REFERENCES bugs(id)
         );
+        CREATE TABLE IF NOT EXISTS map_regions (
+            id TEXT PRIMARY KEY,
+            name TEXT NOT NULL,
+            description TEXT,
+            min_lat REAL NOT NULL,
+            max_lat REAL NOT NULL,
+            min_lon REAL NOT NULL,
+            max_lon REAL NOT NULL,
+            created_at INTEGER NOT NULL,
+            updated_at INTEGER NOT NULL
+        );
+        CREATE TABLE IF NOT EXISTS agents (
+            id TEXT PRIMARY KEY,
+            name TEXT NOT NULL,
+            system_prompt TEXT NOT NULL,
+            model TEXT NOT NULL DEFAULT 'llama3.2',
+            config TEXT NOT NULL,
+            created_at INTEGER NOT NULL,
+            updated_at INTEGER NOT NULL
+        );
+        CREATE TABLE IF NOT EXISTS threads (
+            id TEXT PRIMARY KEY,
+            agent_id TEXT NOT NULL,
+            match_id TEXT,
+            name TEXT NOT NULL,
+            created_at INTEGER NOT NULL,
+            updated_at INTEGER NOT NULL,
+            FOREIGN KEY (agent_id) REFERENCES agents(id)
+        );
+        CREATE TABLE IF NOT EXISTS messages (
+            id TEXT PRIMARY KEY,
+            thread_id TEXT NOT NULL,
+            role TEXT NOT NULL,
+            content TEXT,
+            tool_calls TEXT,
+            created_at INTEGER NOT NULL,
+            FOREIGN KEY (thread_id) REFERENCES threads(id)
+        );
     `);
     console.log('Database initialized with tables');
 }

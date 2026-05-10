@@ -25,3 +25,19 @@ export class RCSComponent implements IComponent {
         if (init) Object.assign(this, init);
     }
 }
+
+/**
+ * IRSignatureComponent: Infrared signature.
+ * Scales with engine power and afterburners.
+ */
+export class IRSignatureComponent implements IComponent {
+    readonly type = 'IRSignatureComponent';
+
+    public baseIR: number = 10.0;
+    public afterburnerMultiplier: number = 5.0;
+    public heatDecayRate: number = 0.5;
+
+    constructor(init?: Partial<IRSignatureComponent>) {
+        if (init) Object.assign(this, init);
+    }
+}

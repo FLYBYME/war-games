@@ -223,7 +223,57 @@ describe('Sensors & Detection Unit Tests', () => {
         });
     });
 
-    describe('Sensor Mechanics (Tests 30-31, 38)', () => {
+    describe('Sensor Mechanics (Tests 23, 30-31, 37, 38)', () => {
+        it('should decrease probability of detection with range (Test 23)', () => {
+            const sensor = new SensorComponent({ sensorType: SensorType.Radar, maxRangeM: 100000 });
+            const env = new EnvironmentComponent();
+            const target = new Entity('tgt', Side.Red);
+            const rcs = 0.0001; // Advanced Stealth
+            const noiseWatts = 1e-15;
+
+            // At 10km, Pd should be near 1.0
+            // At 80km, Pd should be much lower
+            
+            // Mock random to return Pd value so we can compare
+            let lastPd = 0;
+            mockWorld.random.next.mockImplementation(() => {
+                // We'll capture the Pd by returning a value and checking what the system does
+                return 0.5; // Fixed threshold for this test
+            });
+
+            // We can't easily "capture" Pd because it's local. 
+            // But we can check if it detects at 10km and fails at 90km with the same random seed.
+            mockWorld.random.next.mockReturnValue(0.5); 
+            
+            // @ts-ignore
+            const detectClose = sensorSystem.calculateRadarDetection(sensor, env, 10000, rcs, noiseWatts, target, mockWorld);
+            // @ts-ignore
+            const detectFar = sensorSystem.calculateRadarDetection(sensor, env, 90000, rcs, noiseWatts, target, mockWorld);
+            
+            expect(detectClose).toBe(true);
+            expect(detectFar).toBe(false);
+        });
+
+        it('should not detect if sensor is inactive (Test 37)', async () => {
+            const observer = new Entity('obs', Side.Blue);
+            const sensor = new SensorComponent({ sensorType: SensorType.Radar, maxRangeM: 100000 });
+            sensor.isActive = false; // Sensor is OFF
+            observer.addComponent(sensor);
+            observer.addComponent(new DetectionComponent());
+            observer.addComponent(new TransformComponent({ position: { x: 0, y: 0, z: 100 } }));
+
+            const target = new Entity('tgt', Side.Red);
+            target.addComponent(new TransformComponent({ position: { x: 5000, y: 0, z: 100 } }));
+            target.addComponent(new RCSComponent({ baseRCS: 10 }));
+
+            mockWorld.getEntities.mockReturnValue([observer, target]);
+            mockWorld.getNearbyEntities.mockReturnValue([target]);
+            
+            const commands = await sensorSystem.process(mockWorld, 0.1);
+            const addCmds = commands.filter(c => c.constructor.name === 'AddDetectionCommand');
+            expect(addCmds.length).toBe(0);
+        });
+
         it('should not detect target outside sensor beam (Test 31)', () => {
             const sensor = new SensorComponent({ sensorType: SensorType.Radar, maxRangeM: 100000 });
             sensor.beamWidthDeg = 10;

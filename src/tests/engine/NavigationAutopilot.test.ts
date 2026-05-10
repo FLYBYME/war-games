@@ -96,4 +96,56 @@ describe('Navigation & Autopilot Unit Tests (Tests 121-128)', () => {
         expect(pitchCmd).toBeDefined();
         expect(pitchCmd.pitch).toBeGreaterThan(0); // Should pitch up
     });
+
+    it('should maintain orbit in loiter mode (Test 124)', async () => {
+        const entity = setupNavigator('plane', { x: 2000, y: 0, z: 1000 }); // At the radius (2km)
+        const nav = entity.getComponent(NavigationComponent)!;
+        nav.navState = NavState.Loiter;
+        nav.waypoints = [{ position: { x: 0, y: 0, z: 1000 }, speedKts: 250 }];
+
+        const commands = await waypointSystem.process(world, 0.1);
+        const hdgCmd = commands.find(c => c.constructor.name === 'SetHeadingCommand') as any;
+
+        expect(hdgCmd).toBeDefined();
+        // At (2000, 0), center is at (0,0). vToTarget is (-2000, 0) -> 180 deg.
+        // Tangential (CCW) is 180 + 90 = 270 deg (South).
+        expect(hdgCmd.heading).toBeCloseTo(270, 1);
+    });
+
+    it('should follow terrain profile (Test 129)', async () => {
+        const entity = setupNavigator('heli', { x: 0, y: 0, z: 100 }); // 100m alt
+        const nav = entity.getComponent(NavigationComponent)!;
+        nav.navState = NavState.Waypoint;
+        nav.terrainFollowing = true;
+        nav.waypoints = [{ position: { x: 1000, y: 0, z: 100 }, speedKts: 100 }];
+
+        // Mock terrain: A hill 200m high ahead
+        const env = new (await import('../../engine/components/Environment')).EnvironmentComponent();
+        env.terrainHeightM = 200; // Hill is 200m
+        entity.addComponent(env);
+
+        const commands = await waypointSystem.process(world, 0.1);
+        const pitchCmd = commands.find(c => c.constructor.name === 'SetPitchCommand') as any;
+
+        // Altitude (100) < Terrain (200) + Clearance (200). Should CLIMB.
+        expect(pitchCmd).toBeDefined();
+        expect(pitchCmd.pitch).toBeGreaterThan(0);
+    });
+
+    it('should manage submarine depth (Test 135)', async () => {
+        const sub = setupNavigator('sub', { x: 0, y: 0, z: -50 }); // 50m depth
+        const nav = sub.getComponent(NavigationComponent)!;
+        
+        world.profileRegistry.register('sub-profile', { type: 'Submarine' });
+        sub.profileId = 'sub-profile';
+
+        nav.desiredAltitudeM = -200; // Go deeper
+
+        const commands = await controlSystem.process(world, 1.0);
+        const pitchCmd = commands.find(c => c.constructor.name === 'SetPitchCommand') as any;
+
+        // Alt (-50) > Target (-200). Should pitch DOWN (negative pitch).
+        expect(pitchCmd).toBeDefined();
+        expect(pitchCmd.pitch).toBeLessThan(0);
+    });
 });

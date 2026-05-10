@@ -21,7 +21,7 @@ export interface KinematicSnapshot {
 export class TelemetryComponent implements IComponent {
     readonly type = 'TelemetryComponent';
     public history: KinematicSnapshot[] = [];
-    public maxHistory: number = 10000;
+    public maxHistory: number = 1000;
 
     constructor(init?: Partial<TelemetryComponent>) {
         if (init) Object.assign(this, init);

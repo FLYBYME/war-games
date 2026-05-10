@@ -277,7 +277,8 @@ export const KinematicsProfileSchema = z.object({
     maxSpeedKts: z.number().optional().describe("Maximum speed in knots"),
     cruiseSpeedKts: z.number().optional().describe("Cruise speed in knots"),
     maxAltitudeM: z.number().optional().describe("Maximum operational altitude in meters"),
-    dragCoeff: z.number().optional().describe("Simplified drag coefficient")
+    dragCoeff: z.number().optional().describe("Simplified drag coefficient"),
+    turnRateDegS: z.number().optional().describe("Maximum turn rate in degrees per second")
 }).describe("Basic performance envelope");
 export type KinematicsProfile = z.infer<typeof KinematicsProfileSchema>;
 

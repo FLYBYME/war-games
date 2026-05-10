@@ -79,3 +79,25 @@ export const sensorSetEmconContract = defineContract({
     outputSchema: SensorSetEmconOutputSchema,
     rest: { method: 'PATCH', path: '/matches/:matchId/entities/:entityId/sensors/emcon' }
 });
+
+// ─── sensor_add_detection ────────────────────────────────────────────────────
+
+export const SensorAddDetectionInputSchema = z.object({
+    matchId: z.string().describe("The match ID"),
+    entityId: z.string().describe("The sensing entity ID (e.g., munition)"),
+    targetId: z.string().describe("The entity ID to 'perfectly' detect")
+});
+
+export const SensorAddDetectionOutputSchema = z.object({
+    success: z.boolean().describe("Whether the detection was added")
+});
+
+export const sensorAddDetectionContract = defineContract({
+    domain: 'sensor',
+    action: 'add_detection',
+    description: 'Grant a perfect detection of a target to an entity. Used for testing and munitions.',
+    inputSchema: SensorAddDetectionInputSchema,
+    outputSchema: SensorAddDetectionOutputSchema,
+    rest: { method: 'POST', path: '/matches/:matchId/entities/:entityId/detections' }
+});
+

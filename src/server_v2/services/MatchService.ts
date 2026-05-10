@@ -176,6 +176,17 @@ export class MatchService implements IMatchService {
         const manifest = ScenarioManifestSchema.parse(scenario.manifest);
         loader.load(manifest);
 
+        // Synchronize Geographic Origin
+        const envSystem = handle.world.getSystem(EnvironmentSystem);
+        if (envSystem && manifest.origin) {
+            envSystem.setOrigin(manifest.origin.lat, manifest.origin.lon);
+            
+            console.log('--- STARTING TERRAIN PREFETCH ---');
+            // Prefetch terrain for all spawned entities before returning
+            await envSystem.prefetch(handle.world);
+            console.log('--- TERRAIN PREFETCH COMPLETE ---');
+        }
+
         this.activeMatches.set(matchId, handle);
 
         db.insert(matches).values({

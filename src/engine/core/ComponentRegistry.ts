@@ -19,8 +19,16 @@ export class ComponentRegistry {
     private static constructors = new Map<string, ComponentConstructorFn>();
 
     public static register(constructor: ComponentConstructorFn) {
-        // Use the class name as the registry key
-        this.constructors.set(constructor.name, constructor);
+        // V3 Improvement: Use the 'type' property of the component instance if it exists,
+        // otherwise fallback to class name. This ensures parity between serialized 'type' 
+        // and registry keys.
+        try {
+            const instance = new (constructor as any)();
+            const key = instance.type || constructor.name;
+            this.constructors.set(key, constructor);
+        } catch (e) {
+            this.constructors.set(constructor.name, constructor);
+        }
     }
 
     public static get(name: string): ComponentConstructorFn | undefined {

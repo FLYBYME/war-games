@@ -59,3 +59,43 @@ export const bugComments = sqliteTable('bug_comments', {
     text: text('text').notNull(),
     createdAt: integer('created_at', { mode: 'timestamp' }).notNull()
 });
+
+export const mapRegions = sqliteTable('map_regions', {
+    id: text('id').primaryKey(),
+    name: text('name').notNull(),
+    description: text('description'),
+    minLat: real('min_lat').notNull(),
+    maxLat: real('max_lat').notNull(),
+    minLon: real('min_lon').notNull(),
+    maxLon: real('max_lon').notNull(),
+    createdAt: integer('created_at', { mode: 'timestamp' }).notNull(),
+    updatedAt: integer('updated_at', { mode: 'timestamp' }).notNull()
+});
+
+export const agents = sqliteTable('agents', {
+    id: text('id').primaryKey(),
+    name: text('name').notNull(),
+    systemPrompt: text('system_prompt').notNull(),
+    model: text('model').notNull().default('llama3.2'),
+    config: text('config', { mode: 'json' }).notNull(), // AgentConfig JSON (temp, etc)
+    createdAt: integer('created_at', { mode: 'timestamp' }).notNull(),
+    updatedAt: integer('updated_at', { mode: 'timestamp' }).notNull()
+});
+
+export const threads = sqliteTable('threads', {
+    id: text('id').primaryKey(),
+    agentId: text('agent_id').notNull().references(() => agents.id),
+    matchId: text('match_id'),
+    name: text('name').notNull(),
+    createdAt: integer('created_at', { mode: 'timestamp' }).notNull(),
+    updatedAt: integer('updated_at', { mode: 'timestamp' }).notNull()
+});
+
+export const messages = sqliteTable('messages', {
+    id: text('id').primaryKey(),
+    threadId: text('thread_id').notNull().references(() => threads.id),
+    role: text('role').notNull(), // 'user', 'assistant', 'tool', 'system'
+    content: text('content'),
+    toolCalls: text('tool_calls', { mode: 'json' }), // JSON array of tool calls
+    createdAt: integer('created_at', { mode: 'timestamp' }).notNull()
+});

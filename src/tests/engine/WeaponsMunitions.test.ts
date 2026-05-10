@@ -16,6 +16,7 @@ describe('Weapons & Munitions Unit Tests (Tests 81-82, 95-98)', () => {
     let world: World;
     let stageSystem: WeaponStageSystem;
     let collisionSystem: CollisionSystem;
+    let mockWorld: any;
 
     beforeEach(() => {
         world = new World();
@@ -23,6 +24,19 @@ describe('Weapons & Munitions Unit Tests (Tests 81-82, 95-98)', () => {
         world.random = new DeterministicRandom(1234);
         stageSystem = new WeaponStageSystem();
         collisionSystem = new CollisionSystem(world.grid);
+        // @ts-ignore
+        mockWorld = {
+            currentTick: 0,
+            getEntities: vi.fn().mockReturnValue([]),
+            getEntity: vi.fn(),
+            profileRegistry: {
+                get: vi.fn()
+            },
+            events: {
+                emit: vi.fn()
+            },
+            random: world.random
+        };
     });
 
     it('should advance weapon stages and change thrust (Test 95)', async () => {
@@ -114,5 +128,66 @@ describe('Weapons & Munitions Unit Tests (Tests 81-82, 95-98)', () => {
         
         // 10m > (0.1 + 2). Should MISS.
         expect(damageCmd).toBeUndefined();
+    });
+
+    it('should lose guidance lock on sensor loss (Semi-Active) (Test 82)', async () => {
+        const guidanceSystem = new (await import('../../engine/systems/GuidanceSystem')).GuidanceSystem();
+        const missile = new Entity('aim-7', Side.Blue);
+        const guidance = new GuidanceComponent({ guidanceType: GuidanceType.SARH, targetId: 'tgt', illuminatorId: 'ship' });
+        missile.addComponent(guidance);
+
+        const ship = new Entity('ship', Side.Blue);
+        const sensor = new (await import('../../engine/components/Sensors')).SensorComponent({ 
+            mode: (await import('../../engine/core/Types')).SensorMode.Illumination,
+            illuminatedTargetId: 'tgt',
+            isActive: false // Sensor is OFF
+        });
+        ship.addComponent(sensor);
+        ship.addComponent(new (await import('../../engine/components/Sensors')).DetectionComponent());
+
+        mockWorld.getEntities.mockReturnValue([missile, ship]);
+        mockWorld.getEntity.mockImplementation((id: string) => id === 'ship' ? ship : undefined);
+
+        await guidanceSystem.process(mockWorld, 0.1);
+        expect(guidance.hasLock).toBe(false);
+    });
+
+    it('should exhaust weapon duration/battery (Test 93)', async () => {
+        const weapon = new Entity('aim-9', Side.Blue);
+        const stages = [{ name: 'Rocket', durationTicks: 50, thrustN: 10000, separateOnComplete: false }];
+        weapon.addComponent(new WeaponStageComponent(stages));
+        world.addEntity(weapon);
+
+        // Fast forward past duration
+        weapon.getComponent(WeaponStageComponent)!.currentStageElapsedTicks = 50;
+        
+        const commands = await stageSystem.process(world, 0.1);
+        const thrustCmd = commands.find(c => c.constructor.name === 'UpdateThrustCommand') as any;
+        expect(thrustCmd).toBeDefined();
+        expect(thrustCmd.thrustN).toBe(0); // Thrust exhausted
+    });
+
+    it('should respect weapon agility (Max-G) limits (Test 94)', async () => {
+        const physicsSystem = new (await import('../../engine/systems/PhysicsSystem')).PhysicsSystem();
+        const missile = new Entity('aim-120', Side.Blue);
+        missile.addComponent(new TransformComponent({ position: { x: 0, y: 0, z: 0 } }));
+        // High speed (Mach 2)
+        missile.addComponent(new KinematicsComponent({ velocity: { x: 700, y: 0, z: 0 }, massKg: 150, dragCoeff: 0.02, thrustN: 0 }));
+        
+        // Massive sideways force (e.g. 100G)
+        const mass = 150;
+        const force100G = mass * 9.81 * 100;
+        missile.getComponent(KinematicsComponent)!.netForce = { x: 0, y: force100G, z: 0 };
+
+        mockWorld.getEntities.mockReturnValue([missile]);
+        mockWorld.profileRegistry.get.mockReturnValue({ type: 'Weapon' });
+
+        const commands = await physicsSystem.process(mockWorld, 0.1);
+        const kinCmd = commands.find(c => c.constructor.name === 'UpdateKinematicsCommand') as any;
+        
+        // Max acceleration in PhysicsSystem is 50G
+        const maxAccel = 50 * 9.81;
+        const accelMag = Math.sqrt(kinCmd.acceleration.x ** 2 + kinCmd.acceleration.y ** 2 + kinCmd.acceleration.z ** 2);
+        expect(accelMag).toBeLessThanOrEqual(maxAccel + 1); // Allow small floating point error
     });
 });

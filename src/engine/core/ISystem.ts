@@ -24,7 +24,12 @@ export interface IWorldView {
     getEntity(id: string): Entity | undefined;
     getEntities(): IterableIterator<Entity>;
     getNearbyEntities(pos: Vector3, radius: number): Entity[];
+    addEntity(entity: Entity): void;
+    removeEntity(id: string): void;
+    getSystem<T extends ISystem>(ctor: new (...args: never[]) => T): T | undefined;
     recordEvent(event: TacticalEvent): void;
+    getTracerSize(): number;
+    getOctreeNodeCount(): number;
 }
 
 export enum SystemPhase {
