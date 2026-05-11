@@ -1,5 +1,9 @@
 /**
- * ThemeService - Manages global IDE CSS variables to match Monaco editor themes.
+ * ThemeService - Manages global CSS variables for the tactical command center.
+ *
+ * Supports:
+ * - Legacy IDE themes (vs-dark, hc-black, etc.)
+ * - Tactical variants (command, alert, observer) via data-theme attribute
  */
 
 import { IDE } from './IDE';
@@ -100,8 +104,12 @@ const THEMES: Record<string, ThemePalette> = {
     }
 };
 
+export type TacticalVariant = 'command' | 'alert' | 'observer';
+
 export class ThemeService {
     private ide: IDE;
+    private currentVariant: TacticalVariant = 'command';
+    private alertTimer: ReturnType<typeof setTimeout> | null = null;
 
     constructor(ide: IDE) {
         this.ide = ide;
@@ -110,10 +118,14 @@ export class ThemeService {
         const currentTheme = this.ide.settings.get<string>('editor.theme') || 'ide-dark';
         this.applyTheme(currentTheme);
 
+        // Apply default tactical variant
+        document.documentElement.setAttribute('data-theme', this.currentVariant);
+
         // Listen for changes
-        this.ide.commands.on(ConfigurationEvents.CHANGED, (e: any) => {
-            if (e.key === 'editor.theme') {
-                this.applyTheme(e.value);
+        this.ide.commands.on(ConfigurationEvents.CHANGED, (e: unknown) => {
+            const event = e as { key: string; value: string };
+            if (event.key === 'editor.theme') {
+                this.applyTheme(event.value);
             }
         });
     }
@@ -133,4 +145,42 @@ export class ThemeService {
             root.style.removeProperty('border');
         }
     }
+
+    /**
+     * Get the current tactical variant.
+     */
+    public getTacticalVariant(): TacticalVariant {
+        return this.currentVariant;
+    }
+
+    /**
+     * Switch to a tactical theme variant (command, alert, observer).
+     * These are defined in tactical-theme.css via [data-theme="..."] selectors.
+     */
+    public setTacticalVariant(variant: TacticalVariant): void {
+        this.currentVariant = variant;
+        document.documentElement.setAttribute('data-theme', variant);
+    }
+
+    /**
+     * Auto-trigger alert theme for critical events (entity destruction, etc.).
+     * Reverts to previous variant after the specified duration.
+     */
+    public triggerAlert(durationMs: number = 5000): void {
+        const previousVariant = this.currentVariant;
+
+        if (this.alertTimer) {
+            clearTimeout(this.alertTimer);
+        }
+
+        this.setTacticalVariant('alert');
+
+        this.alertTimer = setTimeout(() => {
+            if (this.currentVariant === 'alert') {
+                this.setTacticalVariant(previousVariant);
+            }
+            this.alertTimer = null;
+        }, durationMs);
+    }
 }
+

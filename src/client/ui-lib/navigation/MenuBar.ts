@@ -51,8 +51,13 @@ export class MenuBar extends BaseComponent<{}> {
         return item;
     }
 
+    private activeItem: MenuItem | null = null;
+    private isSticky: boolean = false;
+
     private setupItemListener(item: MenuItem): void {
-        item.getElement().addEventListener('menu-item-click', (e: any) => {
+        const el = item.getElement();
+
+        el.addEventListener('menu-item-click', (e: any) => {
             const { command } = e.detail;
             if (command) {
                 const event = new CustomEvent('menu-command', {
@@ -60,6 +65,25 @@ export class MenuBar extends BaseComponent<{}> {
                     bubbles: true
                 });
                 this.element.dispatchEvent(event);
+            }
+        });
+
+        el.addEventListener('menu-open', (e: any) => {
+            this.activeItem = e.detail.item;
+            this.isSticky = true;
+        });
+
+        el.addEventListener('menu-close', () => {
+            this.activeItem = null;
+            this.isSticky = false;
+        });
+
+        el.addEventListener('menu-hover', (e: any) => {
+            const hoveredItem = e.detail.item;
+            if (this.isSticky && this.activeItem && this.activeItem !== hoveredItem) {
+                this.activeItem.close();
+                hoveredItem.open();
+                this.activeItem = hoveredItem;
             }
         });
     }

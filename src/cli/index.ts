@@ -1,7 +1,9 @@
 import { Command } from 'commander';
 import { CommandRegistry } from './core/CommandRegistry.js';
 import { StartServerCommand } from './commands/StartServerCommand.js';
+import { StartWorkerCommand } from './commands/StartWorkerCommand.js';
 import { GenerateCommand } from './commands/GenerateCommand.js';
+import { IngestTerrainCommand } from './commands/IngestTerrainCommand.js';
 import { WarGamesClientV2 } from '../sdk_v2/generated/WarGamesClientV2.js';
 import { C } from './core/Utils.js';
 import fs from 'fs';
@@ -12,7 +14,9 @@ const registry = new CommandRegistry();
 
 // Register Commands
 registry.register(new StartServerCommand());
+registry.register(new StartWorkerCommand());
 registry.register(new GenerateCommand());
+registry.register(new IngestTerrainCommand());
 
 program
     .name('war-games')

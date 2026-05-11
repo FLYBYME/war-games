@@ -11,6 +11,8 @@ export interface CardProps {
     variant?: 'default' | 'elevated' | 'ghost';
     padding?: string;
     width?: string;
+    hoverable?: boolean;
+    onClick?: (e: MouseEvent) => void;
 }
 
 export class Card extends BaseComponent<CardProps> {
@@ -20,7 +22,18 @@ export class Card extends BaseComponent<CardProps> {
     }
 
     public render(): void {
-        const { title, subtitle, headerIcon, children, footer, variant = 'default', padding = 'md', width } = this.props;
+        const { 
+            title, 
+            subtitle, 
+            headerIcon, 
+            children, 
+            footer, 
+            variant = 'default', 
+            padding = 'md', 
+            width,
+            hoverable = false,
+            onClick
+        } = this.props;
 
         this.applyStyles({
             display: 'flex',
@@ -33,8 +46,28 @@ export class Card extends BaseComponent<CardProps> {
             width: width || 'auto',
             fontFamily: Theme.font.family,
             transition: 'all 0.2s ease',
-            margin: '0' // Removed fixed margin
+            margin: '0',
+            cursor: onClick ? 'pointer' : 'default'
         });
+
+        if (hoverable || onClick) {
+            this.element.onmouseenter = () => {
+                this.applyStyles({ 
+                    backgroundColor: 'rgba(255, 255, 255, 0.05)',
+                    borderColor: Theme.colors.accent
+                });
+            };
+            this.element.onmouseleave = () => {
+                this.applyStyles({ 
+                    backgroundColor: variant === 'ghost' ? 'transparent' : Theme.colors.bgSecondary,
+                    borderColor: Theme.colors.border
+                });
+            };
+        }
+
+        if (onClick) {
+            this.element.onclick = (e) => onClick(e);
+        }
 
         this.element.innerHTML = '';
 

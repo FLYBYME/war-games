@@ -4,6 +4,7 @@ import { BaseComponent } from '../BaseComponent';
 import { Theme } from '../theme';
 
 export interface TextInputProps {
+    label?: string;
     value?: string;
     placeholder?: string;
     type?: 'text' | 'password' | 'number' | 'email';
@@ -14,13 +15,17 @@ export interface TextInputProps {
 }
 
 export class TextInput extends BaseComponent<TextInputProps> {
+    private input: HTMLInputElement;
+
     constructor(props: TextInputProps) {
-        super('input', props);
+        super('div', props);
+        this.input = document.createElement('input');
         this.render();
     }
 
     public render(): void {
         const {
+            label,
             value = '',
             placeholder = '',
             type = 'text',
@@ -29,18 +34,33 @@ export class TextInput extends BaseComponent<TextInputProps> {
             onEnter
         } = this.props;
 
-        const input = this.element as HTMLInputElement;
-
-        input.type = type;
-        input.value = value;
-        input.placeholder = placeholder;
-        input.disabled = disabled;
-
+        this.element.innerHTML = '';
+        
         this.applyStyles({
+            display: 'flex',
+            flexDirection: 'column',
+            gap: Theme.spacing.xs,
+            width: '100%'
+        });
+
+        if (label) {
+            const labelEl = document.createElement('span');
+            labelEl.textContent = label;
+            labelEl.style.fontSize = Theme.font?.sizeBase || '13px';
+            labelEl.style.color = Theme.colors.textMain;
+            this.element.appendChild(labelEl);
+        }
+
+        this.input.type = type;
+        this.input.value = value;
+        this.input.placeholder = placeholder;
+        this.input.disabled = disabled;
+
+        Object.assign(this.input.style, {
             width: '100%',
             boxSizing: 'border-box',
             padding: `${Theme.spacing.xs} ${Theme.spacing.sm}`,
-            backgroundColor: Theme.colors.bgTertiary, // slightly lighter/darker than panel background
+            backgroundColor: Theme.colors.bgTertiary,
             color: Theme.colors.textMain,
             border: `1px solid ${Theme.colors.border}`,
             borderRadius: Theme.radius,
@@ -51,34 +71,36 @@ export class TextInput extends BaseComponent<TextInputProps> {
         });
 
         // Focus ring effect for IDEs
-        input.onfocus = () => this.applyStyles({ border: `1px solid ${Theme.colors.accent}` });
-        input.onblur = () => this.applyStyles({ border: `1px solid ${Theme.colors.border}` });
+        this.input.onfocus = () => { this.input.style.borderColor = Theme.colors.accent; };
+        this.input.onblur = () => { this.input.style.borderColor = Theme.colors.border; };
 
         // Event listeners
-        input.oninput = (e) => {
+        this.input.oninput = (e) => {
             const target = e.target as HTMLInputElement;
             if (onChange) onChange(target.value);
         };
 
         if (onEnter) {
-            input.onkeydown = (e) => {
+            this.input.onkeydown = (e) => {
                 if (e.key === 'Enter') {
                     onEnter((e.target as HTMLInputElement).value);
                 }
             };
         }
+
+        this.element.appendChild(this.input);
     }
 
     // Expose a method to get the value directly if needed outside of the onChange flow
     public getValue(): string {
-        return (this.element as HTMLInputElement).value;
+        return this.input.value;
     }
 
     public focus(): void {
-        this.element.focus();
+        this.input.focus();
     }
 
     public setDisabled(disabled: boolean): void {
-        (this.element as HTMLInputElement).disabled = disabled;
+        this.input.disabled = disabled;
     }
 }

@@ -68,6 +68,12 @@ export class MenuItem extends BaseComponent<MenuItemProps> {
         if (!disabled) {
             this.element.onmouseenter = () => {
                 if (!active) this.element.style.backgroundColor = 'rgba(255, 255, 255, 0.1)';
+                
+                // Signal hover to MenuBar for sticky behavior
+                this.element.dispatchEvent(new CustomEvent('menu-hover', {
+                    detail: { item: this },
+                    bubbles: true
+                }));
             };
             this.element.onmouseleave = () => {
                 if (!active) this.element.style.backgroundColor = 'transparent';
@@ -180,6 +186,12 @@ export class MenuItem extends BaseComponent<MenuItemProps> {
 
             this.isOpen = true;
             document.addEventListener('click', this.handleDocumentClick);
+
+            // Signal to MenuBar
+            this.element.dispatchEvent(new CustomEvent('menu-open', {
+                detail: { item: this },
+                bubbles: true
+            }));
         }
     }
 
@@ -188,6 +200,12 @@ export class MenuItem extends BaseComponent<MenuItemProps> {
             this.dropdown.style.display = 'none';
             this.isOpen = false;
             document.removeEventListener('click', this.handleDocumentClick);
+
+            // Signal to MenuBar
+            this.element.dispatchEvent(new CustomEvent('menu-close', {
+                detail: { item: this },
+                bubbles: true
+            }));
         }
     }
 

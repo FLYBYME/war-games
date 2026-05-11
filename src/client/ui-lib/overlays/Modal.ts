@@ -6,7 +6,7 @@ import { Button } from '../forms/Button';
 
 export interface ModalProps {
     title: string;
-    children: (BaseComponent<any> | Node | string)[];
+    children?: (BaseComponent<any> | Node | string)[];
     isOpen?: boolean;
     onClose?: () => void;
     width?: string;
@@ -26,7 +26,7 @@ export class Modal extends BaseComponent<ModalProps> {
     }
 
     public render(): void {
-        const { title, children, width = '500px', footer = [] } = this.props;
+        const { title, children = [], width = '500px', footer = [] } = this.props;
 
         // Backdrop
         Object.assign(this.backdrop.style, {

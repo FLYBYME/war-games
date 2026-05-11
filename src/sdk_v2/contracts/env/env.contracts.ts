@@ -163,7 +163,8 @@ export const EnvPrefetchTerrainInputSchema = z.object({
     latMin: z.number().describe("Minimum latitude"),
     latMax: z.number().describe("Maximum latitude"),
     lonMin: z.number().describe("Minimum longitude"),
-    lonMax: z.number().describe("Maximum longitude")
+    lonMax: z.number().describe("Maximum longitude"),
+    targetResolution: z.number().optional().default(1201).describe("Resolution to prefetch (LOD)")
 });
 
 export const EnvPrefetchTerrainOutputSchema = z.object({
@@ -194,4 +195,28 @@ export const envGetCacheStatsContract = defineContract({
     inputSchema: EnvGetCacheStatsInputSchema,
     outputSchema: EnvGetCacheStatsOutputSchema,
     rest: { method: 'GET', path: '/env/terrain/cache' }
+});
+
+// ─── env_get_terrain_tile ────────────────────────────────────────────────────
+
+export const EnvGetTerrainTileInputSchema = z.object({
+    lat: z.number().describe("Integer latitude of the tile"),
+    lon: z.number().describe("Integer longitude of the tile"),
+    targetResolution: z.number().optional().default(1201).describe("Desired resolution (LOD). 1201 for engine, 256 for UI.")
+});
+
+export const EnvGetTerrainTileOutputSchema = z.object({
+    lat: z.number(),
+    lon: z.number(),
+    resolution: z.number(),
+    data: z.instanceof(Uint8Array).describe("Binary WGT encoded tile data")
+});
+
+export const envGetTerrainTileContract = defineContract({
+    domain: 'env',
+    action: 'get_terrain_tile',
+    description: 'Fetch a binary WGT terrain tile for a specific coordinate and LOD.',
+    inputSchema: EnvGetTerrainTileInputSchema,
+    outputSchema: EnvGetTerrainTileOutputSchema,
+    rest: { method: 'GET', path: '/env/terrain/tile' }
 });

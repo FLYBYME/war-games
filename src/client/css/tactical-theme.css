@@ -1,0 +1,307 @@
+/* ═══════════════════════════════════════════════════════════════════════════
+ * WAR GAMES — Tactical Command Center Theme
+ * 
+ * This stylesheet defines CSS custom properties for the tactical UI.
+ * Three variants: Command (default), Alert, Observer.
+ * ═══════════════════════════════════════════════════════════════════════════ */
+
+/* ─── Command Theme (Default) ─────────────────────────────────────────────── */
+/* Dark, low-contrast theme for prolonged monitoring sessions. */
+
+:root,
+[data-theme="command"] {
+    /* Surfaces */
+    --bg-root: #0a0a0c;
+    --bg-panel: #111114;
+    --bg-sidebar: #16161a;
+    --bg-activity-bar: #111114;
+    --bg-titlebar: #1a1a1f;
+    --bg-input: #1e1e24;
+    --bg-status-bar: #111114;
+
+    /* Borders */
+    --border: #2a2a32;
+    --border-color: #2a2a32;
+
+    /* Text */
+    --text-main: #c8c8d0;
+    --text-muted: #6b6b78;
+
+    /* Accent */
+    --accent: #007acc;
+    --hover-bg: #1a1a22;
+
+    /* Force Colors (Tactical) */
+    --blue-force: #00bcd4;
+    --blue-force-bg: rgba(0, 188, 212, 0.12);
+    --red-force: #ff9800;
+    --red-force-bg: rgba(255, 152, 0, 0.12);
+    --neutral-force: #78909c;
+    --neutral-force-bg: rgba(120, 144, 156, 0.12);
+
+    /* Semantic */
+    --success: #4caf50;
+    --warning: #ff9800;
+    --error: #f44336;
+    --info: #007acc;
+
+    /* Status Indicators */
+    --status-ok: #4caf50;
+    --status-warn: #ff9800;
+    --status-crit: #f44336;
+
+    /* Typography */
+    --font-family: "Inter", -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+    --font-mono: "JetBrains Mono", "Fira Code", "Cascadia Code", "Consolas", monospace;
+    --font-ui: var(--font-family);
+    --font-code: var(--font-mono);
+
+    /* Spacing & Radii */
+    --radius: 4px;
+    --radius-lg: 8px;
+}
+
+/* ─── Alert Theme ─────────────────────────────────────────────────────────── */
+/* High contrast — activated during critical events. */
+
+[data-theme="alert"] {
+    --bg-root: #0d0000;
+    --bg-panel: #1a0505;
+    --bg-sidebar: #1f0808;
+    --bg-activity-bar: #1a0505;
+    --bg-titlebar: #250a0a;
+    --bg-input: #2a0f0f;
+    --bg-status-bar: #b71c1c;
+
+    --border: #4a1515;
+    --border-color: #4a1515;
+
+    --text-main: #ffcccc;
+    --text-muted: #aa6666;
+
+    --accent: #ff5252;
+    --hover-bg: #2a1010;
+
+    --blue-force: #4dd0e1;
+    --red-force: #ffab40;
+
+    --status-ok: #69f0ae;
+    --status-warn: #ffd740;
+    --status-crit: #ff5252;
+}
+
+/* ─── Observer Theme ──────────────────────────────────────────────────────── */
+/* Desaturated, neutral — for spectator/replay mode. */
+
+[data-theme="observer"] {
+    --bg-root: #121215;
+    --bg-panel: #18181c;
+    --bg-sidebar: #1c1c22;
+    --bg-activity-bar: #18181c;
+    --bg-titlebar: #202028;
+    --bg-input: #242430;
+    --bg-status-bar: #9c27b0;
+
+    --border: #333340;
+    --border-color: #333340;
+
+    --text-main: #b0b0c0;
+    --text-muted: #666680;
+
+    --accent: #9c27b0;
+    --hover-bg: #22222c;
+
+    /* Desaturated force colors */
+    --blue-force: #5c8a92;
+    --red-force: #a08060;
+    --neutral-force: #707080;
+
+    --status-ok: #66bb6a;
+    --status-warn: #bfa040;
+    --status-crit: #c06060;
+}
+
+/* ─── Tactical-Specific Styles ────────────────────────────────────────────── */
+
+/* Status bar — dark tactical, not VS Code blue */
+#status-bar {
+    background-color: var(--bg-status-bar) !important;
+    border-top: 1px solid var(--border) !important;
+    color: var(--text-main) !important;
+}
+
+/* Activity bar — darker */
+.activity-bar {
+    background-color: var(--bg-activity-bar) !important;
+    border-right: 1px solid var(--border) !important;
+}
+
+/* Sidebar content — proper bg */
+.sidebar-content {
+    background-color: var(--bg-sidebar) !important;
+}
+
+/* Map canvas background */
+#center-panel {
+    background-color: var(--bg-root) !important;
+}
+
+/* ─── Force-Colored Selection Ring ────────────────────────────────────────── */
+
+.entity-selected-blue {
+    box-shadow: 0 0 0 2px var(--blue-force);
+}
+
+.entity-selected-red {
+    box-shadow: 0 0 0 2px var(--red-force);
+}
+
+/* ─── Pulsing Status Dot ──────────────────────────────────────────────────── */
+
+@keyframes pulse-status {
+    0%, 100% { opacity: 1; }
+    50% { opacity: 0.4; }
+}
+
+.status-dot-pulse {
+    animation: pulse-status 1.5s ease-in-out infinite;
+}
+
+/* ─── Tactical Grid Overlay ───────────────────────────────────────────────── */
+
+.tactical-overlay {
+    pointer-events: none;
+    position: absolute;
+    inset: 0;
+    z-index: 10;
+}
+
+/* ─── Smooth Transitions for Theme Switching ──────────────────────────────── */
+
+body,
+#app,
+.activity-bar,
+.sidebar-content,
+#center-panel,
+#status-bar,
+#bottom-panel {
+    transition: background-color 0.3s ease, border-color 0.3s ease, color 0.3s ease;
+}
+
+/* ─── Entity Inspector Subsystem Tabs ─────────────────────────────────────── */
+
+.subsystem-tab {
+    padding: 4px 8px;
+    font-size: 10px;
+    background: transparent;
+    color: var(--text-muted);
+    border: none;
+    border-bottom: 2px solid transparent;
+    cursor: pointer;
+    font-family: inherit;
+    transition: all 0.15s ease;
+}
+
+.subsystem-tab:hover {
+    color: var(--text-main);
+}
+
+.subsystem-tab.active {
+    color: var(--text-main);
+    border-bottom-color: var(--accent);
+    font-weight: 600;
+}
+
+/* ─── Event Log Row ───────────────────────────────────────────────────────── */
+
+.event-log-row {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    padding: 3px 6px;
+    font-size: 11px;
+    font-family: var(--font-mono);
+    color: var(--text-main);
+    border-bottom: 1px solid rgba(255, 255, 255, 0.04);
+    cursor: pointer;
+}
+
+.event-log-row:hover {
+    background-color: rgba(255, 255, 255, 0.03);
+}
+
+/* ─── Agent Chat Bubbles ──────────────────────────────────────────────────── */
+
+.chat-bubble-user {
+    align-self: flex-end;
+    background-color: var(--accent);
+    color: #fff;
+    padding: 8px 12px;
+    border-radius: 8px 8px 2px 8px;
+    max-width: 85%;
+}
+
+.chat-bubble-agent {
+    align-self: flex-start;
+    background-color: var(--bg-input);
+    color: var(--text-main);
+    border: 1px solid var(--border);
+    padding: 8px 12px;
+    border-radius: 8px 8px 8px 2px;
+    max-width: 85%;
+}
+
+.chat-tool-call {
+    align-self: flex-start;
+    padding: 6px 10px;
+    border-radius: 4px;
+    font-size: 11px;
+    font-family: var(--font-mono);
+    background-color: rgba(0, 122, 204, 0.1);
+    border: 1px solid rgba(0, 122, 204, 0.3);
+    max-width: 85%;
+}
+
+/* ─── Gauge Cluster SVG ───────────────────────────────────────────────────── */
+
+.gauge-cluster {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 12px;
+    justify-content: center;
+}
+
+/* ─── Timeline ────────────────────────────────────────────────────────────── */
+
+.timeline-track {
+    position: relative;
+    width: 100%;
+    height: 4px;
+    background: var(--border);
+    border-radius: 2px;
+}
+
+.timeline-fill {
+    position: absolute;
+    height: 100%;
+    background: var(--accent);
+    border-radius: 2px;
+    transition: width 0.1s ease;
+}
+
+.timeline-playhead {
+    position: absolute;
+    top: -6px;
+    width: 12px;
+    height: 16px;
+    background: var(--accent);
+    border-radius: 3px;
+    transform: translateX(-6px);
+    cursor: grab;
+    border: 1px solid rgba(255, 255, 255, 0.3);
+    z-index: 3;
+}
+
+.timeline-playhead:active {
+    cursor: grabbing;
+}

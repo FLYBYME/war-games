@@ -1,11 +1,22 @@
 /**
- * WAR-GAMES IDE - Entry Point
- * Initializes all IDE components and services
+ * WAR-GAMES — Tactical Command Center Entry Point
+ * Initializes all services and extensions for the simulation workbench.
  */
 
 import { IDE } from './core/IDE';
 import { ProjectScaffolderExtension } from './extensions/ProjectScaffolderExtension';
 import { MapExtension } from './extensions/map/MapExtension';
+import { MatchExtension } from './extensions/MatchExtension';
+import { ToolRunnerExtension } from './extensions/ToolRunnerExtension';
+import { EntityExtension } from './extensions/EntityExtension';
+import { EventLogExtension } from './extensions/EventLogExtension';
+import { SimControlExtension } from './extensions/SimControlExtension';
+import { AgentExtension } from './extensions/AgentExtension';
+import { DBBrowserExtension } from './extensions/DBBrowserExtension';
+import { HistoryExtension } from './extensions/HistoryExtension';
+import { DevToolsExtension } from './extensions/DevToolsExtension';
+import { KeyboardShortcutsExtension } from './extensions/KeyboardShortcutsExtension';
+import { QuickCommandExtension } from './extensions/QuickCommandExtension';
 
 import * as React from 'react';
 import * as ReactDOM from 'react-dom';
@@ -13,6 +24,7 @@ import * as monaco from 'monaco-editor';
 
 // Import styles
 import './css/main.css';
+import './css/tactical-theme.css';
 import './css/layout.css';
 import './css/filetree.css';
 import './css/settings.css';
@@ -40,13 +52,30 @@ async function initializeApp(): Promise<void> {
     try {
         const ide = new IDE();
 
-        // Register extensions before initializing
-        ide.extensions.register(ProjectScaffolderExtension);
-        ide.extensions.register(MapExtension);
+        // ── Phase 1: Foundation ──────────────────────────────────────────
+        ide.extensions.register(MatchExtension);       // Match lifecycle, status bar, notification-status
+        ide.extensions.register(MapExtension);          // Tactical map (center panel)
+        ide.extensions.register(EntityExtension);       // Entity inspector (right sidebar)
+
+        // ── Phase 2: Interactivity ──────────────────────────────────────
+        ide.extensions.register(SimControlExtension);   // Play/pause/step toolbar
+        ide.extensions.register(EventLogExtension);     // Live event stream viewer
+        ide.extensions.register(ToolRunnerExtension);   // Schema-driven debug console
+
+        // ── Phase 3: Intelligence ───────────────────────────────────────
+        ide.extensions.register(AgentExtension);        // AI agent chat
+        ide.extensions.register(DBBrowserExtension);    // Database browser
+        ide.extensions.register(HistoryExtension);      // Post-match analytics
+
+        // ── Phase 4: Dev Tools ──────────────────────────────────────────
+        ide.extensions.register(DevToolsExtension);     // Developer console
+        ide.extensions.register(QuickCommandExtension); // Command palette (Ctrl+Shift+P)
+        ide.extensions.register(KeyboardShortcutsExtension); // Shortcut overlay
+        ide.extensions.register(ProjectScaffolderExtension);  // Legacy scaffolder
 
         await ide.initialize();
         hideLoadingScreen();
-        console.log('✅ Application initialized successfully');
+        console.log('✅ War Games Command Center initialized');
     } catch (error) {
         hideLoadingScreen(); // Hide it even on error so user can see error screen
         console.error('❌ Failed to initialize application:', error);

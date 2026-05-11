@@ -11,6 +11,9 @@ import { MonacoService } from './MonacoService';
 import { EditorManager } from './editor/EditorManager';
 import { ShortcutManager } from './ShortcutManager';
 import { WarGamesClientV2 } from '@sdk/generated/WarGamesClientV2';
+import { MatchService } from './services/MatchService';
+import { SelectionService } from './services/SelectionService';
+import { SimStreamService } from './services/SimStreamService';
 
 
 export const IDEEvents = {
@@ -33,6 +36,9 @@ export class IDE {
     public shortcuts: ShortcutManager;
     private initialized: boolean = false;
     private client: WarGamesClientV2;
+    public matches: MatchService;
+    public selection: SelectionService;
+    public stream: SimStreamService;
 
     constructor() {
         this.configurationRegistry = new ConfigurationRegistry();
@@ -52,6 +58,9 @@ export class IDE {
         this.shortcuts = new ShortcutManager(this);
 
         this.client = new WarGamesClientV2(this.settings.get<string>('core.apiBase'));
+        this.matches = new MatchService(this.client);
+        this.selection = new SelectionService();
+        this.stream = new SimStreamService(this.client);
     }
 
     public async initialize(): Promise<void> {
@@ -73,6 +82,10 @@ export class IDE {
 
             this.notifications.setStatusMessage('Loading extensions...');
             await this.extensions.activateAll();
+
+            // Wire service emitters now that commands is ready
+            this.matches.setEmitter(this.commands);
+            this.selection.setEmitter(this.commands);
 
             this.initialized = true;
             this.commands.emit(IDEEvents.APP_READY, { timestamp: Date.now() });
@@ -163,7 +176,7 @@ export class IDE {
             properties: {
                 'core.apiBase': {
                     type: 'string',
-                    default: 'http://localhost:3001',
+                    default: '/api/v2',
                     description: 'The base URL of the API server.',
                 },
                 'core.tokenKey': {

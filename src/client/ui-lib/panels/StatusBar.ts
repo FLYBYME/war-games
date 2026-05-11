@@ -14,7 +14,7 @@ export class StatusBar extends BaseComponent<{}> {
         this.leftContainer = document.createElement('div');
         this.rightContainer = document.createElement('div');
         this.render();
-        this.renderDefaultItems();
+        // Status bar starts empty. Extensions register items via addItem().
     }
 
     public render(): void {
@@ -46,20 +46,6 @@ export class StatusBar extends BaseComponent<{}> {
         this.element.appendChild(this.rightContainer);
     }
 
-    private renderDefaultItems(): void {
-        // Left items
-        this.addItem('branch', { tooltip: 'The current branch', text: 'master', icon: 'fas fa-code-branch' }, 'left');
-        this.addItem('errors', { tooltip: 'Number of errors', text: '0 errors', icon: 'far fa-times-circle' }, 'left');
-        this.addItem('warnings', { tooltip: 'Number of warnings', text: '0 warnings', icon: 'far fa-bell' }, 'left');
-
-        // Notification status
-        this.addItem('notification-status', { tooltip: 'Notifications', text: '' }, 'left');
-
-        // Right items
-        this.addItem('position', { tooltip: 'The current position', text: 'Ln 1, Col 1' }, 'right');
-        this.addItem('encoding', { tooltip: 'The current encoding', text: 'UTF-8' }, 'right');
-        this.addItem('language', { tooltip: 'The current language', text: 'TypeScript', icon: 'fab fa-js' }, 'right');
-    }
 
     public addItem(id: string, props: StatusBarItemProps, position: 'left' | 'right' = 'left'): StatusBarItem {
         const item = new StatusBarItem(props);
