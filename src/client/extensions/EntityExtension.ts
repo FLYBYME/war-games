@@ -42,76 +42,63 @@ export const EntityExtension: Extension = {
             resolveView: (container, disposables) => {
                 const root = new uiLib.Column({ padding: 'md', gap: 'md', fill: true });
 
-                // Header with entity name
-                const headerRow = document.createElement('div');
-                headerRow.style.display = 'flex';
-                headerRow.style.alignItems = 'center';
-                headerRow.style.justifyContent = 'space-between';
+                // Header with entity name and side badge
+                const header = new uiLib.Row({
+                    align: 'center',
+                    justify: 'space-between'
+                });
+                
+                header.getElement().style.paddingBottom = '4px';
+                header.getElement().style.borderBottom = '1px solid var(--border)';
 
-                const entityTitle = new uiLib.Heading({ text: 'No Entity Selected', level: 4, transform: 'uppercase' });
+                const entityTitle = new uiLib.Heading({ text: 'No Selection', level: 4, transform: 'uppercase' });
+                const sideBadge = new uiLib.ForceColorBadge({ side: 'observer' });
+                sideBadge.getElement().style.display = 'none';
+
+                header.appendChildren(entityTitle, sideBadge);
+                root.appendChildren(header);
 
                 const emptyState = new uiLib.EmptyStateView({
                     icon: 'fas fa-mouse-pointer',
                     title: 'No Selection',
                     description: 'Select an entity on the Tactical Map to inspect its subsystems.'
                 });
+                root.appendChildren(emptyState);
 
                 // Tab container
-                const tabBar = document.createElement('div');
-                tabBar.style.display = 'flex';
-                tabBar.style.flexWrap = 'wrap';
-                tabBar.style.gap = '2px';
-                tabBar.style.borderBottom = '1px solid var(--border, #3e3e42)';
-                tabBar.style.paddingBottom = '4px';
-                tabBar.style.display = 'none'; // hidden until entity selected
-
-                // Content area for the active subsystem
-                const contentArea = document.createElement('div');
-                contentArea.style.flex = '1';
-                contentArea.style.overflow = 'auto';
-
                 let activeTabId = 'overview';
+                const tabBar = new uiLib.Row({
+                    gap: 'xs'
+                });
+                
+                tabBar.getElement().style.flexWrap = 'wrap';
+                tabBar.getElement().style.paddingBottom = '4px';
+                tabBar.getElement().style.borderBottom = '1px solid var(--border)';
+                tabBar.getElement().style.display = 'none';
+
+                // Content area with ScrollArea
+                const contentArea = new uiLib.Column({ fill: true });
+                const scrollArea = new uiLib.ScrollArea({ fill: true, children: [contentArea] });
+                scrollArea.getElement().style.display = 'none';
 
                 // Build tab buttons
                 for (const tab of SUBSYSTEM_TABS) {
-                    const tabBtn = document.createElement('button');
-                    tabBtn.textContent = tab.label;
-                    tabBtn.title = tab.label;
-                    tabBtn.dataset['tabId'] = tab.id;
-                    Object.assign(tabBtn.style, {
-                        padding: '4px 8px',
-                        fontSize: '10px',
-                        background: 'transparent',
-                        color: 'var(--text-muted, #888)',
-                        border: 'none',
-                        borderBottom: '2px solid transparent',
-                        cursor: 'pointer',
-                        fontFamily: 'inherit',
-                        transition: 'all 0.15s ease',
-                    });
-                    tabBtn.addEventListener('mouseenter', () => {
-                        tabBtn.style.color = 'var(--text-main, #ccc)';
-                    });
-                    tabBtn.addEventListener('mouseleave', () => {
-                        if (activeTabId !== tab.id) {
-                            tabBtn.style.color = 'var(--text-muted, #888)';
+                    const tabBtn = new uiLib.Tab({
+                        label: tab.label,
+                        active: tab.id === activeTabId,
+                        onClick: () => {
+                            activeTabId = tab.id;
+                            updateTabStyles();
+                            void loadSubsystemData(tab.id);
                         }
                     });
-                    tabBtn.addEventListener('click', () => {
-                        activeTabId = tab.id;
-                        updateTabStyles();
-                        void loadSubsystemData(tab.id);
-                    });
-                    tabBar.appendChild(tabBtn);
+                    tabBar.appendChildren(tabBtn);
                 }
 
                 const updateTabStyles = () => {
-                    const buttons = tabBar.querySelectorAll('button');
-                    buttons.forEach((btn) => {
-                        const isActive = btn.dataset['tabId'] === activeTabId;
-                        btn.style.borderBottomColor = isActive ? 'var(--accent, #007acc)' : 'transparent';
-                        btn.style.color = isActive ? 'var(--text-main, #ccc)' : 'var(--text-muted, #888)';
-                        btn.style.fontWeight = isActive ? '600' : '400';
+                    const tabs = tabBar.getChildren() as uiLib.Tab[];
+                    tabs.forEach((t, i) => {
+                        t.updateProps({ active: SUBSYSTEM_TABS[i].id === activeTabId });
                     });
                 };
 
@@ -121,42 +108,36 @@ export const EntityExtension: Extension = {
                     const entityId = selection.primaryId.get();
                     if (!matchId || !entityId) return;
 
-                    contentArea.innerHTML = '';
+                    contentArea.getElement().innerHTML = '';
                     const spinner = new uiLib.Spinner({ size: 'sm' });
-                    contentArea.appendChild(spinner.getElement());
+                    contentArea.appendChildren(spinner);
 
                     try {
-                        let data: Record<string, unknown> = {};
+                        let data: unknown = null;
 
                         switch (subsystemId) {
                             case 'overview': {
-                                const entity = await client.api.entity.get({ matchId, entityId });
-                                data = entity as unknown as Record<string, unknown>;
+                                data = await client.api.entity.get({ matchId, entityId });
                                 break;
                             }
                             case 'kinematics': {
-                                const kin = await client.api.kinematics.get({ matchId, entityId });
-                                data = kin as unknown as Record<string, unknown>;
+                                data = await client.api.kinematics.get({ matchId, entityId });
                                 break;
                             }
                             case 'sensors': {
-                                const sensors = await client.api.sensor.list({ matchId, entityId });
-                                data = sensors as unknown as Record<string, unknown>;
+                                data = await client.api.sensor.list({ matchId, entityId });
                                 break;
                             }
                             case 'combat': {
-                                const combat = await client.api.combat.get({ matchId, entityId });
-                                data = combat as unknown as Record<string, unknown>;
+                                data = await client.api.combat.get({ matchId, entityId });
                                 break;
                             }
                             case 'nav': {
-                                const nav = await client.api.nav.list_waypoints({ matchId, entityId });
-                                data = nav as unknown as Record<string, unknown>;
+                                data = await client.api.nav.list_waypoints({ matchId, entityId });
                                 break;
                             }
                             case 'logistics': {
-                                const log = await client.api.logistics.get({ matchId, entityId });
-                                data = log as unknown as Record<string, unknown>;
+                                data = await client.api.logistics.get({ matchId, entityId });
                                 break;
                             }
                             default: {
@@ -165,49 +146,65 @@ export const EntityExtension: Extension = {
                             }
                         }
 
-                        contentArea.innerHTML = '';
-                        const grid = new uiLib.PropertyGrid({
-                            items: Object.entries(data).map(([key, value]) => ({
-                                label: key,
-                                control: new uiLib.Text({ 
-                                    text: typeof value === 'object' ? JSON.stringify(value, null, 2) : String(value ?? '—'),
-                                    size: 'sm'
-                                }).getElement()
-                            }))
-                        });
-                        grid.mount(contentArea);
+                        contentArea.getElement().innerHTML = '';
+                        
+                        if (data) {
+                            const jsonTree = new uiLib.JsonTree({
+                                data,
+                                expandDepth: 2,
+                                label: subsystemId.toUpperCase()
+                            });
+                            contentArea.appendChildren(jsonTree);
+                        } else {
+                            contentArea.appendChildren(new uiLib.EmptyStateView({
+                                title: 'No Data',
+                                description: `No ${subsystemId} data available for this entity.`,
+                                icon: 'fas fa-info-circle'
+                            }));
+                        }
 
                     } catch (err) {
-                        contentArea.innerHTML = '';
-                        const errorAlert = new uiLib.Alert({
+                        contentArea.getElement().innerHTML = '';
+                        contentArea.appendChildren(new uiLib.Alert({
                             message: `Failed to load ${subsystemId} data: ${err instanceof Error ? err.message : String(err)}`,
                             variant: 'error'
-                        });
-                        errorAlert.mount(contentArea);
+                        }));
                     }
                 };
 
-                // Assemble the view
-                root.getElement().appendChild(entityTitle.getElement());
-                root.getElement().appendChild(emptyState.getElement());
-                root.getElement().appendChild(tabBar);
-                root.getElement().appendChild(contentArea);
+                root.appendChildren(tabBar, scrollArea);
                 root.mount(container);
 
                 // React to selection changes
-                const unsub = selection.primaryId.subscribe((entityId: string | null) => {
+                const unsub = selection.primaryId.subscribe(async (entityId: string | null) => {
                     if (entityId) {
                         entityTitle.updateProps({ text: `Entity: ${entityId.substring(0, 8)}...` });
                         emptyState.getElement().style.display = 'none';
-                        tabBar.style.display = 'flex';
+                        tabBar.getElement().style.display = 'flex';
+                        scrollArea.getElement().style.display = 'block';
+                        
+                        // Update side badge
+                        const matchId = matches.currentMatchId.get();
+                        if (matchId) {
+                            try {
+                                const entity = await client.api.entity.get({ matchId, entityId });
+                                sideBadge.updateProps({ side: entity.side as any });
+                                sideBadge.getElement().style.display = 'flex';
+                            } catch (e) {
+                                sideBadge.getElement().style.display = 'none';
+                            }
+                        }
+
                         activeTabId = 'overview';
                         updateTabStyles();
                         void loadSubsystemData('overview');
                     } else {
-                        entityTitle.updateProps({ text: 'No Entity Selected' });
+                        entityTitle.updateProps({ text: 'No Selection' });
+                        sideBadge.getElement().style.display = 'none';
                         emptyState.getElement().style.display = 'flex';
-                        tabBar.style.display = 'none';
-                        contentArea.innerHTML = '';
+                        tabBar.getElement().style.display = 'none';
+                        scrollArea.getElement().style.display = 'none';
+                        contentArea.getElement().innerHTML = '';
                     }
                 });
                 disposables.push({ dispose: unsub });

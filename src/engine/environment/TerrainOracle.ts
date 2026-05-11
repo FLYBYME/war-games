@@ -4,8 +4,8 @@ import { Vector3 } from '../core/Types.js';
  * ITileProvider: Interface for loading terrain data chunks.
  */
 export interface ITileProvider {
-    getTile(lat: number, lon: number): Promise<Float32Array | undefined>;
-    getCachedTile(lat: number, lon: number): Float32Array | undefined;
+    getTile(lat: number, lon: number): Promise<Float32Array | Int16Array | undefined>;
+    getCachedTile(lat: number, lon: number): Float32Array | Int16Array | undefined;
 }
 
 /**
@@ -41,7 +41,7 @@ export class TerrainOracle {
         return this.interpolateElevation(tile, lat, lon);
     }
 
-    private interpolateElevation(tile: Float32Array, lat: number, lon: number): number {
+    private interpolateElevation(tile: Float32Array | Int16Array, lat: number, lon: number): number {
         const resolution = Math.sqrt(tile.length);
         if (Math.floor(resolution) !== resolution) {
             return tile[0] || 0;

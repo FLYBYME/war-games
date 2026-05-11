@@ -8,7 +8,7 @@ import { TerrainService } from './TerrainService.js';
 export class TerrainServiceAdapter implements ITileProvider {
     constructor(private terrainService: TerrainService) {}
 
-    public async getTile(lat: number, lon: number): Promise<Float32Array | undefined> {
+    public async getTile(lat: number, lon: number): Promise<Float32Array | Int16Array | undefined> {
         try {
             const tile = await this.terrainService.getTile(lat, lon);
             return tile.data;
@@ -18,10 +18,9 @@ export class TerrainServiceAdapter implements ITileProvider {
         }
     }
 
-    public getCachedTile(_lat: number, _lon: number): Float32Array | undefined {
+    public getCachedTile(_lat: number, _lon: number): Float32Array | Int16Array | undefined {
         // Current TerrainService doesn't expose synchronous cache access easily,
         // so we return undefined to force the async getTile path.
-        // The TerrainOracle handles the async call.
         return undefined;
     }
 }

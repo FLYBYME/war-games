@@ -71,21 +71,6 @@ export class StatusBar extends BaseComponent<{}> {
         }
     }
 
-    public setBranch(text: string): void {
-        const item = this.getItem('branch');
-        if (item) item.updateProps({ text });
-    }
-
-    public setErrors(count: number): void {
-        const item = this.getItem('errors');
-        if (item) item.updateProps({ text: `${count} error${count === 1 ? '' : 's'}` });
-    }
-
-    public setWarnings(count: number): void {
-        const item = this.getItem('warnings');
-        if (item) item.updateProps({ text: `${count} warning${count === 1 ? '' : 's'}` });
-    }
-
     public showItem(id: string): void {
         const item = this.getItem(id);
         if (item) item.getElement().style.display = 'inline-flex';

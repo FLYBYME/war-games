@@ -28,7 +28,7 @@ export const MapExtension: Extension = {
         // 1. Initialize Extension-Level State
         const mapState = new MapState();
         const layerRegistry = new LayerRegistry();
-        const pipeline = new MapDataPipeline(ide.getClient());
+        const pipeline = new MapDataPipeline(window.location.origin);
 
         // 2. Register Default Layers
         layerRegistry.register(new TerrainLayer(pipeline), {

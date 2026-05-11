@@ -5,16 +5,23 @@ import { LRUCache } from 'lru-cache';
 import { WgtFormat } from '../../engine/environment/utils/WgtFormat.js';
 import { WorkerService } from './WorkerService.js';
 
+/**
+ * TerrainTile: Internal representation of a geodetic data chunk.
+ */
 interface TerrainTile {
     lat: number;
     lon: number;
     resolution: number;
-    data: Float32Array;
+    data: Int16Array | Float32Array;
+    format: number; // 0 = Int16, 1 = Float32
 }
 
+/**
+ * TerrainService: Manages geodetic data lifecycle and multi-level caching.
+ * Professional Upgrade: Supports WGTv2 and optimized Int16 transport.
+ */
 export class TerrainService {
-    // Cache Level 1: RAM (LRU) - 500MB approx (Float32Array 1201*1201 is ~5.7MB)
-    // 100 tiles is ~570MB
+    // Cache Level 1: RAM (LRU) - Capped at 100 tiles (~280MB for Int16 tiles)
     private readonly ramCache = new LRUCache<string, TerrainTile>({
         max: 100
     });
@@ -24,7 +31,7 @@ export class TerrainService {
     // Cache Level 2: Local Disk Cache path
     private readonly diskCacheDir = path.resolve(process.env.TERRAIN_DISK_CACHE || './data/terrain_cache');
     
-    // Cache Level 3: Remote Node URL
+    // Cache Level 3: Remote Node URL (used by the Laptop Sim Engine)
     private readonly remoteNodeUrl = process.env.TERRAIN_REMOTE_NODE_URL;
 
     constructor(private readonly workerService: WorkerService) {
@@ -37,6 +44,10 @@ export class TerrainService {
         this.workerService.createPool('terrain', WORKER_PATH, 2);
     }
 
+    /**
+     * getTile: Retrieves a terrain tile by coordinate and resolution.
+     * Implements L1 (RAM) -> L2 (Disk) -> L3 (Remote) -> Fallback (Worker/AWS)
+     */
     public async getTile(lat: number, lon: number, targetResolution: number = 1201): Promise<TerrainTile> {
         const floorLat = Math.floor(lat);
         const floorLon = Math.floor(lon);
@@ -58,11 +69,12 @@ export class TerrainService {
                 try {
                     const buffer = fs.readFileSync(diskPath);
                     const decoded = WgtFormat.decode(buffer);
-                    const tile = {
+                    const tile: TerrainTile = {
                         lat: decoded.lat,
                         lon: decoded.lon,
                         resolution: decoded.resolution,
-                        data: decoded.data
+                        data: decoded.data,
+                        format: decoded.format
                     };
                     this.ramCache.set(key, tile);
                     return tile;
@@ -71,9 +83,9 @@ export class TerrainService {
                 }
             }
 
-            // 4. Remote Node (L3)
+            // 4. Remote Node (L3) - Only if on Laptop (client-mode)
             if (this.remoteNodeUrl) {
-                const remoteUrl = `${this.remoteNodeUrl}/terrain/tile?lat=${floorLat}&lon=${floorLon}&res=${targetResolution}`;
+                const remoteUrl = `${this.remoteNodeUrl}/terrain/tile/degree?lat=${floorLat}&lon=${floorLon}&res=${targetResolution}`;
                 try {
                     const response = await fetch(remoteUrl);
                     if (response.ok) {
@@ -86,11 +98,12 @@ export class TerrainService {
                         fs.writeFileSync(diskPath, buffer);
 
                         const decoded = WgtFormat.decode(buffer);
-                        const tile = {
+                        const tile: TerrainTile = {
                             lat: decoded.lat,
                             lon: decoded.lon,
                             resolution: decoded.resolution,
-                            data: decoded.data
+                            data: decoded.data,
+                            format: decoded.format
                         };
                         this.ramCache.set(key, tile);
                         return tile;
@@ -100,7 +113,7 @@ export class TerrainService {
                 }
             }
 
-            // 5. Fallback: Worker (Original behavior - AWS fetch)
+            // 5. Fallback: Worker (Master-mode - AWS fetch + processing)
             const pool = this.workerService.getPool('terrain');
             const msg = await pool.execute<any>({ lat: floorLat, lon: floorLon, targetRes: targetResolution });
             
@@ -108,11 +121,12 @@ export class TerrainService {
             
             const encoded = targetResolution === 1201 ? msg.engineEncoded : msg.uiEncoded;
             const decoded = WgtFormat.decode(encoded);
-            const tile = {
+            const tile: TerrainTile = {
                 lat: msg.lat,
                 lon: msg.lon,
                 resolution: decoded.resolution,
-                data: decoded.data
+                data: decoded.data,
+                format: decoded.format
             };
 
             // Save to Disk Cache (L2)
@@ -130,6 +144,9 @@ export class TerrainService {
         return job;
     }
 
+    /**
+     * getElevation: High-speed point query.
+     */
     public async getElevation(lat: number, lon: number): Promise<number> {
         const tile = await this.getTile(lat, lon, 1201);
         const res = tile.resolution;
@@ -144,6 +161,9 @@ export class TerrainService {
         return tile.data[idx] || 0;
     }
 
+    /**
+     * getElevationProfile: Batch point query for paths.
+     */
     public async getElevationProfile(startLat: number, startLon: number, endLat: number, endLon: number, points: number): Promise<number[]> {
         const profile: number[] = [];
         for (let i = 0; i < points; i++) {
@@ -153,6 +173,33 @@ export class TerrainService {
             profile.push(await this.getElevation(lat, lon));
         }
         return profile;
+    }
+
+    /**
+     * prefetchTheater: Predictively loads a bounding box of tiles into RAM.
+     * Use this before starting a simulation or when units approach an edge.
+     */
+    public async prefetchTheater(
+        latMin: number, 
+        latMax: number, 
+        lonMin: number, 
+        lonMax: number, 
+        res: number = 1201
+    ): Promise<number> {
+        const floorLatMin = Math.floor(latMin);
+        const floorLatMax = Math.ceil(latMax);
+        const floorLonMin = Math.floor(lonMin);
+        const floorLonMax = Math.ceil(lonMax);
+
+        const tasks: Promise<any>[] = [];
+        for (let lat = floorLatMin; lat <= floorLatMax; lat++) {
+            for (let lon = floorLonMin; lon <= floorLonMax; lon++) {
+                tasks.push(this.getTile(lat, lon, res));
+            }
+        }
+
+        await Promise.all(tasks);
+        return tasks.length;
     }
 
     public getCacheStats() {

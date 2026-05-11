@@ -193,100 +193,88 @@ export const ToolRunnerExtension: Extension = {
             id: 'tool-runner.view',
             name: 'Tool Runner',
             resolveView: (container, disposables) => {
-                const root = new uiLib.Column({ padding: 'md', gap: 'md', fill: true });
+                const root = new uiLib.Column({ padding: 'md', gap: 'md', fill: true, overflow: 'hidden' });
 
                 // Header
                 const header = new uiLib.Heading({ text: 'TOOL RUNNER', level: 4, transform: 'uppercase' });
-                root.appendChildren(header);
-
                 const description = new uiLib.Text({
-                    text: 'Select a tool to generate a type-safe input form.',
+                    text: 'Execute any system tool using auto-generated type-safe forms.',
                     variant: 'muted',
                     size: 'sm'
                 });
-                root.appendChildren(description);
+                root.appendChildren(header, description);
 
                 // Tool selector
                 const toolOptions = buildToolOptions();
                 const toolSelect = new uiLib.Select({
                     options: toolOptions,
                     value: '',
-                    placeholder: 'Select a tool...'
+                    placeholder: 'Select a tool...',
+                    onChange: (selectedKey) => switchTool(selectedKey)
                 });
                 root.appendChildren(toolSelect);
 
-                // Dynamic form area
-                const formArea = document.createElement('div');
-                formArea.style.display = 'flex';
-                formArea.style.flexDirection = 'column';
-                formArea.style.gap = '8px';
+                // Main Area with ScrollArea
+                const formArea = new uiLib.Column({ gap: 'md' });
+                const resultArea = new uiLib.Column({ gap: 'sm', borderTop: true, paddingTop: 'md' });
+                resultArea.getElement().style.display = 'none';
 
-                // Result area
-                const resultArea = document.createElement('div');
-                resultArea.style.marginTop = '8px';
-
-                root.getElement().appendChild(formArea);
-                root.getElement().appendChild(resultArea);
+                const scrollArea = new uiLib.ScrollArea({ 
+                    fill: true, 
+                    children: [formArea, resultArea] 
+                });
+                root.appendChildren(scrollArea);
 
                 // State
                 let currentFields: FormField[] = [];
                 let currentContract: ToolContract | null = null;
 
-                // On tool selection, generate the form
-                const selectEl = toolSelect.getElement().querySelector('select') as HTMLSelectElement | null;
-                if (selectEl) {
-                    const onChangeHandler = () => {
-                        const selectedKey = selectEl.value;
-                        formArea.innerHTML = '';
-                        resultArea.innerHTML = '';
-                        currentFields = [];
-                        currentContract = null;
+                const switchTool = (selectedKey: string) => {
+                    formArea.getElement().innerHTML = '';
+                    resultArea.getElement().innerHTML = '';
+                    resultArea.getElement().style.display = 'none';
+                    currentFields = [];
+                    currentContract = null;
 
-                        if (!selectedKey) return;
+                    if (!selectedKey) return;
 
-                        const contract = globalContractRegistry.get(selectedKey);
-                        if (!contract) return;
-                        currentContract = contract;
+                    const contract = globalContractRegistry.get(selectedKey);
+                    if (!contract) return;
+                    currentContract = contract;
 
-                        // Build context values from services
-                        const contextValues: Record<string, string | undefined> = {
-                            matchId: ide.matches.currentMatchId.get() ?? undefined,
-                            side: ide.matches.currentSide.get(),
-                        };
-
-                        const selectedEntity = ide.selection.primaryId.get();
-                        if (selectedEntity) {
-                            contextValues['entityId'] = selectedEntity;
-                        }
-
-                        // Generate form fields
-                        currentFields = generateFieldsFromSchema(contract.inputSchema, contextValues);
-
-                        for (const field of currentFields) {
-                            formArea.appendChild(field.element);
-                        }
-
-                        // Execute button
-                        const execBtn = new uiLib.Button({
-                            label: `Execute ${contract.domain}.${contract.action}`,
-                            variant: 'primary',
-                            icon: 'fas fa-play',
-                            onClick: () => { void executeCurrentTool(); }
-                        });
-                        formArea.appendChild(execBtn.getElement());
-
-                        // Description
-                        const desc = new uiLib.Alert({
-                            message: contract.description,
-                            variant: 'info'
-                        });
-                        formArea.appendChild(desc.getElement());
+                    // Build context values from services
+                    const contextValues: Record<string, string | undefined> = {
+                        matchId: ide.matches.currentMatchId.get() ?? undefined,
+                        side: ide.matches.currentSide.get(),
                     };
-                    selectEl.addEventListener('change', onChangeHandler);
-                    disposables.push({
-                        dispose: () => selectEl.removeEventListener('change', onChangeHandler)
+
+                    const selectedEntity = ide.selection.primaryId.get();
+                    if (selectedEntity) {
+                        contextValues['entityId'] = selectedEntity;
+                    }
+
+                    // Generate form fields
+                    currentFields = generateFieldsFromSchema(contract.inputSchema, contextValues);
+
+                    // Add Tool Description
+                    formArea.appendChildren(new uiLib.Alert({
+                        message: contract.description,
+                        variant: 'info'
+                    }));
+
+                    for (const field of currentFields) {
+                        formArea.getElement().appendChild(field.element);
+                    }
+
+                    // Execute button
+                    const execBtn = new uiLib.Button({
+                        label: `Execute ${contract.domain}.${contract.action}`,
+                        variant: 'primary',
+                        icon: 'fas fa-play',
+                        onClick: () => { void executeCurrentTool(); }
                     });
-                }
+                    formArea.appendChildren(execBtn);
+                };
 
                 // Execute tool
                 const executeCurrentTool = async () => {
@@ -301,9 +289,10 @@ export const ToolRunnerExtension: Extension = {
                         }
                     }
 
-                    resultArea.innerHTML = '';
+                    resultArea.getElement().innerHTML = '';
+                    resultArea.getElement().style.display = 'flex';
                     const spinner = new uiLib.Spinner({ size: 'md' });
-                    resultArea.appendChild(spinner.getElement());
+                    resultArea.appendChildren(spinner);
 
                     try {
                         // Validate with Zod before sending
@@ -313,11 +302,8 @@ export const ToolRunnerExtension: Extension = {
                         const domain = currentContract.domain;
                         const action = currentContract.action;
                         
-                        // Use unknown as an intermediate step to satisfy strict typing rules
-                        const api = ide.getClient().api as unknown as Record<string, Record<string, (args: unknown) => unknown>>;
-                        const apiDomain = api[domain];
-                        if (!apiDomain) throw new Error(`Unknown API domain: ${domain}`);
-                        const apiFn = apiDomain[action];
+                        const api = ide.getClient().api as any;
+                        const apiFn = api[domain]?.[action];
                         if (!apiFn) throw new Error(`Unknown API action: ${domain}.${action}`);
 
                         const resultRaw = apiFn(validated);
@@ -327,34 +313,29 @@ export const ToolRunnerExtension: Extension = {
                         if (resultRaw instanceof Promise) {
                             result = await resultRaw;
                         } else if (resultRaw && typeof (resultRaw as any)[Symbol.asyncIterator] === 'function') {
-                            // If it's a stream, we just collect the first few items for the debug view or show it's a stream
                             result = { info: "Stream started...", stream: resultRaw };
                         } else {
                             result = resultRaw;
                         }
 
                         // Render result
-                        resultArea.innerHTML = '';
-                        const successBadge = new uiLib.Alert({
-                            message: '✅ Success',
-                            variant: 'success'
+                        resultArea.getElement().innerHTML = '';
+                        resultArea.appendChildren(new uiLib.Text({ text: 'EXECUTION RESULT', size: 'xs', weight: 'bold', variant: 'muted' }));
+                        
+                        const jsonTree = new uiLib.JsonTree({
+                            data: result,
+                            expandDepth: 3,
+                            label: `${currentContract.domain}.${currentContract.action} result`
                         });
-                        resultArea.appendChild(successBadge.getElement());
-
-                        const codeBlock = new uiLib.CodeBlock({
-                            code: JSON.stringify(result, null, 2),
-                            language: 'json'
-                        });
-                        resultArea.appendChild(codeBlock.getElement());
+                        resultArea.appendChildren(jsonTree);
 
                     } catch (error) {
-                        resultArea.innerHTML = '';
+                        resultArea.getElement().innerHTML = '';
                         const errMsg = error instanceof Error ? error.message : String(error);
-                        const errorAlert = new uiLib.Alert({
-                            message: `❌ ${errMsg}`,
+                        resultArea.appendChildren(new uiLib.Alert({
+                            message: `Execution Failed: ${errMsg}`,
                             variant: 'error'
-                        });
-                        resultArea.appendChild(errorAlert.getElement());
+                        }));
                     }
                 };
 

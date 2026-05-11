@@ -7,7 +7,7 @@ export interface TerrainTile {
     resolution: number;
     lat: number;
     lon: number;
-    data: Float32Array;
+    data: Float32Array | Int16Array;
 }
 
 /**
@@ -19,7 +19,7 @@ export class TileManager implements ITileProvider {
 
     constructor(private readonly terrainDir: string = join(process.cwd(), 'data/terrain/engine')) { }
 
-    public async getTile(lat: number, lon: number): Promise<Float32Array | undefined> {
+    public async getTile(lat: number, lon: number): Promise<Float32Array | Int16Array | undefined> {
         const floorLat = Math.floor(lat);
         const floorLon = Math.floor(lon);
         const key = `${floorLat},${floorLon}`;
@@ -46,7 +46,7 @@ export class TileManager implements ITileProvider {
         return undefined;
     }
 
-    public getCachedTile(lat: number, lon: number): Float32Array | undefined {
+    public getCachedTile(lat: number, lon: number): Float32Array | Int16Array | undefined {
         const floorLat = Math.floor(lat);
         const floorLon = Math.floor(lon);
         const key = `${floorLat},${floorLon}`;
@@ -63,7 +63,12 @@ export class TileManager implements ITileProvider {
         try {
             const buffer = await fs.readFile(filePath);
             const decoded = WgtFormat.decode(new Uint8Array(buffer));
-            return decoded;
+            return {
+                resolution: decoded.resolution,
+                lat: decoded.lat,
+                lon: decoded.lon,
+                data: decoded.data
+            };
         } catch (err) {
             // console.warn(`Terrain tile not found: ${fileName}`);
             return undefined;

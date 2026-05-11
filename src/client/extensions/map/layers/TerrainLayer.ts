@@ -6,14 +6,13 @@ import { worldToLatLon } from '../CoordUtils';
 
 /**
  * TerrainLayer: Renders elevation data from the MapDataPipeline.
- * Uses a dynamic grid of tiles loaded at multiple LODs.
+ * Professional Upgrade: Uses QuadTree (z/x/y) tiles with dynamic LOD scaling.
  */
 export class TerrainLayer implements MapLayer {
     readonly id = 'terrain';
     readonly container = new Container();
     private pipeline: MapDataPipeline;
     private tileContainers = new Map<string, Container>();
-    private tileSprites = new Map<string, Sprite>();
     private activeTiles = new Set<string>();
 
     constructor(pipeline: MapDataPipeline) {
@@ -24,80 +23,79 @@ export class TerrainLayer implements MapLayer {
         const origin = vs.origin;
         if (!origin || !visibleBounds) return;
 
-        // 1. Calculate geodetic bounds of the viewport
+        // 1. Determine optimal Zoom Level (z) based on viewScale (meters/pixel)
+        // metersPerPixel: >5000 (z2), 1000-5000 (z4), 100-1000 (z7), <100 (z10)
+        let z = 10;
+        if (viewScale > 5000) z = 2;
+        else if (viewScale > 1000) z = 4;
+        else if (viewScale > 200) z = 7;
+
+        // 2. Calculate geodetic bounds of the viewport
         const nw = worldToLatLon(visibleBounds.x, visibleBounds.y, origin);
         const se = worldToLatLon(visibleBounds.x + visibleBounds.width, visibleBounds.y + visibleBounds.height, origin);
 
-        const latMin = Math.floor(Math.min(nw.lat, se.lat)) - 1;
-        const latMax = Math.ceil(Math.max(nw.lat, se.lat)) + 1;
-        const lonMin = Math.floor(Math.min(nw.lon, se.lon)) - 1;
-        const lonMax = Math.ceil(Math.max(nw.lon, se.lon)) + 1;
+        // 3. Convert Geodetic to Tile Coordinates (z/x/y)
+        const tileNW = this.latLonToTile(nw.lat, nw.lon, z);
+        const tileSE = this.latLonToTile(se.lat, se.lon, z);
 
-        // Limit range to prevent massive accidental fetches
-        const latRange = Math.min(10, latMax - latMin);
-        const lonRange = Math.min(10, lonMax - lonMin);
+        const xMin = Math.floor(Math.min(tileNW.x, tileSE.x));
+        const xMax = Math.ceil(Math.max(tileNW.x, tileSE.x));
+        const yMin = Math.floor(Math.min(tileNW.y, tileSE.y));
+        const yMax = Math.ceil(Math.max(tileNW.y, tileSE.y));
 
         const newVisibleTiles = new Set<string>();
 
-        // 2. Request tiles from pipeline
-        for (let i = 0; i <= latRange; i++) {
-            for (let j = 0; j <= lonRange; j++) {
-                const lat = latMin + i;
-                const lon = lonMin + j;
-                
-                // Sanity check lat
-                if (lat < -90 || lat > 90) continue;
-
-                const key = `${lat},${lon}`;
+        // 4. Request tiles for the viewport
+        for (let x = xMin; x <= xMax; x++) {
+            for (let y = yMin; y <= yMax; y++) {
+                const key = `${z}_${x}_${y}`;
                 newVisibleTiles.add(key);
 
                 if (!this.activeTiles.has(key)) {
-                    void this.loadTile(lat, lon, vs);
+                    void this.loadTile(z, x, y, origin);
                 }
             }
         }
 
-        // 3. Cleanup tiles no longer visible
+        // 5. Cleanup tiles no longer visible
         for (const key of this.activeTiles) {
             if (!newVisibleTiles.has(key)) {
-                const tileContainer = this.tileContainers.get(key);
-                if (tileContainer) {
-                    this.container.removeChild(tileContainer);
-                    tileContainer.destroy({ children: true });
+                const container = this.tileContainers.get(key);
+                if (container) {
+                    this.container.removeChild(container);
+                    container.destroy({ children: true });
                     this.tileContainers.delete(key);
-                    this.tileSprites.delete(key);
                 }
             }
         }
 
         this.activeTiles = newVisibleTiles;
 
-        // 4. Update container positions
-        this.tileContainers.forEach((tileContainer, key) => {
-            const [lat, lon] = key.split(',').map(Number);
+        // 6. Update container positions (sync with rest of map)
+        this.tileContainers.forEach((container, key) => {
+            const [tz, tx, ty] = key.split('_').map(Number);
+            const bounds = this.getTileBounds(tz, tx, ty);
             
             // Re-project based on current origin
             const cosLat = Math.cos(origin.lat * (Math.PI / 180));
             const METERS_PER_DEGREE = 111319.9;
             
-            tileContainer.x = (lon - origin.lon) * METERS_PER_DEGREE * cosLat;
-            tileContainer.y = -(lat - origin.lat) * METERS_PER_DEGREE;
+            container.x = (bounds.minLon - origin.lon) * METERS_PER_DEGREE * cosLat;
+            container.y = -(bounds.maxLat - origin.lat) * METERS_PER_DEGREE;
         });
     }
 
-    private async loadTile(lat: number, lon: number, vs: MapViewState): Promise<void> {
-        const key = `${lat},${lon}`;
-        const tile = await this.pipeline.getTile(lat, lon, 256);
+    private async loadTile(z: number, x: number, y: number, origin: { lat: number, lon: number }): Promise<void> {
+        const key = `${z}_${x}_${y}`;
+        const tile = await this.pipeline.getQuadTile(z, x, y);
         if (!tile || !this.activeTiles.has(key)) return;
 
-        this.renderTile(tile, vs);
+        this.renderTile(key, tile, origin);
     }
 
-    private renderTile(tile: WgtTile, vs: MapViewState): void {
-        const key = `${tile.lat},${tile.lon}`;
+    private renderTile(key: string, tile: WgtTile, origin: { lat: number, lon: number }): void {
         const res = tile.resolution;
         
-        // Create a canvas to generate a heightmap texture
         const canvas = document.createElement('canvas');
         canvas.width = res;
         canvas.height = res;
@@ -109,9 +107,6 @@ export class TerrainLayer implements MapLayer {
 
         for (let i = 0; i < tile.data.length; i++) {
             const h = tile.data[i];
-            
-            // Simple grayscale heightmap
-            // Normalize -100m (ocean) to 9000m (everest) to 0-255
             let val = Math.floor(((h + 100) / 9100) * 255);
             val = Math.max(0, Math.min(255, val));
 
@@ -119,7 +114,7 @@ export class TerrainLayer implements MapLayer {
             data[idx] = val;     // R
             data[idx + 1] = val; // G
             data[idx + 2] = val; // B
-            data[idx + 3] = 255; // A
+            data[idx + 3] = 180; // A (slightly transparent)
         }
 
         ctx.putImageData(imageData, 0, 0);
@@ -127,23 +122,47 @@ export class TerrainLayer implements MapLayer {
         const texture = Texture.from(canvas);
         const sprite = new Sprite(texture);
         
-        // Scale sprite to fit the 1-degree geographic block
-        sprite.width = 100000;
-        sprite.height = 100000;
-        sprite.alpha = 0.6; // Subtle overlay
+        // Calculate world-space dimensions of this tile
+        const [tz, tx, ty] = key.split('_').map(Number);
+        const bounds = this.getTileBounds(tz, tx, ty);
+        const cosLat = Math.cos(origin.lat * (Math.PI / 180));
+        const METERS_PER_DEGREE = 111319.9;
+
+        sprite.width = (bounds.maxLon - bounds.minLon) * METERS_PER_DEGREE * cosLat;
+        sprite.height = (bounds.maxLat - bounds.minLat) * METERS_PER_DEGREE;
 
         const tileContainer = new Container();
         tileContainer.addChild(sprite);
         
         this.container.addChild(tileContainer);
         this.tileContainers.set(key, tileContainer);
-        this.tileSprites.set(key, sprite);
+    }
+
+    private latLonToTile(lat: number, lon: number, z: number) {
+        const n = Math.pow(2, z);
+        const x = ((lon + 180) / 360) * n;
+        const latRad = (lat * Math.PI) / 180;
+        const y = (1 - Math.log(Math.tan(latRad) + 1 / Math.cos(latRad)) / Math.PI) / 2 * n;
+        return { x, y };
+    }
+
+    private getTileBounds(z: number, x: number, y: number) {
+        const n = Math.pow(2, z);
+        const lonMin = (x / n) * 360 - 180;
+        const lonMax = ((x + 1) / n) * 360 - 180;
+        const latMinRad = Math.atan(Math.sinh(Math.PI * (1 - 2 * (y + 1) / n)));
+        const latMaxRad = Math.atan(Math.sinh(Math.PI * (1 - 2 * y / n)));
+        return { 
+            minLat: (latMinRad * 180) / Math.PI, 
+            maxLat: (latMaxRad * 180) / Math.PI, 
+            minLon: lonMin, 
+            maxLon: lonMax 
+        };
     }
 
     public destroy(): void {
         this.tileContainers.forEach(c => c.destroy({ children: true }));
         this.tileContainers.clear();
-        this.tileSprites.clear();
         this.activeTiles.clear();
         this.container.removeChildren();
     }

@@ -4,7 +4,6 @@
  */
 
 import { IDE } from './core/IDE';
-import { ProjectScaffolderExtension } from './extensions/ProjectScaffolderExtension';
 import { MapExtension } from './extensions/map/MapExtension';
 import { MatchExtension } from './extensions/MatchExtension';
 import { ToolRunnerExtension } from './extensions/ToolRunnerExtension';
@@ -26,11 +25,6 @@ import * as monaco from 'monaco-editor';
 import './css/main.css';
 import './css/tactical-theme.css';
 import './css/layout.css';
-import './css/filetree.css';
-import './css/settings.css';
-import './css/dialog.css';
-import './css/inline-edit.css';
-import './css/sourcecontrol.css';
 
 // Expose dependencies to the global window object for dynamically loaded extensions
 declare global {
@@ -71,7 +65,6 @@ async function initializeApp(): Promise<void> {
         ide.extensions.register(DevToolsExtension);     // Developer console
         ide.extensions.register(QuickCommandExtension); // Command palette (Ctrl+Shift+P)
         ide.extensions.register(KeyboardShortcutsExtension); // Shortcut overlay
-        ide.extensions.register(ProjectScaffolderExtension);  // Legacy scaffolder
 
         await ide.initialize();
         hideLoadingScreen();

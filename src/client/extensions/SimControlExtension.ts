@@ -26,17 +26,20 @@ export const SimControlExtension: Extension = {
             id: 'sim.controls',
             name: 'Sim Controls',
             resolveView: (container, disposables) => {
-                container.style.padding = '4px 8px';
+                const root = new uiLib.Row({
+                    padding: 'xs',
+                    gap: 'xs',
+                    align: 'center',
+                    fill: true
+                });
 
-                const toolbar = document.createElement('div');
-                Object.assign(toolbar.style, {
-                    display: 'flex',
-                    alignItems: 'center',
-                    gap: '4px',
-                    padding: '4px 8px',
-                    backgroundColor: 'var(--bg-sidebar, #252526)',
-                    borderRadius: '6px',
-                    border: '1px solid var(--border, #3e3e42)',
+                const toolbar = new uiLib.Row({
+                    padding: 'xs',
+                    gap: 'xs',
+                    align: 'center',
+                    backgroundColor: 'var(--bg-panel, #1e1e1e)',
+                    border: true,
+                    borderRadius: 'md'
                 });
 
                 // State
@@ -61,7 +64,6 @@ export const SimControlExtension: Extension = {
                         }
                     }
                 });
-                toolbar.appendChild(playPauseBtn.getElement());
 
                 // Step button
                 const stepBtn = new uiLib.Button({
@@ -79,7 +81,6 @@ export const SimControlExtension: Extension = {
                         }
                     }
                 });
-                toolbar.appendChild(stepBtn.getElement());
 
                 // Step-10 button
                 const step10Btn = new uiLib.Button({
@@ -97,28 +98,16 @@ export const SimControlExtension: Extension = {
                         }
                     }
                 });
-                toolbar.appendChild(step10Btn.getElement());
-
-                // Divider
-                const divider = document.createElement('div');
-                Object.assign(divider.style, {
-                    width: '1px',
-                    height: '18px',
-                    backgroundColor: 'var(--border, #3e3e42)',
-                    margin: '0 4px',
-                });
-                toolbar.appendChild(divider);
 
                 // Time compression label
-                const tcLabel = document.createElement('span');
-                Object.assign(tcLabel.style, {
-                    fontSize: '11px',
-                    color: 'var(--text-muted, #888)',
-                    fontFamily: 'var(--font-mono, monospace)',
-                    minWidth: '40px',
+                const tcLabel = new uiLib.Text({ 
+                    text: '1x', 
+                    font: 'mono', 
+                    size: 'xs', 
+                    variant: 'muted',
+                    id: 'tc-label'
                 });
-                tcLabel.textContent = '1x';
-                toolbar.appendChild(tcLabel);
+                tcLabel.getElement().style.minWidth = '40px';
 
                 // Time compression slider
                 const tcSlider = new uiLib.Slider({
@@ -127,7 +116,7 @@ export const SimControlExtension: Extension = {
                     value: 1,
                     onChange: async (value: number) => {
                         timeCompression = value;
-                        tcLabel.textContent = `${value}x`;
+                        tcLabel.updateProps({ text: `${value}x` });
                         const matchId = matches.currentMatchId.get();
                         if (!matchId) return;
                         try {
@@ -137,31 +126,35 @@ export const SimControlExtension: Extension = {
                         }
                     }
                 });
-                toolbar.appendChild(tcSlider.getElement());
 
                 // Status indicator
-                const statusDot = document.createElement('div');
-                Object.assign(statusDot.style, {
-                    width: '8px',
-                    height: '8px',
-                    borderRadius: '50%',
-                    backgroundColor: 'var(--status-ok, #4caf50)',
-                    marginLeft: '8px',
-                    transition: 'background-color 0.3s ease',
+                const statusIcon = new uiLib.Icon({
+                    icon: 'fas fa-circle',
+                    size: 'xs',
+                    color: 'var(--status-warn, #ff9800)'
                 });
-                toolbar.appendChild(statusDot);
 
                 const updatePlayPauseIcon = () => {
                     playPauseBtn.updateProps({
-                        label: '',
                         icon: isPaused ? 'fas fa-play' : 'fas fa-pause',
-                        variant: 'ghost',
-                        size: 'sm',
                     });
-                    statusDot.style.backgroundColor = isPaused
-                        ? 'var(--status-warn, #ff9800)'
-                        : 'var(--status-ok, #4caf50)';
+                    statusIcon.updateProps({
+                        color: isPaused ? 'var(--status-warn, #ff9800)' : 'var(--status-ok, #4caf50)'
+                    });
                 };
+
+                toolbar.appendChildren(
+                    playPauseBtn,
+                    stepBtn,
+                    step10Btn,
+                    new uiLib.Text({ text: '|', variant: 'muted' }),
+                    tcLabel,
+                    tcSlider,
+                    statusIcon
+                );
+
+                root.appendChildren(toolbar);
+                root.mount(container);
 
                 // Sync state on match activation
                 const subActivated = ide.commands.on(MatchServiceEvents.MATCH_ACTIVATED, async (data: unknown) => {
@@ -170,15 +163,14 @@ export const SimControlExtension: Extension = {
                         const simState = await client.api.sim.get({ matchId: payload.matchId });
                         isPaused = simState.isPaused;
                         timeCompression = simState.timeCompression;
-                        tcLabel.textContent = `${timeCompression}x`;
+                        tcLabel.updateProps({ text: `${timeCompression}x` });
+                        tcSlider.updateProps({ value: timeCompression });
                         updatePlayPauseIcon();
                     } catch (_err) {
                         // ignore, will sync later
                     }
                 });
                 disposables.push({ dispose: () => ide.commands.off(subActivated) });
-
-                container.appendChild(toolbar);
             }
         };
 

@@ -1,67 +1,121 @@
 import fastify from 'fastify';
 import { TerrainService } from './services/TerrainService.js';
 import { WorkerService } from './services/WorkerService.js';
+import { HarvesterService } from './services/HarvesterService.js';
+import { QuadTreeBaker } from './services/QuadTreeBaker.js';
 import { WgtFormat } from '../engine/environment/utils/WgtFormat.js';
 
 /**
- * WorkerNode: A standalone Node.js process designed to run on a remote machine.
- * Exposes storage-heavy or compute-heavy services (like Terrain) over HTTP.
- * 
- * Designed to be "stable" - the API here should rarely change so the node 
- * doesn't need frequent reboots or updates.
+ * WorkerNode: A stable, high-performance geodetic "Slave" process.
+ * Exposes binary terrain streams and offloads simulation math.
  */
 export async function createWorkerNode(port: number = 8080) {
-    const app = fastify({ logger: true });
+    const app = fastify({ 
+        logger: true,
+        disableRequestLogging: true 
+    });
 
-    // Initialize services
+    // ─── Service Initialization ──────────────────────────────────────────────
+    
     const workerService = new WorkerService();
     const terrainService = new TerrainService(workerService);
+    const harvesterService = new HarvesterService(terrainService);
+    const baker = new QuadTreeBaker(terrainService);
 
     // ─── Health & Capabilities ───────────────────────────────────────────────
     
-    app.get('/health', async () => ({ status: 'ok', uptime: process.uptime() }));
-    
-    app.get('/capabilities', async () => ({
-        capabilities: ['terrain', 'elevation'],
-        version: '1.0.0'
+    app.get('/health', async () => ({
+        status: 'ok',
+        capabilities: ['terrain.degree', 'terrain.quad', 'math.los', 'harvester'],
+        uptime: process.uptime(),
+        version: '3.0.0'
     }));
 
-    // ─── Terrain Endpoints ───────────────────────────────────────────────────
-
-    app.get('/terrain/tile', async (request, reply) => {
+    // ─── 1. SIM STREAM: 1x1 Degree Raw Tiles ─────────────────────────────────
+    
+    app.get('/terrain/tile/degree', async (request, reply) => {
         const { lat, lon, res } = request.query as any;
-        if (!lat || !lon) return reply.status(400).send({ error: 'Missing lat/lon' });
+        if (lat === undefined || lon === undefined) {
+            return reply.status(400).send({ error: 'Missing lat/lon' });
+        }
 
         try {
-            const tile = await terrainService.getTile(Number(lat), Number(lon), res ? Number(res) : 1201);
+            const targetRes = res ? Number(res) : 1201;
+            const tile = await terrainService.getTile(Number(lat), Number(lon), targetRes);
             
-            // Re-encode to WGT for transport
-            const encoded = WgtFormat.encode(tile.resolution, tile.lat, tile.lon, tile.data);
-            
+            // Encode as WGTv2 (Raw Binary)
+            const encoded = WgtFormat.encode(
+                tile.resolution,
+                tile.lat,
+                tile.lon,
+                tile.data as any
+            );
+
             reply.type('application/octet-stream');
             return Buffer.from(encoded);
         } catch (err: any) {
-            console.error(`❌ Worker Node Error [${request.id}]:`, err);
-            return reply.status(500).send({ 
-                error: err.message,
-                stack: process.env.NODE_ENV === 'development' ? err.stack : undefined 
-            });
+            app.log.error(err);
+            return reply.status(500).send({ error: err.message });
         }
     });
 
-    app.get('/terrain/elevation', async (request, reply) => {
-        const { lat, lon } = request.query as any;
-        if (!lat || !lon) return reply.status(400).send({ error: 'Missing lat/lon' });
+    // ─── 2. UI STREAM: QuadTree z/x/y Tiles ──────────────────────────────────
+    
+    app.get('/terrain/tile/quad/:z/:x/:y', async (request, reply) => {
+        const { z, x, y } = request.params as any;
         
-        const elevation = await terrainService.getElevation(Number(lat), Number(lon));
-        return { elevation };
+        try {
+            const encoded = await baker.getTile(Number(z), Number(x), Number(y));
+            reply.type('application/octet-stream');
+            return Buffer.from(encoded);
+        } catch (err: any) {
+            app.log.error(err);
+            return reply.status(500).send({ error: err.message });
+        }
+    });
+
+    // ─── 3. MATH ORACLE ──────────────────────────────────────────────────────
+
+    app.post('/env/math/profile', async (request, reply) => {
+        const { p1, p2, points = 50 } = request.body as any;
+        if (!p1 || !p2) return reply.status(400).send({ error: 'Missing endpoints' });
+
+        try {
+            const elevations = await terrainService.getElevationProfile(
+                p1.lat, p1.lon, 
+                p2.lat, p2.lon, 
+                points
+            );
+            return { elevations };
+        } catch (err: any) {
+            return reply.status(500).send({ error: err.message });
+        }
+    });
+
+    // ─── 4. HARVESTER ────────────────────────────────────────────────────────
+    
+    app.get('/harvester/status', async () => {
+        return harvesterService.getStatus();
+    });
+
+    app.post('/harvester/start', async () => {
+        void harvesterService.start();
+        return { status: 'STARTED' };
+    });
+
+    app.post('/harvester/stop', async () => {
+        harvesterService.stop();
+        return { status: 'STOPPED' };
     });
 
     // ─── Startup ─────────────────────────────────────────────────────────────
 
     try {
         await app.listen({ port, host: '0.0.0.0' });
-        console.log(`\n🚀 Worker Node running on http://0.0.0.0:${port}`);
+        console.log(`\n🌍 Regional Node (V3) running on http://0.0.0.0:${port}`);
+        
+        // Auto-start harvester in background
+        void harvesterService.start();
     } catch (err) {
         app.log.error(err);
         process.exit(1);

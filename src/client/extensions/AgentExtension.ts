@@ -32,27 +32,17 @@ export const AgentExtension: Extension = {
             id: 'agent.chat',
             name: 'AI Agent',
             resolveView: (container, disposables) => {
-                const root = document.createElement('div');
-                Object.assign(root.style, {
-                    display: 'flex',
-                    flexDirection: 'column',
-                    height: '100%',
-                    overflow: 'hidden',
-                });
+                const root = new uiLib.Column({ fill: true });
 
                 // Header
-                const header = document.createElement('div');
-                Object.assign(header.style, {
-                    display: 'flex',
-                    alignItems: 'center',
-                    gap: '8px',
-                    padding: '8px 12px',
-                    borderBottom: '1px solid var(--border, #3e3e42)',
+                const header = new uiLib.Row({ 
+                    padding: 'sm', 
+                    gap: 'md', 
+                    align: 'center' 
                 });
-                const headerTitle = new uiLib.Heading({ text: 'AI AGENT', level: 4, transform: 'uppercase' });
-                header.appendChild(headerTitle.getElement());
 
-                // Agent selector
+                const headerTitle = new uiLib.Heading({ text: 'AI AGENT', level: 4 });
+                
                 const agentSelect = new uiLib.Select({
                     options: [
                         { label: 'QA Analyst', value: 'qa-analyst' },
@@ -61,36 +51,27 @@ export const AgentExtension: Extension = {
                     value: 'qa-analyst',
                     placeholder: 'Select agent...'
                 });
-                header.appendChild(agentSelect.getElement());
-                root.appendChild(header);
 
-                // Message area
-                const messageArea = document.createElement('div');
-                Object.assign(messageArea.style, {
-                    flex: '1',
-                    overflow: 'auto',
-                    padding: '8px',
-                    display: 'flex',
-                    flexDirection: 'column',
-                    gap: '8px',
-                });
-                root.appendChild(messageArea);
+                header.appendChildren(headerTitle, agentSelect);
+                root.appendChildren(header);
+
+                // Message area with ScrollArea
+                const messageList = new uiLib.Column({ gap: 'md', padding: 'md' });
+                const scrollArea = new uiLib.ScrollArea({ fill: true, children: [messageList] });
+                root.appendChildren(scrollArea);
 
                 // Input area
-                const inputArea = document.createElement('div');
-                Object.assign(inputArea.style, {
-                    display: 'flex',
-                    gap: '4px',
-                    padding: '8px',
-                    borderTop: '1px solid var(--border, #3e3e42)',
+                const inputRow = new uiLib.Row({ 
+                    padding: 'sm', 
+                    gap: 'sm', 
+                    align: 'flex-end' 
                 });
 
                 const textInput = new uiLib.TextArea({
                     placeholder: 'Send a message to the agent...',
-                    rows: 2,
+                    rows: 1
                 });
                 textInput.getElement().style.flex = '1';
-                inputArea.appendChild(textInput.getElement());
 
                 const sendBtn = new uiLib.Button({
                     label: 'Send',
@@ -99,74 +80,91 @@ export const AgentExtension: Extension = {
                     size: 'sm',
                     onClick: () => { void sendMessage(); }
                 });
-                inputArea.appendChild(sendBtn.getElement());
-                root.appendChild(inputArea);
+
+                inputRow.appendChildren(textInput, sendBtn);
+                root.appendChildren(inputRow);
 
                 const messages: ChatMessage[] = [];
 
                 const renderMessages = () => {
-                    messageArea.innerHTML = '';
+                    messageList.getElement().innerHTML = '';
                     for (const msg of messages) {
-                        const bubble = document.createElement('div');
-                        Object.assign(bubble.style, {
-                            padding: '8px 12px',
-                            borderRadius: '8px',
-                            fontSize: '12px',
-                            lineHeight: '1.5',
-                            maxWidth: '85%',
-                            wordBreak: 'break-word',
-                        });
+                        const isUser = msg.role === 'user';
+                        const isAgent = msg.role === 'agent';
 
-                        if (msg.role === 'user') {
-                            Object.assign(bubble.style, {
-                                alignSelf: 'flex-end',
+                        const bubble = new uiLib.Column({
+                            padding: 'sm',
+                            gap: 'xs'
+                        });
+                        
+                        bubble.getElement().style.alignSelf = isUser ? 'flex-end' : 'flex-start';
+                        bubble.getElement().style.maxWidth = '85%';
+                        bubble.getElement().classList.add('chat-bubble');
+                        
+                        if (isUser) {
+                            bubble.applyStyles({
                                 backgroundColor: 'var(--accent, #007acc)',
                                 color: '#fff',
+                                borderRadius: '8px 8px 0 8px'
                             });
-                        } else if (msg.role === 'agent') {
-                            Object.assign(bubble.style, {
-                                alignSelf: 'flex-start',
-                                backgroundColor: 'var(--bg-input, #2d2d30)',
+                        } else if (isAgent) {
+                            bubble.applyStyles({
+                                backgroundColor: 'var(--bg-panel, #1e1e1e)',
                                 color: 'var(--text-main, #ccc)',
                                 border: '1px solid var(--border, #3e3e42)',
+                                borderRadius: '8px 8px 8px 0'
                             });
                         } else {
-                            Object.assign(bubble.style, {
+                            bubble.applyStyles({
                                 alignSelf: 'center',
                                 backgroundColor: 'transparent',
                                 color: 'var(--text-muted, #888)',
                                 fontSize: '10px',
-                                fontStyle: 'italic',
+                                fontStyle: 'italic'
                             });
                         }
 
-                        bubble.textContent = msg.content;
-                        messageArea.appendChild(bubble);
+                        bubble.getElement().textContent = msg.content;
+                        messageList.appendChildren(bubble);
 
                         // Render tool calls if present
-                        if (msg.toolCalls) {
+                        if (msg.toolCalls && msg.toolCalls.length > 0) {
                             for (const tc of msg.toolCalls) {
-                                const toolCard = document.createElement('div');
-                                Object.assign(toolCard.style, {
-                                    alignSelf: 'flex-start',
-                                    padding: '6px 10px',
-                                    borderRadius: '4px',
-                                    fontSize: '11px',
-                                    fontFamily: 'var(--font-mono, monospace)',
-                                    backgroundColor: 'rgba(0, 122, 204, 0.1)',
-                                    border: '1px solid rgba(0, 122, 204, 0.3)',
-                                    color: 'var(--text-main, #ccc)',
-                                    maxWidth: '85%',
+                                const toolCard = new uiLib.Card({
+                                    variant: 'default',
+                                    children: [
+                                        new uiLib.Row({
+                                            gap: 'xs',
+                                            children: [
+                                                new uiLib.Icon({ icon: 'fas fa-tools', size: 'sm' }),
+                                                new uiLib.Text({ text: tc.name, weight: 'bold', size: 'xs' })
+                                            ]
+                                        }),
+                                        new uiLib.Text({ 
+                                            text: tc.args.length > 100 ? tc.args.substring(0, 100) + '...' : tc.args,
+                                            size: 'xs',
+                                            variant: 'muted'
+                                        })
+                                    ]
                                 });
-                                toolCard.innerHTML = `<strong>🔧 ${tc.name}</strong><br/><span style="color:var(--text-muted)">${tc.args.substring(0, 100)}</span>`;
+                                
                                 if (tc.result) {
-                                    toolCard.innerHTML += `<br/><span style="color:var(--success, #4caf50)">→ ${tc.result.substring(0, 100)}</span>`;
+                                    toolCard.appendChildren(new uiLib.Text({
+                                        text: `→ ${tc.result.length > 100 ? tc.result.substring(0, 100) + '...' : tc.result}`,
+                                        size: 'xs'
+                                    }));
                                 }
-                                messageArea.appendChild(toolCard);
+                                
+                                toolCard.applyStyles({ alignSelf: 'flex-start', width: '90%' });
+                                messageList.appendChildren(toolCard);
                             }
                         }
                     }
-                    messageArea.scrollTop = messageArea.scrollHeight;
+                    
+                    // Scroll to bottom
+                    setTimeout(() => {
+                        scrollArea.getElement().scrollTop = scrollArea.getElement().scrollHeight;
+                    }, 0);
                 };
 
                 const sendMessage = async () => {
@@ -175,16 +173,17 @@ export const AgentExtension: Extension = {
                     if (!text) return;
 
                     // Clear input
-                    if (textarea) textarea.value = '';
+                    if (textarea) {
+                        textarea.value = '';
+                        textarea.dispatchEvent(new Event('input')); 
+                    }
 
                     // Add user message
                     messages.push({ role: 'user', content: text, timestamp: Date.now() });
                     renderMessages();
 
                     // Get context
-                    const matchId = ide.matches.currentMatchId.get();
-                    const selectEl = agentSelect.getElement().querySelector('select') as HTMLSelectElement | null;
-                    const agentId = selectEl?.value ?? 'qa-analyst';
+                    const agentId = (agentSelect as any).getValue?.() || 'qa-analyst';
 
                     try {
                         // 1. Ensure we have a thread for this agent
@@ -236,22 +235,13 @@ export const AgentExtension: Extension = {
                                     renderMessages();
                                     break;
                                 }
-                                case 'thinking': {
-                                    messages.push({
-                                        role: 'system',
-                                        content: `💭 ${event.text.substring(0, 100)}`,
-                                        timestamp: Date.now(),
-                                    });
-                                    renderMessages();
-                                    break;
-                                }
                             }
                         }
 
                         // Finalize the agent message with tool calls
                         const lastAgent = messages.findLast(m => m.role === 'agent');
                         if (lastAgent) {
-                            lastAgent.toolCalls = toolCalls;
+                            lastAgent.toolCalls = [...toolCalls];
                         }
                         renderMessages();
 
@@ -265,7 +255,7 @@ export const AgentExtension: Extension = {
                     }
                 };
 
-                container.appendChild(root);
+                root.mount(container);
             }
         };
 

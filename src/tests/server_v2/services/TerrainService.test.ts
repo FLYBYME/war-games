@@ -25,7 +25,8 @@ describe('TerrainService', () => {
             lat: 39,
             lon: 108,
             resolution: 1201,
-            data: mockData
+            data: mockData,
+            format: 1
         });
 
         const el = await service.getElevation(39.999, 108.001);
