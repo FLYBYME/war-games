@@ -19,6 +19,9 @@ export async function createWorkerNode(port: number = 8080) {
     // ─── CORS Support ────────────────────────────────────────────────────────
     
     app.addHook('onRequest', async (request, reply) => {
+        // Add start time for performance tracking immediately
+        (request as any).startTime = process.hrtime();
+
         reply.header('Access-Control-Allow-Origin', '*');
         reply.header('Access-Control-Allow-Methods', 'GET, POST, OPTIONS');
         reply.header('Access-Control-Allow-Headers', 'Content-Type, Authorization');
@@ -27,9 +30,6 @@ export async function createWorkerNode(port: number = 8080) {
             reply.status(204).send();
             return;
         }
-
-        // Add start time for performance tracking
-        (request as any).startTime = process.hrtime();
     });
 
     app.addHook('onResponse', async (request, reply) => {

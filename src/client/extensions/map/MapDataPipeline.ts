@@ -23,6 +23,8 @@ export class MapDataPipeline {
     private maxConcurrentRequests = 6;
     private requestQueue: (() => void)[] = [];
     private persistentCache = new TerrainCache();
+    private pendingBatchTiles = new Map<string, { z: number, x: number, y: number }>();
+    private batchTimeout: any = null;
     
     // We hit the binary endpoint directly to bypass SDK/JSON overhead
     private baseUrl: string;
@@ -105,73 +107,102 @@ export class MapDataPipeline {
 
     /**
      * fetchViewport: Intelligently batches requests for a set of tiles.
-     * This is the "Smart" part of the pipeline.
+     * Uses a short debounce to group overlapping calls from the renderer.
      */
     public async fetchViewport(tiles: { z: number; x: number; y: number }[]): Promise<void> {
-        // 1. Filter out what we already have (RAM or IDB)
-        const missing: { z: number; x: number; y: number }[] = [];
-        
+        // 1. Filter out what we already have and add to pending batch
         for (const t of tiles) {
             const key = `quad_${t.z}_${t.x}_${t.y}`;
             if (this.tileCache.has(key)) continue;
+            if (this.pendingTiles.has(key)) continue;
             
-            const inPersistent = await this.persistentCache.getTile(t.z, t.x, t.y);
-            if (inPersistent) {
-                // Pre-warm RAM cache
-                const decoded = WgtFormat.decode(inPersistent);
-                this.tileCache.set(key, {
-                    resolution: decoded.resolution,
-                    lat: decoded.lat,
-                    lon: decoded.lon,
-                    data: decoded.data
-                });
-                continue;
+            // Check IDB (async but fast)
+            this.persistentCache.getTile(t.z, t.x, t.y).then(cached => {
+                if (cached) {
+                    const decoded = WgtFormat.decode(cached);
+                    this.tileCache.set(key, {
+                        resolution: decoded.resolution,
+                        lat: decoded.lat,
+                        lon: decoded.lon,
+                        data: decoded.data
+                    });
+                } else {
+                    this.pendingBatchTiles.set(key, t);
+                }
+            });
+        }
+
+        // 2. Debounce the batch request
+        if (this.batchTimeout) return;
+
+        this.batchTimeout = setTimeout(async () => {
+            this.batchTimeout = null;
+            const missing = Array.from(this.pendingBatchTiles.values());
+            this.pendingBatchTiles.clear();
+
+            if (missing.length === 0) return;
+
+            // Mark these as pending so individual getQuadTile calls don't re-request
+            const batchPromises = new Map<string, (val: WgtTile | null) => void>();
+            for (const m of missing) {
+                const key = `quad_${m.z}_${m.x}_${m.y}`;
+                this.pendingTiles.set(key, new Promise(resolve => {
+                    batchPromises.set(key, resolve);
+                }));
             }
 
-            if (this.pendingTiles.has(key)) continue;
-            missing.push(t);
-        }
+            this.isLoading.set(true);
+            console.log(`🌐 SmartPipeline: Batching ${missing.length} tiles...`);
 
-        if (missing.length === 0) return;
-
-        // 2. Request Bundle for missing tiles
-        this.isLoading.set(true);
-        console.log(`🌐 SmartPipeline: Requesting bundle for ${missing.length} tiles...`);
-
-        try {
-            const response = await fetch(`${this.baseUrl}/api/v2/terrain/theater/bundle`, {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ tiles: missing })
-            });
-
-            if (!response.ok) throw new Error(`Bundle request failed: ${response.status}`);
-
-            const buffer = await response.arrayBuffer();
-            const entries = TheaterBundleFormat.unpack(new Uint8Array(buffer));
-
-            // 3. Unpack and Save to Cache
-            const saveTasks = entries.map(async (entry) => {
-                const key = `quad_${entry.z}_${entry.x}_${entry.y}`;
-                const decoded = WgtFormat.decode(entry.data);
-                
-                this.tileCache.set(key, {
-                    resolution: decoded.resolution,
-                    lat: decoded.lat,
-                    lon: decoded.lon,
-                    data: decoded.data
+            try {
+                const response = await fetch(`${this.baseUrl}/api/v2/terrain/theater/bundle`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ tiles: missing })
                 });
 
-                return this.persistentCache.putTile(entry.z, entry.x, entry.y, entry.data);
-            });
+                if (!response.ok) throw new Error(`Bundle failed: ${response.status}`);
 
-            await Promise.all(saveTasks);
-            console.log(`✅ SmartPipeline: Bundle received and unpacked (${entries.length} tiles).`);
-        } catch (err) {
-            console.error('MapDataPipeline: Failed to fetch bundle', err);
-        } finally {
-            this.isLoading.set(false);
-        }
+                const buffer = await response.arrayBuffer();
+                const entries = TheaterBundleFormat.unpack(new Uint8Array(buffer));
+
+                const saveTasks = entries.map(async (entry) => {
+                    const key = `quad_${entry.z}_${entry.x}_${entry.y}`;
+                    const decoded = WgtFormat.decode(entry.data);
+                    
+                    const tile: WgtTile = {
+                        resolution: decoded.resolution,
+                        lat: decoded.lat,
+                        lon: decoded.lon,
+                        data: decoded.data
+                    };
+
+                    this.tileCache.set(key, tile);
+                    const resolver = batchPromises.get(key);
+                    if (resolver) resolver(tile);
+                    this.pendingTiles.delete(key);
+
+                    return this.persistentCache.putTile(entry.z, entry.x, entry.y, entry.data);
+                });
+
+                await Promise.all(saveTasks);
+                
+                // Any missing from bundle (e.g. error) should be resolved as null
+                batchPromises.forEach((resolve, key) => {
+                    if (this.pendingTiles.has(key)) {
+                        resolve(null);
+                        this.pendingTiles.delete(key);
+                    }
+                });
+
+            } catch (err) {
+                console.error('MapDataPipeline: Batch fetch failed', err);
+                batchPromises.forEach(resolve => resolve(null));
+                missing.forEach(m => this.pendingTiles.delete(`quad_${m.z}_${m.x}_${m.y}`));
+            } finally {
+                this.isLoading.set(false);
+            }
+        }, 100); // 100ms debounce to catch rapid panning frames
     }
 
     /**
