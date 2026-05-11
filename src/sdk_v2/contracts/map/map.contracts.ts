@@ -191,24 +191,41 @@ export const mapGetElevationProfileContract = defineContract({
     rest: { method: 'GET', path: '/matches/:matchId/map/elevation-profile' }
 });
 
-// ─── map_convert_coordinates ─────────────────────────────────────────────────
+// ─── map_get_los_geodetic ────────────────────────────────────────────────────
 
-export const MapConvertCoordinatesInputSchema = z.object({
-    from: z.enum(['LLA', 'ECEF', 'ENU']).describe("Source coordinate system"),
-    to: z.enum(['LLA', 'ECEF', 'ENU']).describe("Target coordinate system"),
-    position: z.any().describe("Coordinate object to convert"),
-    origin: LlaSchema.optional().describe("Origin for ENU conversions")
+export const MapGetLOSGeodeticInputSchema = z.object({
+    from: LlaSchema.describe("Observer position (LLA)"),
+    to: LlaSchema.describe("Target position (LLA)"),
+    numSamples: z.number().optional().default(10).describe("Number of sampling points")
 });
 
-export const MapConvertCoordinatesOutputSchema = z.object({ 
-    position: z.any() 
-}).describe("The converted coordinate object");
-
-export const mapConvertCoordinatesContract = defineContract({
+export const mapGetLOSGeodeticContract = defineContract({
     domain: 'map',
-    action: 'convert',
-    description: 'Utility to convert between Geodetic (LLA), ECEF, and Local Tangent Plane (ENU).',
-    inputSchema: MapConvertCoordinatesInputSchema,
-    outputSchema: MapConvertCoordinatesOutputSchema,
-    rest: { method: 'POST', path: '/map/convert' }
+    action: 'get_los_geodetic',
+    description: 'Calculate geodetic Line-of-Sight between two LLA coordinates.',
+    inputSchema: MapGetLOSGeodeticInputSchema,
+    outputSchema: z.object({
+        blocked: z.boolean(),
+        obstructionLla: LlaSchema.optional()
+    }),
+    rest: { method: 'POST', path: '/map/los/geodetic' }
+});
+
+// ─── map_get_elevation_profile_geodetic ──────────────────────────────────────
+
+export const MapGetElevationProfileGeodeticInputSchema = z.object({
+    from: LlaSchema.describe("Start position (LLA)"),
+    to: LlaSchema.describe("End position (LLA)"),
+    points: z.number().optional().default(20).describe("Number of sampling points")
+});
+
+export const mapGetElevationProfileGeodeticContract = defineContract({
+    domain: 'map',
+    action: 'get_elevation_profile_geodetic',
+    description: 'Returns an elevation profile between two LLA coordinates.',
+    inputSchema: MapGetElevationProfileGeodeticInputSchema,
+    outputSchema: z.object({
+        elevations: z.array(z.number())
+    }),
+    rest: { method: 'POST', path: '/map/elevation-profile/geodetic' }
 });

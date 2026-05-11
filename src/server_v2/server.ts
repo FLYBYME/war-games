@@ -15,9 +15,12 @@ export async function createServer() {
     const app = fastify({ logger: true });
 
     const workerService = new WorkerService();
+    // In SIM_ENGINE mode, TerrainService uses the remote worker node for heavy lifting
     const terrainService = new TerrainService(workerService);
     const matchService = new MatchService(terrainService);
     const agentService = new AgentService(process.env.OLLAMA_HOST);
+
+    console.log(`📡 Sim Engine: Using remote terrain worker at ${process.env.TERRAIN_REMOTE_NODE_URL || 'LOCAL_ONLY'}`);
 
     const serverContext = {
         app: {
@@ -32,8 +35,8 @@ export async function createServer() {
     // Import all tools to ensure they are registered
     await import('./tools/index.js');
 
-    // Generate routes from the global registry
-    const routes = generateRoutes(globalServerToolRegistry.entries(), '/api/v2');
+    // Generate routes from the global registry (Sim Engine Role)
+    const routes = generateRoutes(globalServerToolRegistry.entries('SIM_ENGINE'), '/api/v2');
 
     for (const route of routes) {
         const tool = globalServerToolRegistry.get(route.toolKey);

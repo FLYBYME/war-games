@@ -22,8 +22,30 @@ export class ServerToolRegistry {
         return this.tools.get(key);
     }
 
-    public entries(): IterableIterator<[string, ServerTool]> {
-        return this.tools.entries();
+    public entries(role?: 'SIM_ENGINE' | 'REGIONAL_WORKER'): IterableIterator<[string, ServerTool]> {
+        if (!role) return this.tools.entries();
+        
+        const filtered = new Map<string, ServerTool>();
+        for (const [key, tool] of this.tools.entries()) {
+            const domain = tool.contract.domain;
+            const action = tool.contract.action;
+
+            if (role === 'REGIONAL_WORKER') {
+                // Regional Workers only handle geodetic math and terrain/env oracle tools
+                const isRegional = 
+                    domain === 'worker' || 
+                    (domain === 'env' && (action === 'sample_geodetic' || action === 'get_terrain_tile' || action === 'get_cache_stats' || action === 'prefetch_terrain')) ||
+                    (domain === 'map' && (action === 'get_los_geodetic' || action === 'get_elevation_profile_geodetic' || action === 'calculate_distance' || action === 'convert'));
+                
+                if (isRegional) filtered.set(key, tool);
+            } else if (role === 'SIM_ENGINE') {
+                // Sim Engine handles everything EXCEPT the raw geodetic worker tools 
+                // (it uses the "Answer" versions of those tools)
+                const isWorkerOnly = domain === 'worker' || action.endsWith('_geodetic');
+                if (!isWorkerOnly) filtered.set(key, tool);
+            }
+        }
+        return filtered.entries();
     }
 
     public values(): IterableIterator<ServerTool> {

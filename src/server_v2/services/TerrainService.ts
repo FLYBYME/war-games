@@ -4,6 +4,8 @@ import { fileURLToPath } from 'url';
 import { LRUCache } from 'lru-cache';
 import { WgtFormat } from '../../engine/environment/utils/WgtFormat.js';
 import { WorkerService } from './WorkerService.js';
+import { SpatialDatabase } from './SpatialDatabase.js';
+import { ZeroCopyElevationService } from './ZeroCopyElevationService.js';
 
 /**
  * TerrainTile: Internal representation of a geodetic data chunk.
@@ -34,7 +36,11 @@ export class TerrainService {
     // Cache Level 3: Remote Node URL (used by the Laptop Sim Engine)
     private readonly remoteNodeUrl = process.env.TERRAIN_REMOTE_NODE_URL;
 
-    constructor(private readonly workerService: WorkerService) {
+    constructor(
+        private readonly workerService: WorkerService,
+        private readonly spatialDb?: SpatialDatabase,
+        private readonly zeroCopyElev?: ZeroCopyElevationService
+    ) {
         if (!fs.existsSync(this.diskCacheDir)) {
             fs.mkdirSync(this.diskCacheDir, { recursive: true });
         }
@@ -63,7 +69,24 @@ export class TerrainService {
         }
 
         const job = (async () => {
-            // 3. Local Disk Cache (L2)
+            // 3. SQLite/Spatial Database (L2 - Optimized)
+            if (this.spatialDb) {
+                const cachedData = this.spatialDb.getDegreeTile(floorLat, floorLon, targetResolution);
+                if (cachedData) {
+                    const decoded = WgtFormat.decode(cachedData);
+                    const tile: TerrainTile = {
+                        lat: decoded.lat,
+                        lon: decoded.lon,
+                        resolution: decoded.resolution,
+                        data: decoded.data,
+                        format: decoded.format
+                    };
+                    this.ramCache.set(key, tile);
+                    return tile;
+                }
+            }
+
+            // 4. Legacy File Disk Cache (L2 - Migration Fallback)
             const diskPath = path.join(this.diskCacheDir, `res_${targetResolution}`, `${floorLat}`, `${floorLon}.wgt`);
             if (fs.existsSync(diskPath)) {
                 try {
@@ -76,6 +99,12 @@ export class TerrainService {
                         data: decoded.data,
                         format: decoded.format
                     };
+                    
+                    // Migrate to SQLite if available
+                    if (this.spatialDb) {
+                        this.spatialDb.putDegreeTile(floorLat, floorLon, targetResolution, buffer);
+                    }
+
                     this.ramCache.set(key, tile);
                     return tile;
                 } catch (err) {
@@ -83,7 +112,7 @@ export class TerrainService {
                 }
             }
 
-            // 4. Remote Node (L3) - Only if on Laptop (client-mode)
+            // 5. Remote Node (L3) - Only if on Laptop (client-mode)
             if (this.remoteNodeUrl) {
                 const remoteUrl = `${this.remoteNodeUrl}/api/v2/terrain/tile/degree?lat=${floorLat}&lon=${floorLon}&res=${targetResolution}`;
                 try {
@@ -92,10 +121,10 @@ export class TerrainService {
                         const arrayBuffer = await response.arrayBuffer();
                         const buffer = Buffer.from(arrayBuffer);
                         
-                        // Save to L2 Disk Cache
-                        const dir = path.dirname(diskPath);
-                        if (!fs.existsSync(dir)) fs.mkdirSync(dir, { recursive: true });
-                        fs.writeFileSync(diskPath, buffer);
+                        // Save to L2 (SQLite)
+                        if (this.spatialDb) {
+                            this.spatialDb.putDegreeTile(floorLat, floorLon, targetResolution, buffer);
+                        }
 
                         const decoded = WgtFormat.decode(buffer);
                         const tile: TerrainTile = {
@@ -113,29 +142,17 @@ export class TerrainService {
                 }
             }
 
-            // 5. Fallback: Worker (Master-mode - AWS fetch + processing)
-            const pool = this.workerService.getPool('terrain');
-            const msg = await pool.execute<any>({ lat: floorLat, lon: floorLon, targetRes: targetResolution });
-            
-            if (!msg.success) throw new Error(msg.error);
-            
-            const encoded = targetResolution === 1201 ? msg.engineEncoded : msg.uiEncoded;
-            const decoded = WgtFormat.decode(encoded);
-            const tile: TerrainTile = {
-                lat: msg.lat,
-                lon: msg.lon,
-                resolution: decoded.resolution,
-                data: decoded.data,
-                format: decoded.format
-            };
+            // 6. Zero-Wait Fallback: If in Master-mode and cache miss, return flat tile and trigger background harvest
+            if (this.spatialDb && !this.remoteNodeUrl) {
+                // Trigger background bake (don't await)
+                this.triggerBackgroundBake(floorLat, floorLon, targetResolution);
+                
+                // Return Flat/Sea-Level Fallback instantly
+                return this.getFallbackTile(floorLat, floorLon, targetResolution);
+            }
 
-            // Save to Disk Cache (L2)
-            const dir = path.dirname(diskPath);
-            if (!fs.existsSync(dir)) fs.mkdirSync(dir, { recursive: true });
-            fs.writeFileSync(diskPath, Buffer.from(encoded));
-
-            this.ramCache.set(key, tile);
-            return tile;
+            // 7. Fallback: Worker (Standard Master-mode wait)
+            return this.executeWorkerBake(floorLat, floorLon, targetResolution);
         })().finally(() => {
             this.activeJobs.delete(key);
         });
@@ -144,10 +161,62 @@ export class TerrainService {
         return job;
     }
 
+    private async triggerBackgroundBake(lat: number, lon: number, res: number) {
+        try {
+            const tile = await this.executeWorkerBake(lat, lon, res);
+            console.log(`✅ SmartServer: Background bake complete for ${lat}, ${lon}`);
+        } catch (err) {
+            console.error(`❌ SmartServer: Background bake failed for ${lat}, ${lon}`, err);
+        }
+    }
+
+    private async executeWorkerBake(lat: number, lon: number, targetResolution: number): Promise<TerrainTile> {
+        const pool = this.workerService.getPool('terrain');
+        const msg = await pool.execute<any>({ lat, lon, targetRes: targetResolution });
+        
+        if (!msg.success) throw new Error(msg.error);
+        
+        const encoded = targetResolution === 1201 ? msg.engineEncoded : msg.uiEncoded;
+        const decoded = WgtFormat.decode(encoded);
+        const tile: TerrainTile = {
+            lat: msg.lat,
+            lon: msg.lon,
+            resolution: decoded.resolution,
+            data: decoded.data,
+            format: decoded.format
+        };
+
+        // Save to SQLite (L2)
+        if (this.spatialDb) {
+            this.spatialDb.putDegreeTile(lat, lon, targetResolution, Buffer.from(encoded));
+        }
+
+        this.ramCache.set(`${lat},${lon}_${targetResolution}`, tile);
+        return tile;
+    }
+
+    private getFallbackTile(lat: number, lon: number, res: number): TerrainTile {
+        return {
+            lat,
+            lon,
+            resolution: res,
+            data: new Int16Array(res * res).fill(0), // Sea level
+            format: 0
+        };
+    }
+
     /**
      * getElevation: High-speed point query.
+     * Uses ZeroCopy disk sampling if available on Master node.
      */
     public async getElevation(lat: number, lon: number): Promise<number> {
+        // 1. FAST PATH: ZeroCopy direct disk sampling (Master Mode)
+        if (this.zeroCopyElev) {
+            const elev = this.zeroCopyElev.getElevationAt(lat, lon);
+            if (elev !== null) return elev;
+        }
+
+        // 2. RAM/CACHE PATH: Fallback to loaded tiles
         const tile = await this.getTile(lat, lon, 1201);
         const res = tile.resolution;
         

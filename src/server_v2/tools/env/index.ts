@@ -7,3 +7,4 @@ export * from './env_set_time.js';
 export * from './env_prefetch_terrain.js';
 export * from './env_get_cache_stats.js';
 export * from './env_get_terrain_tile.js';
+export * from './env_sample_geodetic.js';

@@ -224,3 +224,24 @@ export const envGetTerrainTileContract = defineContract({
     outputSchema: EnvGetTerrainTileOutputSchema,
     rest: { method: 'GET', path: '/env/terrain/tile' }
 });
+
+// ─── env_sample_geodetic ─────────────────────────────────────────────────────
+
+export const EnvSampleGeodeticInputSchema = z.object({
+    lat: z.number().describe("Target latitude"),
+    lon: z.number().describe("Target longitude")
+});
+
+export const envSampleGeodeticContract = defineContract({
+    domain: 'env',
+    action: 'sample_geodetic',
+    description: 'Returns the precise ground elevation at a given geodetic coordinate without needing a match projection.',
+    inputSchema: EnvSampleGeodeticInputSchema,
+    outputSchema: z.object({
+        lat: z.number(),
+        lon: z.number(),
+        elevationM: z.number(),
+        status: z.string()
+    }),
+    rest: { method: 'GET', path: '/env/terrain/sample' }
+});

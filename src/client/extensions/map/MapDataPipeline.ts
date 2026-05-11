@@ -110,45 +110,55 @@ export class MapDataPipeline {
      * Uses a short debounce to group overlapping calls from the renderer.
      */
     public async fetchViewport(tiles: { z: number; x: number; y: number }[]): Promise<void> {
-        // 1. Filter out what we already have and add to pending batch
+        // 1. Filter out what we already have and add to pending batch IMMEDIATELY
+        const tilesToBatch: { z: number; x: number; y: number }[] = [];
+        
         for (const t of tiles) {
             const key = `quad_${t.z}_${t.x}_${t.y}`;
             if (this.tileCache.has(key)) continue;
             if (this.pendingTiles.has(key)) continue;
             
-            // Check IDB (async but fast)
-            this.persistentCache.getTile(t.z, t.x, t.y).then(cached => {
-                if (cached) {
-                    const decoded = WgtFormat.decode(cached);
-                    this.tileCache.set(key, {
-                        resolution: decoded.resolution,
-                        lat: decoded.lat,
-                        lon: decoded.lon,
-                        data: decoded.data
-                    });
-                } else {
-                    this.pendingBatchTiles.set(key, t);
-                }
-            });
+            this.pendingBatchTiles.set(key, t);
+            
+            // Create a "Pre-Batch" promise that getQuadTile will wait on
+            let resolver: (val: WgtTile | null) => void;
+            const promise = new Promise<WgtTile | null>(resolve => { resolver = resolve; });
+            (promise as any).resolver = (val: WgtTile | null) => resolver(val);
+            
+            this.pendingTiles.set(key, promise);
         }
 
-        // 2. Debounce the batch request
+        // 2. Debounce the actual network request
         if (this.batchTimeout) return;
 
         this.batchTimeout = setTimeout(async () => {
             this.batchTimeout = null;
-            const missing = Array.from(this.pendingBatchTiles.values());
+            
+            // Re-verify what we still need (some might have loaded from IDB in the meantime)
+            const missing: { z: number; x: number; y: number }[] = [];
+            for (const [key, t] of this.pendingBatchTiles.entries()) {
+                const cached = await this.persistentCache.getTile(t.z, t.x, t.y);
+                if (cached) {
+                    const decoded = WgtFormat.decode(cached);
+                    const tile = {
+                        resolution: decoded.resolution,
+                        lat: decoded.lat,
+                        lon: decoded.lon,
+                        data: decoded.data
+                    };
+                    this.tileCache.set(key, tile);
+                    const p = this.pendingTiles.get(key);
+                    if (p && (p as any).resolver) (p as any).resolver(tile);
+                    this.pendingTiles.delete(key);
+                } else {
+                    missing.push(t);
+                }
+            }
+            
             this.pendingBatchTiles.clear();
-
-            if (missing.length === 0) return;
-
-            // Mark these as pending so individual getQuadTile calls don't re-request
-            const batchPromises = new Map<string, (val: WgtTile | null) => void>();
-            for (const m of missing) {
-                const key = `quad_${m.z}_${m.x}_${m.y}`;
-                this.pendingTiles.set(key, new Promise(resolve => {
-                    batchPromises.set(key, resolve);
-                }));
+            if (missing.length === 0) {
+                this.isLoading.set(false);
+                return;
             }
 
             this.isLoading.set(true);
@@ -178,8 +188,9 @@ export class MapDataPipeline {
                     };
 
                     this.tileCache.set(key, tile);
-                    const resolver = batchPromises.get(key);
-                    if (resolver) resolver(tile);
+                    
+                    const p = this.pendingTiles.get(key);
+                    if (p && (p as any).resolver) (p as any).resolver(tile);
                     this.pendingTiles.delete(key);
 
                     return this.persistentCache.putTile(entry.z, entry.x, entry.y, entry.data);
@@ -187,10 +198,12 @@ export class MapDataPipeline {
 
                 await Promise.all(saveTasks);
                 
-                // Any missing from bundle (e.g. error) should be resolved as null
-                batchPromises.forEach((resolve, key) => {
-                    if (this.pendingTiles.has(key)) {
-                        resolve(null);
+                // Cleanup any missing from bundle
+                missing.forEach(m => {
+                    const key = `quad_${m.z}_${m.x}_${m.y}`;
+                    const p = this.pendingTiles.get(key);
+                    if (p && (p as any).resolver) {
+                        (p as any).resolver(null);
                         this.pendingTiles.delete(key);
                     }
                 });
