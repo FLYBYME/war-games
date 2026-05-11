@@ -8,7 +8,7 @@
 
 import { Extension, ExtensionContext } from '../core/extensions/Extension';
 import { ViewProvider } from '../core/extensions/ViewProvider';
-import { globalContractRegistry, ToolContract, toolKey } from '@sdk/contracts/core/tool_contract';
+import { globalContractRegistry, ToolContract, toolKey } from '@sdk/contracts/index';
 import { z } from 'zod';
 import * as uiLib from '../ui-lib';
 

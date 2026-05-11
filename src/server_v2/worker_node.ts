@@ -1,6 +1,7 @@
 import fastify from 'fastify';
 import { TerrainService } from './services/TerrainService.js';
 import { WorkerService } from './services/WorkerService.js';
+import { WgtFormat } from '../engine/environment/utils/WgtFormat.js';
 
 /**
  * WorkerNode: A standalone Node.js process designed to run on a remote machine.
@@ -40,7 +41,11 @@ export async function createWorkerNode(port: number = 8080) {
             reply.type('application/octet-stream');
             return Buffer.from(encoded);
         } catch (err: any) {
-            return reply.status(500).send({ error: err.message });
+            console.error(`❌ Worker Node Error [${request.id}]:`, err);
+            return reply.status(500).send({ 
+                error: err.message,
+                stack: process.env.NODE_ENV === 'development' ? err.stack : undefined 
+            });
         }
     });
 

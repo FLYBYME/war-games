@@ -1,5 +1,6 @@
 import fs from 'fs';
 import path from 'path';
+import { fileURLToPath } from 'url';
 import { LRUCache } from 'lru-cache';
 import { WgtFormat } from '../../engine/environment/utils/WgtFormat.js';
 import { WorkerService } from './WorkerService.js';
@@ -15,10 +16,7 @@ export class TerrainService {
     // Cache Level 1: RAM (LRU) - 500MB approx (Float32Array 1201*1201 is ~5.7MB)
     // 100 tiles is ~570MB
     private readonly ramCache = new LRUCache<string, TerrainTile>({
-        max: 100,
-        dispose: (value, key) => {
-            // Optional: could log eviction
-        }
+        max: 100
     });
 
     private readonly activeJobs = new Map<string, Promise<TerrainTile>>();
@@ -27,15 +25,15 @@ export class TerrainService {
     private readonly diskCacheDir = path.resolve(process.env.TERRAIN_DISK_CACHE || './data/terrain_cache');
     
     // Cache Level 3: Remote Node URL
-    private readonly remoteNodeUrl = process.env.TERRAIN_REMOTE_NODE_URL; // e.g., http://192.168.1.100:8080/terrain
+    private readonly remoteNodeUrl = process.env.TERRAIN_REMOTE_NODE_URL;
 
     constructor(private readonly workerService: WorkerService) {
         if (!fs.existsSync(this.diskCacheDir)) {
             fs.mkdirSync(this.diskCacheDir, { recursive: true });
         }
-        // We still keep the worker pool for fallback decompression/downsampling if needed,
-        // but we'll prefer pre-computed .wgt files from the remote node.
-        const WORKER_PATH = path.resolve(path.dirname(new URL(import.meta.url).pathname), '../workers/terrain.worker.ts');
+        
+        const currentDir = path.dirname(fileURLToPath(import.meta.url));
+        const WORKER_PATH = path.resolve(currentDir, '../workers/terrain.worker.ts');
         this.workerService.createPool('terrain', WORKER_PATH, 2);
     }
 
