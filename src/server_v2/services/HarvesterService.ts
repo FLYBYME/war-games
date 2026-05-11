@@ -12,9 +12,9 @@ export type HarvestStatus = 'PENDING' | 'DOWNLOADING' | 'COMPLETED' | 'OCEAN' | 
 export class HarvesterService {
     private db: Database.Database;
     private isRunning = false;
-    private throttleBps = 125000; // 1 Mbps = 125 KB/s
+    private throttleBps = 12500000; // 10 Mbps = 1250 KB/s
     private tokenBucket = 0;
-    private maxTokens = 5000000; // 40 seconds of burst (enough for ~1.5 compressed tiles)
+    private maxTokens = 500000000; // 40 seconds of burst (enough for ~1.5 compressed tiles)
     private lastTick = Date.now();
 
     constructor(
@@ -77,7 +77,7 @@ export class HarvesterService {
         if (this.isRunning) return;
         this.isRunning = true;
         console.log(`Harvester: Global crawl started (Throttle: 1 Mbps)`);
-        
+
         void this.runCrawlLoop();
     }
 
@@ -98,7 +98,7 @@ export class HarvesterService {
             }
 
             await this.harvestTile(tile.lat, tile.lon);
-            
+
             // Brief pause between tiles to allow the event loop to breathe
             await new Promise(resolve => setTimeout(resolve, 100));
         }
@@ -116,13 +116,13 @@ export class HarvesterService {
             // Trigger TerrainService to fetch (this hits AWS and caches to disk)
             // Note: TerrainService currently doesn't respect our 1Mbps throttle internally.
             // For Phase 2, we wrap the fetch in a token-wait.
-            
+
             if (!isPriority) {
                 // Wait for bandwidth availability (approximate)
                 // A typical SRTM .hgt.gz is ~3MB
                 const estimatedSize = 3000000;
                 if (this.tokenBucket < estimatedSize) {
-                    console.log(`Harvester: Waiting for bandwidth... (${Math.round(this.tokenBucket/1000)}kb / ${Math.round(estimatedSize/1000)}kb)`);
+                    console.log(`Harvester: Waiting for bandwidth... (${Math.round(this.tokenBucket / 1000)}kb / ${Math.round(estimatedSize / 1000)}kb)`);
                 }
 
                 while (this.tokenBucket < estimatedSize) {
@@ -132,7 +132,7 @@ export class HarvesterService {
             }
 
             await this.terrainService.getTile(lat, lon, 1201);
-            
+
             this.db.prepare('UPDATE tiles SET status = ? WHERE lat = ? AND lon = ?').run('COMPLETED', lat, lon);
         } catch (err: any) {
             const status = err.message.includes('404') ? 'OCEAN' : 'ERROR';

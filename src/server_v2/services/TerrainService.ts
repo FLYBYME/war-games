@@ -210,7 +210,27 @@ export class TerrainService {
         p2: { lat: number, lon: number, alt: number },
         numSamples: number = 10
     ): Promise<boolean> {
-        if (this.remoteNodeUrl) {
+        // 1. Check if we have the necessary tiles locally
+        const tilesNeeded = new Set<string>();
+        for (let i = 0; i <= numSamples; i++) {
+            const t = i / numSamples;
+            const lat = p1.lat + (p2.lat - p1.lat) * t;
+            const lon = p1.lon + (p2.lon - p1.lon) * t;
+            tilesNeeded.add(`${Math.floor(lat)},${Math.floor(lon)}`);
+        }
+
+        let allTilesLocal = true;
+        for (const tileKey of tilesNeeded) {
+            const [lat, lon] = tileKey.split(',').map(Number);
+            const diskPath = path.join(this.diskCacheDir, `res_1201`, `${lat}`, `${lon}.wgt`);
+            if (!fs.existsSync(diskPath)) {
+                allTilesLocal = false;
+                break;
+            }
+        }
+
+        // 2. If NOT all tiles are local and we have a remote node, offload the math
+        if (!allTilesLocal && this.remoteNodeUrl) {
             try {
                 const response = await fetch(`${this.remoteNodeUrl}/api/v2/env/math/los`, {
                     method: 'POST',
@@ -226,7 +246,7 @@ export class TerrainService {
             }
         }
 
-        // Fallback: Local calculation using L1/L2 cache
+        // 3. Fallback: Local calculation (either we have the tiles, or we don't have a remote node)
         for (let i = 1; i < numSamples; i++) {
             const t = i / numSamples;
             const sampleAlt = p1.alt + (p2.alt - p1.alt) * t;
