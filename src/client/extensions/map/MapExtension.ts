@@ -292,14 +292,3 @@ async function startDataSync(matchId: string, mapState: MapState, context: Exten
     context.subscriptions.push({ dispose: unsub });
 }
 
-       timestamp: Date.now(),
-                        }));
-                    }
-                    break;
-                }
-            }
-        }
-    });
-    context.subscriptions.push({ dispose: unsub });
-}
-
