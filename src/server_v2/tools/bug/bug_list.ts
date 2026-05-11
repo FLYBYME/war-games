@@ -1,8 +1,12 @@
 import { defineTool } from '../../core/tool_builder.js';
-import { bugListContract } from '../../../sdk_v2/contracts/index.js';
+import { bugListContract, BugSeveritySchema, BugStatusSchema } from '../../../sdk_v2/contracts/bug/bug.contracts.js';
 import { db } from '../../db/db.js';
 import { bugs, bugComments } from '../../db/schema.js';
 import { eq, and, desc } from 'drizzle-orm';
+import { z } from 'zod';
+
+type BugSeverity = z.infer<typeof BugSeveritySchema>;
+type BugStatus = z.infer<typeof BugStatusSchema>;
 
 export const bug_list = defineTool(bugListContract, async (input, ctx) => {
     let conditions = [];
@@ -31,10 +35,10 @@ export const bug_list = defineTool(bugListContract, async (input, ctx) => {
             side: bug.side ?? undefined,
             title: bug.title,
             description: bug.description,
-            severity: bug.severity as any,
-            status: bug.status as any,
+            severity: bug.severity as BugSeverity,
+            status: bug.status as BugStatus,
             suggestedFix: bug.suggestedFix ?? undefined,
-            worldState: bug.worldState as any,
+            worldState: bug.worldState,
             createdAt: bug.createdAt,
             updatedAt: bug.updatedAt,
             comments: comments.map(c => ({

@@ -19,8 +19,10 @@ export interface IWorldView {
     readonly random: DeterministicRandom;
     readonly profileRegistry: ProfileRegistry;
     readonly weaponProfiles: WeaponProfileRegistry;
+    readonly timeCompression: number;
     readonly stats: SimulationStats;
     readonly events: EventBus;
+    queueExternalCommand(cmd: Command): void;
     getEntity(id: string): Entity | undefined;
     getEntities(): IterableIterator<Entity>;
     getNearbyEntities(pos: Vector3, radius: number): Entity[];

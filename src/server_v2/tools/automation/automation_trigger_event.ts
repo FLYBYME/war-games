@@ -10,13 +10,8 @@ export const automation_trigger_event = defineTool(automationTriggerEventContrac
     const autoSystem = handle.world.getSystem(ScenarioAutomationSystem);
     if (!autoSystem) throw new Error("ScenarioAutomationSystem not found in world");
 
-    const events = (autoSystem as any).events || [];
-    const eventIndex = events.findIndex((e: any) => e.id === input.eventId);
-
-    if (eventIndex === -1) throw new Error(`Event not found: ${input.eventId}`);
-
-    const event = events.splice(eventIndex, 1)[0];
-    (autoSystem as any).triggeredEvents.push(event);
+    const success = autoSystem.triggerEvent(input.eventId);
+    if (!success) throw new Error(`Event not found: ${input.eventId}`);
 
     return {
         success: true

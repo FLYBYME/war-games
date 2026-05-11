@@ -20,6 +20,19 @@ export class TerrainCache {
         });
     }
 
+    /**
+     * getDb: Ensures the database is initialized and returns it.
+     */
+    private async getDb(): Promise<IDBPDatabase> {
+        if (!this.db) {
+            await this.init();
+        }
+        if (!this.db) {
+            throw new Error('TerrainCache: Failed to initialize IndexedDB');
+        }
+        return this.db;
+    }
+
     private getKey(z: number, x: number, y: number): string {
         return `tile:${z}:${x}:${y}`;
     }
@@ -28,24 +41,24 @@ export class TerrainCache {
      * getTile: Retrieves a tile from IndexedDB.
      */
     async getTile(z: number, x: number, y: number): Promise<Uint8Array | null> {
-        if (!this.db) await this.init();
-        return this.db!.get(TerrainCache.STORE_NAME, this.getKey(z, x, y)) || null;
+        const db = await this.getDb();
+        return (await db.get(TerrainCache.STORE_NAME, this.getKey(z, x, y))) || null;
     }
 
     /**
      * putTile: Saves a tile to IndexedDB.
      */
     async putTile(z: number, x: number, y: number, data: Uint8Array): Promise<void> {
-        if (!this.db) await this.init();
-        await this.db!.put(TerrainCache.STORE_NAME, data, this.getKey(z, x, y));
+        const db = await this.getDb();
+        await db.put(TerrainCache.STORE_NAME, data, this.getKey(z, x, y));
     }
 
     /**
      * putTiles: Saves multiple tiles to IndexedDB in a single transaction.
      */
     async putTiles(entries: { z: number; x: number; y: number; data: Uint8Array }[]): Promise<void> {
-        if (!this.db) await this.init();
-        const tx = this.db!.transaction(TerrainCache.STORE_NAME, 'readwrite');
+        const db = await this.getDb();
+        const tx = db.transaction(TerrainCache.STORE_NAME, 'readwrite');
         await Promise.all([
             ...entries.map(e => tx.store.put(e.data, this.getKey(e.z, e.x, e.y))),
             tx.done
@@ -56,7 +69,7 @@ export class TerrainCache {
      * clear: Wipes the entire terrain cache.
      */
     async clear() {
-        if (!this.db) await this.init();
-        await this.db!.clear(TerrainCache.STORE_NAME);
+        const db = await this.getDb();
+        await db.clear(TerrainCache.STORE_NAME);
     }
 }

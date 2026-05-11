@@ -22,7 +22,7 @@ export const BugReportSchema = z.object({
     severity: BugSeveritySchema,
     status: BugStatusSchema,
     suggestedFix: z.string().optional().describe("Proposed solution"),
-    worldState: z.any().optional().describe("Captured ECS state snapshot"),
+    worldState: z.unknown().optional().describe("Captured ECS state snapshot"),
     comments: z.array(BugCommentSchema).describe("Discussion thread"),
     createdAt: z.date().describe("Creation timestamp"),
     updatedAt: z.date().describe("Last modification timestamp")
@@ -58,7 +58,7 @@ export const BugCreateInputSchema = z.object({
     description: z.string().describe("Detailed description"),
     severity: BugSeveritySchema.describe("Initial severity"),
     suggestedFix: z.string().optional().describe("Suggested solution"),
-    worldState: z.any().optional().describe("Snapshot of relevant ECS state")
+    worldState: z.unknown().optional().describe("Snapshot of relevant ECS state")
 });
 
 export const bugCreateContract = defineContract({

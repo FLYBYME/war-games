@@ -1,5 +1,6 @@
 import { z } from 'zod';
 import { EntityIdSchema, Vector3Schema, SideSchema } from './primitives.schema.js';
+import { ViewStatePayloadSchema } from './viewstate.schema.js';
 
 // ─── Simulation Events ──────────────────────────────────────────────────────
 
@@ -62,6 +63,58 @@ export const DamageDealtEventSchema = BaseEventPayloadSchema.extend({
 export type DamageDealtEvent = z.infer<typeof DamageDealtEventSchema>;
 
 /**
+ * ImpactEvent: Emitted when a munition impacts an entity.
+ */
+export const ImpactEventSchema = BaseEventPayloadSchema.extend({
+    type: z.literal('Impact'),
+    data: z.object({
+        damage: z.number().describe("Damage points dealt"),
+        remainingHp: z.number().describe("Remaining HP after damage")
+    })
+}).describe("Munition impact event");
+export type ImpactEvent = z.infer<typeof ImpactEventSchema>;
+
+/**
+ * DetonationEvent: Emitted when a warhead detonates (area effect).
+ */
+export const DetonationEventSchema = BaseEventPayloadSchema.extend({
+    type: z.literal('Detonation'),
+    data: z.object({
+        position: Vector3Schema,
+        radius: z.number().describe("Blast radius in meters"),
+        damage: z.number().describe("Peak damage at epicenter")
+    })
+}).describe("Warhead detonation event");
+export type DetonationEvent = z.infer<typeof DetonationEventSchema>;
+
+/**
+ * SubsystemDamageEvent: Emitted when a specific subsystem is damaged.
+ */
+export const SubsystemDamageEventSchema = BaseEventPayloadSchema.extend({
+    type: z.literal('SubsystemDamage'),
+    data: z.object({
+        subsystemId: z.string().describe("ID of the damaged subsystem"),
+        damage: z.number().describe("Damage points dealt"),
+        remainingHp: z.number().describe("Remaining HP of the subsystem")
+    })
+}).describe("Subsystem damage event");
+export type SubsystemDamageEvent = z.infer<typeof SubsystemDamageEventSchema>;
+
+/**
+ * TelemetryUpdatedEvent: Emitted when an entity's kinematics are manually overridden.
+ */
+export const TelemetryUpdatedEventSchema = BaseEventPayloadSchema.extend({
+    type: z.literal('TelemetryUpdated'),
+    data: z.object({
+        position: Vector3Schema.optional(),
+        heading: z.number().optional(),
+        speedKts: z.number().optional(),
+        altitudeM: z.number().optional()
+    })
+}).describe("Manual telemetry override event");
+export type TelemetryUpdatedEvent = z.infer<typeof TelemetryUpdatedEventSchema>;
+
+/**
  * SimulationSpeedChangedEvent: Emitted when time compression changes.
  */
 export const SimulationSpeedChangedEventSchema = BaseEventPayloadSchema.extend({
@@ -85,6 +138,28 @@ export const DetectionEventSchema = BaseEventPayloadSchema.extend({
     })
 }).describe("Sensor detection event");
 export type DetectionEvent = z.infer<typeof DetectionEventSchema>;
+
+/**
+ * EntitySideChangedEvent: Emitted when an entity's side is changed.
+ */
+export const EntitySideChangedEventSchema = BaseEventPayloadSchema.extend({
+    type: z.literal('EntitySideChanged'),
+    data: z.object({
+        oldSide: SideSchema,
+        newSide: SideSchema
+    })
+}).describe("Entity side change event");
+export type EntitySideChangedEvent = z.infer<typeof EntitySideChangedEventSchema>;
+
+/**
+ * ViewStateUpdatedEvent: Emitted periodically to synchronize UI state.
+ */
+export const ViewStateUpdatedEventSchema = z.object({
+    tick: z.number(),
+    type: z.literal('ViewStateUpdated'),
+    data: ViewStatePayloadSchema
+}).describe("UI state synchronization event");
+export type ViewStateUpdatedEvent = z.infer<typeof ViewStateUpdatedEventSchema>;
 
 /**
  * MissionStatusChangedEvent: Emitted when a mission transitions state.
@@ -131,6 +206,11 @@ export const SimulationEventSchema = z.union([
     SimulationSpeedChangedEventSchema,
     DetectionEventSchema,
     MissionStatusChangedEventSchema,
+    ViewStateUpdatedEventSchema,
+    ImpactEventSchema,
+    DetonationEventSchema,
+    SubsystemDamageEventSchema,
+    TelemetryUpdatedEventSchema,
     GenericEventSchema
 ]).describe("Any simulation event");
 export type SimulationEvent = z.infer<typeof SimulationEventSchema>;

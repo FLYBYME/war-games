@@ -10,6 +10,10 @@ export interface WgtTile {
     data: Float32Array | Int16Array;
 }
 
+interface PendingTilePromise extends Promise<WgtTile | null> {
+    resolver?: (val: WgtTile | null) => void;
+}
+
 /**
  * MapDataPipeline: Manages the flow of map data into the renderer.
  * Optimized for Binary QuadTree (z/x/y) transport.
@@ -18,7 +22,7 @@ export class MapDataPipeline {
     public isLoading = new Signal<boolean>(false);
 
     private tileCache = new Map<string, WgtTile>();
-    private pendingTiles = new Map<string, Promise<WgtTile | null>>();
+    private pendingTiles = new Map<string, PendingTilePromise>();
     private activeRequests = 0;
     private maxConcurrentRequests = 6;
     private requestQueue: (() => void)[] = [];
@@ -40,10 +44,12 @@ export class MapDataPipeline {
         const key = `quad_${z}_${x}_${y}`;
 
         // 1. RAM Cache (L1)
-        if (this.tileCache.has(key)) return this.tileCache.get(key)!;
+        const cached = this.tileCache.get(key);
+        if (cached) return cached;
         
         // 2. Pending Requests
-        if (this.pendingTiles.has(key)) return this.pendingTiles.get(key)!;
+        const pending = this.pendingTiles.get(key);
+        if (pending) return pending;
 
         const promise = (async () => {
             // 3. Persistent Cache (L2 - IndexedDB)
@@ -101,7 +107,7 @@ export class MapDataPipeline {
             }
         })();
 
-        this.pendingTiles.set(key, promise);
+        this.pendingTiles.set(key, promise as PendingTilePromise);
         return promise;
     }
 
@@ -111,8 +117,6 @@ export class MapDataPipeline {
      */
     public async fetchViewport(tiles: { z: number; x: number; y: number }[]): Promise<void> {
         // 1. Filter out what we already have and add to pending batch IMMEDIATELY
-        const tilesToBatch: { z: number; x: number; y: number }[] = [];
-        
         for (const t of tiles) {
             const key = `quad_${t.z}_${t.x}_${t.y}`;
             if (this.tileCache.has(key)) continue;
@@ -121,11 +125,11 @@ export class MapDataPipeline {
             this.pendingBatchTiles.set(key, t);
             
             // Create a "Pre-Batch" promise that getQuadTile will wait on
-            let resolver: (val: WgtTile | null) => void;
-            const promise = new Promise<WgtTile | null>(resolve => { resolver = resolve; });
-            (promise as any).resolver = (val: WgtTile | null) => resolver(val);
+            let resolver: (val: WgtTile | null) => void = () => {};
+            const promise: PendingTilePromise = new Promise<WgtTile | null>(resolve => { resolver = resolve; });
+            promise.resolver = resolver;
             
-            this.pendingTiles.set(key, promise);
+            this.pendingTiles.set(key, promise as PendingTilePromise);
         }
 
         // 2. Debounce the actual network request
@@ -137,9 +141,9 @@ export class MapDataPipeline {
             // Re-verify what we still need (some might have loaded from IDB in the meantime)
             const missing: { z: number; x: number; y: number }[] = [];
             for (const [key, t] of this.pendingBatchTiles.entries()) {
-                const cached = await this.persistentCache.getTile(t.z, t.x, t.y);
-                if (cached) {
-                    const decoded = WgtFormat.decode(cached);
+                const cachedData = await this.persistentCache.getTile(t.z, t.x, t.y);
+                if (cachedData) {
+                    const decoded = WgtFormat.decode(cachedData);
                     const tile = {
                         resolution: decoded.resolution,
                         lat: decoded.lat,
@@ -148,7 +152,7 @@ export class MapDataPipeline {
                     };
                     this.tileCache.set(key, tile);
                     const p = this.pendingTiles.get(key);
-                    if (p && (p as any).resolver) (p as any).resolver(tile);
+                    if (p?.resolver) p.resolver(tile);
                     this.pendingTiles.delete(key);
                 } else {
                     missing.push(t);
@@ -190,7 +194,7 @@ export class MapDataPipeline {
                     this.tileCache.set(key, tile);
                     
                     const p = this.pendingTiles.get(key);
-                    if (p && (p as any).resolver) (p as any).resolver(tile);
+                    if (p?.resolver) p.resolver(tile);
                     this.pendingTiles.delete(key);
 
                     return this.persistentCache.putTile(entry.z, entry.x, entry.y, entry.data);
@@ -202,16 +206,20 @@ export class MapDataPipeline {
                 missing.forEach(m => {
                     const key = `quad_${m.z}_${m.x}_${m.y}`;
                     const p = this.pendingTiles.get(key);
-                    if (p && (p as any).resolver) {
-                        (p as any).resolver(null);
+                    if (p?.resolver) {
+                        p.resolver(null);
                         this.pendingTiles.delete(key);
                     }
                 });
 
             } catch (err) {
                 console.error('MapDataPipeline: Batch fetch failed', err);
-                batchPromises.forEach(resolve => resolve(null));
-                missing.forEach(m => this.pendingTiles.delete(`quad_${m.z}_${m.x}_${m.y}`));
+                missing.forEach(m => {
+                    const key = `quad_${m.z}_${m.x}_${m.y}`;
+                    const p = this.pendingTiles.get(key);
+                    if (p?.resolver) p.resolver(null);
+                    this.pendingTiles.delete(key);
+                });
             } finally {
                 this.isLoading.set(false);
             }
@@ -224,8 +232,11 @@ export class MapDataPipeline {
     public async getDegreeTile(lat: number, lon: number, resolution: number = 256): Promise<WgtTile | null> {
         const key = `deg_${lat}_${lon}_${resolution}`;
 
-        if (this.tileCache.has(key)) return this.tileCache.get(key)!;
-        if (this.pendingTiles.has(key)) return this.pendingTiles.get(key)!;
+        const cached = this.tileCache.get(key);
+        if (cached) return cached;
+        
+        const pending = this.pendingTiles.get(key);
+        if (pending) return pending;
 
         const promise = (async () => {
             if (this.activeRequests >= this.maxConcurrentRequests) {
@@ -264,7 +275,7 @@ export class MapDataPipeline {
             }
         })();
 
-        this.pendingTiles.set(key, promise);
+        this.pendingTiles.set(key, promise as PendingTilePromise);
         return promise;
     }
 }

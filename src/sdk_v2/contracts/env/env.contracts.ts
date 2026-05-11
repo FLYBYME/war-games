@@ -232,16 +232,18 @@ export const EnvSampleGeodeticInputSchema = z.object({
     lon: z.number().describe("Target longitude")
 });
 
+export const EnvSampleGeodeticOutputSchema = z.object({
+    lat: z.number(),
+    lon: z.number(),
+    elevationM: z.number(),
+    status: z.string()
+});
+
 export const envSampleGeodeticContract = defineContract({
     domain: 'env',
     action: 'sample_geodetic',
     description: 'Returns the precise ground elevation at a given geodetic coordinate without needing a match projection.',
     inputSchema: EnvSampleGeodeticInputSchema,
-    outputSchema: z.object({
-        lat: z.number(),
-        lon: z.number(),
-        elevationM: z.number(),
-        status: z.string()
-    }),
+    outputSchema: EnvSampleGeodeticOutputSchema,
     rest: { method: 'GET', path: '/env/terrain/sample' }
 });

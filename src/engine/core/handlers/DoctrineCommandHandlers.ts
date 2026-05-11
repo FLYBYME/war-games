@@ -31,6 +31,17 @@ export class SetIntentHandler implements CommandHandler<SetIntentCommand> {
                         params: intent.params
                     });
                     entity.addComponent(newMission);
+                    
+                    world.recordEvent({
+                        type: 'MissionStatusChanged',
+                        tick: world.currentTick,
+                        entityId: entity.id,
+                        data: {
+                            missionType: intent.missionType,
+                            oldStatus: 'None',
+                            newStatus: 'Active'
+                        }
+                    });
                 }
                 break;
             }
@@ -49,6 +60,16 @@ export class SetIntentHandler implements CommandHandler<SetIntentCommand> {
                                     quantity: r.quantity ?? 1
                                 }));
                             }
+                            world.recordEvent({
+                                type: 'DoctrineUpdated',
+                                tick: world.currentTick,
+                                entityId: entity.id,
+                                data: {
+                                    roe: intent.roe,
+                                    emcon: intent.emcon,
+                                    wraRulesCount: intent.wra?.length
+                                }
+                            });
                         }
                     }
                 } else if (intent.side) {
@@ -68,6 +89,16 @@ export class SetIntentHandler implements CommandHandler<SetIntentCommand> {
                             }
                         }
                     }
+                    world.recordEvent({
+                        type: 'DoctrineUpdated',
+                        tick: world.currentTick,
+                        data: {
+                            side: intent.side,
+                            roe: intent.roe,
+                            emcon: intent.emcon,
+                            wraRulesCount: intent.wra?.length
+                        }
+                    });
                 }
                 break;
             }
@@ -107,6 +138,12 @@ export class SetROEHandler implements CommandHandler<SetROECommand> {
         const doctrine = entity?.getComponent(DoctrineComponent);
         if (doctrine) {
             doctrine.roe = cmd.roe as ROE;
+            world.recordEvent({
+                type: 'DoctrineUpdated',
+                tick: world.currentTick,
+                entityId: cmd.entityId,
+                data: { roe: cmd.roe }
+            });
         }
     }
 }
@@ -121,6 +158,11 @@ export class SetSideROEHandler implements CommandHandler<SetSideROECommand> {
                 }
             }
         }
+        world.recordEvent({
+            type: 'DoctrineUpdated',
+            tick: world.currentTick,
+            data: { side: cmd.side, roe: cmd.roe }
+        });
     }
 }
 
@@ -142,6 +184,12 @@ export class SetMissionROEHandler implements CommandHandler<SetMissionROECommand
                 const doctrine = seed.getComponent(DoctrineComponent);
                 if (doctrine) doctrine.roe = cmd.roe as ROE;
             }
+            world.recordEvent({
+                type: 'DoctrineUpdated',
+                tick: world.currentTick,
+                entityId: cmd.entityId,
+                data: { roe: cmd.roe }
+            });
         }
     }
 }
@@ -175,6 +223,12 @@ export class SetLoadoutHandler implements CommandHandler<SetLoadoutCommand> {
                         }
                     }
                 }
+                world.recordEvent({
+                    type: 'GenericEvent',
+                    tick: world.currentTick,
+                    entityId: entity.id,
+                    data: { type: 'LoadoutChanged', loadoutId: loadout.id }
+                });
             }
         }
     }
@@ -186,6 +240,12 @@ export class UpdateWRARulesHandler implements CommandHandler<UpdateWRARulesComma
         const doctrine = entity?.getComponent(DoctrineComponent);
         if (doctrine) {
             doctrine.wraRules = cmd.rules as WRARule[];
+            world.recordEvent({
+                type: 'DoctrineUpdated',
+                tick: world.currentTick,
+                entityId: cmd.entityId,
+                data: { wraRulesCount: cmd.rules.length }
+            });
         }
     }
 }
@@ -214,6 +274,17 @@ export class SetMissionHandler implements CommandHandler<SetMissionCommand> {
                 status: MissionStatus.Pending
             });
             entity.addComponent(newMission);
+
+            world.recordEvent({
+                type: 'MissionStatusChanged',
+                tick: world.currentTick,
+                entityId: entity.id,
+                data: {
+                    missionType: cmd.missionType,
+                    oldStatus: 'None',
+                    newStatus: 'Pending'
+                }
+            });
         }
     }
 }

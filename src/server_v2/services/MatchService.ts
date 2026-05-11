@@ -7,11 +7,12 @@ import * as dbSchema from '../db/schema.js';
 import { scenarios, matches } from '../db/schema.js';
 import { eq } from 'drizzle-orm';
 import { randomUUID } from 'crypto';
-import { ScenarioManifestSchema } from '../../sdk_v2/contracts/index.js';
+import { EntityProfileSchema, WeaponProfileSchema, ScenarioManifestSchema } from '../../engine/core/Types.js';
 import { TerrainService } from './TerrainService.js';
 import { TerrainServiceAdapter } from './TerrainServiceAdapter.js';
 import { TerrainOracle } from '../../engine/environment/TerrainOracle.js';
 import { GeoProjection } from '../../engine/math/GeoProjection.js';
+import { MapDataService } from '../../engine/environment/MapDataService.js';
 
 import { AeroSystem } from '../../engine/systems/AeroSystem.js';
 import { BoardingSystem } from '../../engine/systems/BoardingSystem.js';
@@ -41,6 +42,10 @@ import { TrackManagementSystem } from '../../engine/systems/TrackManagementSyste
 import { WaypointSystem } from '../../engine/systems/WaypointSystem.js';
 import { WeaponStageSystem } from '../../engine/systems/WeaponStageSystem.js';
 import { WRAExecutorSystem } from '../../engine/systems/WRAExecutorSystem.js';
+import { ConditionSystem } from '../../engine/systems/ConditionSystem.js';
+import { MovementSystem } from '../../engine/systems/MovementSystem.js';
+import { OrbitalPhysicsSystem } from '../../engine/systems/OrbitalPhysicsSystem.js';
+import { ViewStateSystem } from '../../engine/systems/ViewStateSystem.js';
 import { ParquetService } from '../core/ParquetService.js';
 
 /**
@@ -48,7 +53,7 @@ import { ParquetService } from '../core/ParquetService.js';
  */
 export class MatchHandle implements IMatchHandle {
     public readonly world: World;
-    public readonly zones = new Map<string, any>(); // id -> zone
+    public readonly zones = new Map<string, unknown>(); // id -> zone
     public telemetryWriter?: ParquetService;
     public eventWriter?: ParquetService;
 
@@ -112,6 +117,19 @@ export class MatchHandle implements IMatchHandle {
         this.world.addSystem(new CollisionSystem(this.world.grid));
         this.world.addSystem(new HealthSystem());
         this.world.addSystem(new DamageDegradationSystem());
+        this.world.addSystem(new ConditionSystem());
+        this.world.addSystem(new MovementSystem());
+        this.world.addSystem(new OrbitalPhysicsSystem());
+        
+        // Final presentation layer
+        const mapData = new MapDataService('data');
+        this.world.addSystem(new ViewStateSystem(
+            projection, 
+            oracle, 
+            this.world.profileRegistry, 
+            this.world.weaponProfiles, 
+            mapData
+        ));
     }
 
     public get isPaused(): boolean { return this.world.isPaused; }
@@ -167,12 +185,14 @@ export class MatchService implements IMatchService {
         // Hydrate Registries from DB
         const allProfiles = db.select().from(dbSchema.profiles).all();
         for (const p of allProfiles) {
-            handle.world.profileRegistry.register(p.id, p.data as any);
+            const validated = EntityProfileSchema.parse(p.data);
+            handle.world.profileRegistry.register(p.id, validated);
         }
 
         const allWeapons = db.select().from(dbSchema.weapons).all();
         for (const w of allWeapons) {
-            handle.world.weaponProfiles.register(w.id, w.data as any);
+            const validated = WeaponProfileSchema.parse(w.data);
+            handle.world.weaponProfiles.register(w.id, validated);
         }
 
         const entityMgr = new EntityManager(handle.world, handle.world.profileRegistry);

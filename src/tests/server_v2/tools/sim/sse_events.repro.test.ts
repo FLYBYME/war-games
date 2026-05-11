@@ -76,14 +76,17 @@ describe('SSE Event Stream Reproduction', () => {
         const consumePromise = (async () => {
             for await (const event of stream) {
                 receivedEvents.push(event);
-                if (receivedEvents.length >= 1) break;
+                // Wait for either Detection or the fallback TickCompleted
+                if (event.type === 'Detection' || event.type === 'TickCompleted') break;
             }
         })();
 
         await new Promise(resolve => setTimeout(resolve, 10));
 
-        // Add observer entity
+        // Add observer entity with required components
         const observer = new Entity('obs', Side.Blue);
+        const { DetectionComponent } = await import('../../../../engine/components/Sensors.js');
+        observer.addComponent(new DetectionComponent());
         world.addEntity(observer);
 
         // Execute AddDetectionCommand

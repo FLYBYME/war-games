@@ -10,17 +10,17 @@ export const automation_list_events = defineTool(automationListEventsContract, a
     const autoSystem = handle.world.getSystem(ScenarioAutomationSystem);
     if (!autoSystem) throw new Error("ScenarioAutomationSystem not found in world");
 
-    // Extract events from the private members using type assertions for the prototype
-    const events = (autoSystem as any).events || [];
-    const triggered = (autoSystem as any).triggeredEvents || [];
+    // Use public methods to access events
+    const events = autoSystem.getPendingEvents();
+    const triggered = autoSystem.getTriggeredEvents();
 
     const result = [
-        ...events.map((e: any) => ({
+        ...events.map(e => ({
             id: e.id || `evt-${e.tick}`,
             description: e.description || `Event at tick ${e.tick}`,
             status: 'Pending' as const
         })),
-        ...triggered.map((e: any) => ({
+        ...triggered.map(e => ({
             id: e.id || `evt-${e.tick}`,
             description: e.description || `Event at tick ${e.tick}`,
             status: 'Triggered' as const

@@ -25,19 +25,6 @@ export const MapExtension: Extension = {
     activate(context: ExtensionContext) {
         const ide = context.ide;
 
-        // 0. Register Settings
-        ide.configurationRegistry.registerConfiguration({
-            id: 'map',
-            title: 'Tactical Map',
-            properties: {
-                'map.terrainServer': {
-                    type: 'string',
-                    default: 'http://192.168.1.9:8080',
-                    description: 'The URL of the remote terrain worker (geodetic slave node).',
-                }
-            }
-        });
-
         // 1. Initialize Extension-Level State
         const mapState = new MapState();
         const layerRegistry = new LayerRegistry();
@@ -202,8 +189,10 @@ export const MapExtension: Extension = {
 
         // 7. React to Match Lifecycle
         ide.commands.on(MatchServiceEvents.MATCH_ACTIVATED, (data: unknown) => {
-            const payload = data as { matchId: string };
-            void startDataSync(payload.matchId, mapState, context);
+            if (typeof data === 'object' && data !== null && 'matchId' in data) {
+                const payload = data as { matchId: string };
+                void startDataSync(payload.matchId, mapState, context);
+            }
         });
 
         ide.commands.on(MatchServiceEvents.MATCH_DEACTIVATED, () => {
@@ -293,6 +282,17 @@ async function startDataSync(matchId: string, mapState: MapState, context: Exten
                             ...prev,
                             currentTick: event.tick,
                             timestamp: Date.now(),
+                        }));
+                    }
+                    break;
+                }
+            }
+        }
+    });
+    context.subscriptions.push({ dispose: unsub });
+}
+
+       timestamp: Date.now(),
                         }));
                     }
                     break;

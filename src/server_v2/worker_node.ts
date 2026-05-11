@@ -50,7 +50,8 @@ export async function createWorkerNode(port: number = 8080) {
     
     // ─── Service Initialization ──────────────────────────────────────────────
     
-    const spatialDb = new SpatialDatabase();
+    const spatialDb = new SpatialDatabase(process.env.SPATIAL_DB_DIR || './data/spatial_storage');
+    spatialDb.syncWithFilesystem('terrain_data');
     const zeroCopyElev = new ZeroCopyElevationService();
     const workerService = new WorkerService();
     const terrainService = new TerrainService(workerService, spatialDb, zeroCopyElev);
@@ -164,15 +165,14 @@ export async function createWorkerNode(port: number = 8080) {
             }
 
             // 2. Fallback to Baker
-            const tile = await baker.getTile(iz, ix, iy);
+            const encoded = await baker.getTile(iz, ix, iy);
             
-            // Only cache if not a fallback
-            if (!tile.isFallback) {
-                spatialDb.saveQuadTile(iz, ix, iy, tile.data as Buffer);
-            }
+            // Note: Since we don't have isFallback from Baker yet, we cache it
+            // In the future, TerrainService could return a flag we pass through
+            spatialDb.putQuadTile(iz, ix, iy, encoded);
             
             reply.type('application/octet-stream');
-            return Buffer.from(tile.data as any);
+            return Buffer.from(encoded);
         } catch (err: any) {
             app.log.error(err);
             return reply.status(500).send({ error: err.message });

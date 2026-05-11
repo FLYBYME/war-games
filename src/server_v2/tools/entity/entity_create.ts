@@ -15,7 +15,7 @@ export const entity_create = defineTool(entityCreateContract, async (input, ctx)
     const entity = entityMgr.spawn({
         id: input.id,
         profileId: input.profileId,
-        side: input.side as any,
+        side: input.side,
         position: input.position,
         heading: input.heading,
         speedKts: input.speedKts

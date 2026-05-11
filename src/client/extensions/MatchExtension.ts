@@ -291,20 +291,7 @@ export const MatchExtension: Extension = {
             label: 'Step Simulation',
             keybinding: 'Ctrl+N',
             handler: async () => {
-                const matchId = matchService.currentMatchId.get();
-                if (!matchId) {
-                    ide.notifications?.notify('No active match', 'warning');
-                    return;
-                }
-                try {
-                    const result = await client.api.sim.step({ matchId, ticks: 1 });
-                    const tickItem = statusBar.getItem('sim-tick');
-                    if (tickItem) {
-                        tickItem.updateProps({ text: `Tick: ${result.tick}` });
-                    }
-                } catch (err) {
-                    console.error('sim.step failed', err);
-                }
+                await ide.sim.step(1);
             }
         });
 
@@ -313,15 +300,7 @@ export const MatchExtension: Extension = {
             label: 'Toggle Play/Pause',
             keybinding: 'Ctrl+Shift+P',
             handler: async () => {
-                const matchId = matchService.currentMatchId.get();
-                if (!matchId) return;
-                try {
-                    const current = await client.api.sim.get({ matchId });
-                    await client.api.sim.update({ matchId, isPaused: !current.isPaused });
-                    await matchService.refresh();
-                } catch (err) {
-                    console.error('sim.togglePlayPause failed', err);
-                }
+                await ide.sim.togglePause();
             }
         });
 
@@ -357,22 +336,16 @@ export const MatchExtension: Extension = {
             ]
         });
 
-        // ── Stream Integration ───────────────────────────────────────────────
-
-        // When a match is activated, subscribe to the stream for tick updates
-        ide.commands.on(MatchServiceEvents.MATCH_ACTIVATED, (data: unknown) => {
-            const payload = data as { matchId: string };
-            const unsub = ide.stream.subscribe(payload.matchId, (event) => {
-                // Update tick display for any event that has a tick
-                if ('tick' in event && typeof event.tick === 'number') {
-                    const tickItem = statusBar.getItem('sim-tick');
-                    if (tickItem) {
-                        tickItem.updateProps({ text: `Tick: ${event.tick}` });
-                    }
-                }
-            });
-            context.subscriptions.push({ dispose: unsub });
+        // Tick signal subscription for status bar
+        const unsubTick = ide.sim.currentTick.subscribe((tick) => {
+            const item = statusBar.getItem('sim-tick');
+            if (item) {
+                item.updateProps({ text: tick > 0 ? `Tick: ${tick}` : 'Tick: —' });
+            }
         });
+        context.subscriptions.push({ dispose: unsubTick });
+
+        // ── Stream Integration ───────────────────────────────────────────────
 
         // When match is deactivated, stream is torn down by SimStreamService
         ide.commands.on(MatchServiceEvents.MATCH_DEACTIVATED, () => {

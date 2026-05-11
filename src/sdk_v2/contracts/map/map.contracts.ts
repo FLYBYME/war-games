@@ -22,6 +22,7 @@ export const TacticalZoneSchema = z.object({
     maxAltM: z.number().optional().describe("Maximum altitude in meters"),
     isActive: z.boolean().describe("Whether zone is currently active")
 }).describe("A tactical zone definition");
+export type TacticalZone = z.infer<typeof TacticalZoneSchema>;
 
 // ─── map_list_regions ────────────────────────────────────────────────────────
 
@@ -199,15 +200,17 @@ export const MapGetLOSGeodeticInputSchema = z.object({
     numSamples: z.number().optional().default(10).describe("Number of sampling points")
 });
 
+export const MapGetLOSGeodeticOutputSchema = z.object({
+    blocked: z.boolean(),
+    obstructionLla: LlaSchema.optional()
+});
+
 export const mapGetLOSGeodeticContract = defineContract({
     domain: 'map',
     action: 'get_los_geodetic',
     description: 'Calculate geodetic Line-of-Sight between two LLA coordinates.',
     inputSchema: MapGetLOSGeodeticInputSchema,
-    outputSchema: z.object({
-        blocked: z.boolean(),
-        obstructionLla: LlaSchema.optional()
-    }),
+    outputSchema: MapGetLOSGeodeticOutputSchema,
     rest: { method: 'POST', path: '/map/los/geodetic' }
 });
 
@@ -219,13 +222,37 @@ export const MapGetElevationProfileGeodeticInputSchema = z.object({
     points: z.number().optional().default(20).describe("Number of sampling points")
 });
 
+export const MapGetElevationProfileGeodeticOutputSchema = z.object({
+    elevations: z.array(z.number())
+});
+
 export const mapGetElevationProfileGeodeticContract = defineContract({
     domain: 'map',
     action: 'get_elevation_profile_geodetic',
     description: 'Returns an elevation profile between two LLA coordinates.',
     inputSchema: MapGetElevationProfileGeodeticInputSchema,
-    outputSchema: z.object({
-        elevations: z.array(z.number())
-    }),
+    outputSchema: MapGetElevationProfileGeodeticOutputSchema,
     rest: { method: 'POST', path: '/map/elevation-profile/geodetic' }
+});
+
+// ─── map_convert_coordinates ─────────────────────────────────────────────────
+
+export const MapConvertCoordinatesInputSchema = z.object({
+    from: z.enum(['LLA', 'ECEF', 'ENU']).describe("Source coordinate system"),
+    to: z.enum(['LLA', 'ECEF', 'ENU']).describe("Target coordinate system"),
+    position: z.any().describe("Coordinate object to convert"),
+    origin: LlaSchema.optional().describe("Origin for ENU conversions")
+});
+
+export const MapConvertCoordinatesOutputSchema = z.object({ 
+    position: z.any() 
+}).describe("The converted coordinate object");
+
+export const mapConvertCoordinatesContract = defineContract({
+    domain: 'map',
+    action: 'convert',
+    description: 'Utility to convert between Geodetic (LLA), ECEF, and Local Tangent Plane (ENU).',
+    inputSchema: MapConvertCoordinatesInputSchema,
+    outputSchema: MapConvertCoordinatesOutputSchema,
+    rest: { method: 'POST', path: '/map/convert' }
 });

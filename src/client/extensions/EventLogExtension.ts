@@ -107,6 +107,9 @@ export const EventLogExtension: Extension = {
 
         const subscribeToStream = (matchId: string, disposables: { dispose: () => void }[]) => {
             const unsub = ide.stream.subscribe(matchId, (event: SimulationEvent) => {
+                // Filter out high-frequency UI sync events from the log viewer
+                if (event.type === 'ViewStateUpdated') return;
+
                 logEntries.push(event);
                 // Cap the buffer
                 if (logEntries.length > MAX_LOG_ENTRIES) {
@@ -122,10 +125,10 @@ export const EventLogExtension: Extension = {
 
             const filtered = filterText
                 ? logEntries.filter(e => {
-                    const eventType = 'type' in e ? String(e.type) : '';
-                    const entityId = e.entityId ?? '';
+                    const eventType = e.type;
+                    const entityId = ('entityId' in e) ? (e as { entityId?: string }).entityId : '';
                     return eventType.toLowerCase().includes(filterText)
-                        || entityId.toLowerCase().includes(filterText);
+                        || (typeof entityId === 'string' && entityId.toLowerCase().includes(filterText));
                 })
                 : logEntries;
 
@@ -171,13 +174,14 @@ export const EventLogExtension: Extension = {
                 row.appendChildren(tickText, icon, typeText);
 
                 // Entity ID
-                if (event.entityId) {
+                if ('entityId' in event && event.entityId) {
+                    const eid = event.entityId;
                     const entityLink = new uiLib.Text({ 
-                        text: event.entityId.substring(0, 8), 
+                        text: eid.substring(0, 8), 
                         variant: 'accent', 
                         size: 'xs',
                         onClick: () => {
-                            if (event.entityId) ide.selection.select(event.entityId);
+                            ide.selection.select(eid);
                         }
                     });
                     row.appendChildren(entityLink);

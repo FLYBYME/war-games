@@ -1,5 +1,6 @@
 import { defineTool } from '../../core/tool_builder.js';
 import { mapCreateZoneContract } from '../../../sdk_v2/contracts/index.js';
+import { TacticalZone } from '../../../sdk_v2/contracts/map/map.contracts.js';
 import { isMatchHandle } from '../../services/MatchService.js';
 import { randomUUID } from 'crypto';
 
@@ -8,7 +9,7 @@ export const map_create_zone = defineTool(mapCreateZoneContract, async (input, c
     if (!isMatchHandle(handle)) throw new Error("Internal error: Handle is not a concrete MatchHandle");
 
     const id = randomUUID();
-    const zone = {
+    const zone: TacticalZone = {
         id,
         name: input.name,
         type: input.type,

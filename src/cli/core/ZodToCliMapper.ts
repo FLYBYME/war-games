@@ -24,24 +24,34 @@ export class ZodToCliMapper {
     /**
      * Unflattens dot-notation options and handles coordinate parsing.
      */
-    public static parseOptions(options: Record<string, any>, schema: z.ZodTypeAny): any {
-        const result: any = {};
+    public static parseOptions(options: Record<string, unknown>, schema: z.ZodTypeAny): Record<string, unknown> {
+        const result: Record<string, unknown> = {};
         const unwrapped = this.unwrapSchema(schema);
-        const shape = (unwrapped instanceof z.ZodObject) ? unwrapped.shape : {};
 
         for (const [key, value] of Object.entries(options)) {
             const parts = key.split('.');
             let current = result;
-            let currentSchema = unwrapped;
+            let currentSchema: z.ZodTypeAny = unwrapped;
 
             for (let i = 0; i < parts.length - 1; i++) {
                 const part = parts[i]!;
-                if (!current[part]) current[part] = {};
-                current = current[part];
+                if (!current[part]) {
+                    current[part] = {};
+                }
+                
+                const next = current[part];
+                if (typeof next !== 'object' || next === null || Array.isArray(next)) {
+                     // Should not happen with well-formed dot-notation
+                     continue;
+                }
+                current = next as Record<string, unknown>;
                 
                 // Track schema depth if possible
                 if (currentSchema instanceof z.ZodObject) {
-                    currentSchema = this.unwrapSchema(currentSchema.shape[part]);
+                    const nextSchema = currentSchema.shape[part];
+                    if (nextSchema) {
+                        currentSchema = this.unwrapSchema(nextSchema);
+                    }
                 }
             }
 
@@ -50,7 +60,10 @@ export class ZodToCliMapper {
             // Get the specific schema for this field
             let fieldSchema: z.ZodTypeAny | undefined;
             if (currentSchema instanceof z.ZodObject) {
-                fieldSchema = this.unwrapSchema(currentSchema.shape[lastPart]);
+                const field = currentSchema.shape[lastPart];
+                if (field) {
+                    fieldSchema = this.unwrapSchema(field);
+                }
             }
 
             current[lastPart] = this.parseValue(value, fieldSchema);
@@ -59,10 +72,10 @@ export class ZodToCliMapper {
         return result;
     }
 
-    private static parseValue(value: any, schema?: z.ZodTypeAny): any {
+    private static parseValue(value: unknown, schema?: z.ZodTypeAny): unknown {
         if (typeof value === 'string' && value.includes(',') && schema instanceof z.ZodObject) {
             const parts = value.split(',').map(v => parseFloat(v.trim()));
-            const shape = schema.shape;
+            const shape = schema.shape as Record<string, z.ZodTypeAny>;
             const keys = Object.keys(shape);
             
             if (parts.length === 3) {
@@ -101,7 +114,7 @@ export class ZodToCliMapper {
 
         // Enums
         if (unwrapped instanceof z.ZodEnum) {
-            const values = unwrapped._def.values.join('|');
+            const values = (unwrapped._def as { values: string[] }).values.join('|');
             program.option(`--${key} <${values}>`, `${description}`);
             return;
         }
@@ -130,16 +143,18 @@ export class ZodToCliMapper {
             current instanceof z.ZodNullable ||
             current instanceof z.ZodDefault
         ) {
-            if (current instanceof z.ZodOptional || current instanceof z.ZodNullable) {
-                current = current._def.innerType;
+            if (current instanceof z.ZodOptional) {
+                current = current.unwrap();
+            } else if (current instanceof z.ZodNullable) {
+                current = current.unwrap();
             } else if (current instanceof z.ZodDefault) {
-                current = current._def.innerType;
+                current = current._def.innerType as z.ZodTypeAny;
             }
         }
         return current;
     }
 
-    private static isCoordinateObject(obj: z.ZodObject<any>): boolean {
+    private static isCoordinateObject(obj: z.ZodObject<Record<string, z.ZodTypeAny>>): boolean {
         const keys = Object.keys(obj.shape);
         const isXYZ = keys.includes('x') && keys.includes('y') && keys.includes('z');
         const isLLA = keys.includes('lat') && keys.includes('lon') && keys.includes('alt');

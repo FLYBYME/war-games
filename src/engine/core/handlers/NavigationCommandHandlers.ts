@@ -20,6 +20,17 @@ export class AddWaypointHandler implements CommandHandler<AddWaypointCommand> {
         }
         nav.waypoints.push({ position: cmd.position, speedKts: cmd.speedKts });
         nav.navState = NavState.Waypoint;
+
+        world.recordEvent({
+            type: 'MissionStatusChanged',
+            tick: world.currentTick,
+            entityId: cmd.entityId,
+            data: {
+                missionType: 'Navigation',
+                oldStatus: 'None',
+                newStatus: 'Active'
+            }
+        });
     }
 }
 

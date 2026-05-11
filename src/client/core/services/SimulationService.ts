@@ -106,12 +106,12 @@ export class SimulationService {
         const matchId = this.matches.currentMatchId.get();
         if (!matchId) return;
 
-        const nextPaused = !this.isPaused.get();
-        const response = await this.client.api.sim.update({ matchId, isPaused: nextPaused });
-        
-        // Update signals from response immediately
-        this.isPaused.set(response.isPaused);
-        this.timeCompression.set(response.timeCompression);
+        const isPaused = this.isPaused.get();
+        if (isPaused) {
+            await this.client.api.sim.resume({ matchId });
+        } else {
+            await this.client.api.sim.pause({ matchId });
+        }
     }
 
     /**
@@ -121,9 +121,7 @@ export class SimulationService {
         const matchId = this.matches.currentMatchId.get();
         if (!matchId) return;
 
-        const response = await this.client.api.sim.update({ matchId, timeCompression: value });
-        this.isPaused.set(response.isPaused);
-        this.timeCompression.set(response.timeCompression);
+        await this.client.api.sim.set_speed({ matchId, timeCompression: value });
     }
 
     /**
@@ -133,7 +131,6 @@ export class SimulationService {
         const matchId = this.matches.currentMatchId.get();
         if (!matchId) return;
 
-        const response = await this.client.api.sim.step({ matchId, ticks });
-        this.currentTick.set(response.tick);
+        await this.client.api.sim.step({ matchId, ticks });
     }
 }

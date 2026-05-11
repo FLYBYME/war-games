@@ -20,12 +20,13 @@ export class AddDetectionHandler implements CommandHandler<AddDetectionCommand> 
                 
                 world.recordEvent({
                     tick: world.currentTick,
-                    type: 'TargetDetected',
+                    type: 'Detection',
                     entityId: cmd.entityId,
                     targetId: cmd.targetId,
                     data: {
-                        observerId: cmd.entityId,
-                        targetId: cmd.targetId
+                        sensorType: 'Manual',
+                        rangeM: 0,
+                        bearing: 0
                     }
                 });
             }

@@ -39,7 +39,8 @@ export const entity_list = defineTool(entityListContract, async (input, ctx) => 
                 fuelPct: fuel ? (fuel.currentKg / fuel.maxKg) : 1,
                 mission: mission ? {
                     type: mission.missionType,
-                    status: mission.status
+                    status: mission.status,
+                    params: mission.params
                 } : undefined
             };
         }),

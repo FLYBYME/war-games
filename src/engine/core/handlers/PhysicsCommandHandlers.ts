@@ -3,21 +3,22 @@ import { World } from '../World.js';
 import { 
     SetPositionCommand, 
     SetHeadingCommand, 
+    SetPitchCommand,
     SetAltitudeCommand, 
     SetSpeedCommand, 
     UpdateKinematicsCommand,
-    UpdateThrustCommand,
     SetThrottleCommand,
-    ApplyForceCommand,
-    SetPitchCommand 
+    UpdateThrustCommand,
+    ApplyForceCommand
 } from '../Command.js';
 import { TransformComponent, KinematicsComponent } from '../../components/Physics.js';
 import { NavigationComponent, NavState } from '../../components/Navigation.js';
-import { PropulsionComponent } from '../../components/Propulsion.js';
 import { TaskGraphComponent } from '../../components/TaskGraph.js';
-import { MissionComponent, MissionType, MissionStatus } from '../../components/Missions.js';
-import { TaskStatus, TaskGraphManager } from '../TaskGraph.js';
- 
+import { TaskStatus, TaskGraphManager } from '../../core/TaskGraph.js';
+import { MissionComponent } from '../../components/Missions.js';
+import { MissionType, MissionStatus } from '../../core/Types.js';
+import { PropulsionComponent } from '../../components/Propulsion.js';
+
 export class SetPositionHandler implements CommandHandler<SetPositionCommand> {
     execute(cmd: SetPositionCommand, world: World): void {
         const entity = world.getEntity(cmd.entityId);
@@ -28,10 +29,19 @@ export class SetPositionHandler implements CommandHandler<SetPositionCommand> {
             transform.position.z = cmd.z;
             
             world.grid.updateEntity(cmd.entityId, transform.position);
+
+            if (cmd.isExternal) {
+                world.recordEvent({
+                    type: 'TelemetryUpdated',
+                    tick: world.currentTick,
+                    entityId: cmd.entityId,
+                    data: { position: { x: cmd.x, y: cmd.y, z: cmd.z } }
+                });
+            }
         }
     }
 }
- 
+
 export class SetHeadingHandler implements CommandHandler<SetHeadingCommand> {
     execute(cmd: SetHeadingCommand, world: World): void {
         const entity = world.getEntity(cmd.entityId);
@@ -49,57 +59,14 @@ export class SetHeadingHandler implements CommandHandler<SetHeadingCommand> {
             transform.rotation = cmd.heading;
         }
 
-        // Suspend automated tasks only on external override
-        if (cmd.isExternal && taskComp) {
-            for (const node of taskComp.graph.nodes.values()) {
-                if (node.status === TaskStatus.Active || node.status === TaskStatus.Pending) {
-                    node.status = TaskStatus.Suspended;
-                }
-            }
-            TaskGraphManager.updateActiveNodes(taskComp.graph);
+        if (cmd.isExternal) {
+            world.recordEvent({
+                type: 'TelemetryUpdated',
+                tick: world.currentTick,
+                entityId: cmd.entityId,
+                data: { heading: cmd.heading }
+            });
         }
-
-        // Abort high-level mission only on external override
-        if (cmd.isExternal && missionComp) {
-            missionComp.missionType = MissionType.Idle;
-            missionComp.status = MissionStatus.Aborted;
-        }
-    }
-}
- 
-export class SetPitchHandler implements CommandHandler<SetPitchCommand> {
-    execute(cmd: SetPitchCommand, world: World): void {
-        const entity = world.getEntity(cmd.entityId);
-        const transform = entity?.getComponent(TransformComponent);
-        if (transform) transform.pitch = cmd.pitch;
-    }
-}
- 
-export class SetAltitudeHandler implements CommandHandler<SetAltitudeCommand> {
-    execute(cmd: SetAltitudeCommand, world: World): void {
-        const entity = world.getEntity(cmd.entityId);
-        if (!entity) return;
- 
-        const navigation = entity.getComponent(NavigationComponent);
-        const taskComp = entity.getComponent(TaskGraphComponent);
-        const missionComp = entity.getComponent(MissionComponent);
-        if (!navigation) return;
- 
-        // Validation: Ships cannot fly!
-        const profile = entity.profileId ? world.profileRegistry.get(entity.profileId) : undefined;
-        if (profile?.type === 'Ship' && cmd.altitudeM !== 0) {
-            navigation.desiredAltitudeM = 0;
-            return;
-        }
- 
-        // Validation: Subs cannot fly!
-        if (profile?.type === 'Submarine' && cmd.altitudeM > 0) {
-            navigation.desiredAltitudeM = Math.min(0, cmd.altitudeM);
-            return;
-        }
- 
-        navigation.desiredAltitudeM = cmd.altitudeM;
-        if (cmd.isExternal) navigation.navState = NavState.None; // Manual override
 
         // Suspend automated tasks only on external override
         if (cmd.isExternal && taskComp) {
@@ -118,29 +85,101 @@ export class SetAltitudeHandler implements CommandHandler<SetAltitudeCommand> {
         }
     }
 }
- 
-export class SetSpeedHandler implements CommandHandler<SetSpeedCommand> {
-    execute(cmd: SetSpeedCommand, world: World): void {
+
+export class SetPitchHandler implements CommandHandler<SetPitchCommand> {
+    execute(cmd: SetPitchCommand, world: World): void {
+        const entity = world.getEntity(cmd.entityId);
+        const transform = entity?.getComponent(TransformComponent);
+        if (transform) {
+            transform.pitch = cmd.pitch;
+        }
+    }
+}
+
+export class SetAltitudeHandler implements CommandHandler<SetAltitudeCommand> {
+    execute(cmd: SetAltitudeCommand, world: World): void {
         const entity = world.getEntity(cmd.entityId);
         if (!entity) return;
- 
+
         const navigation = entity.getComponent(NavigationComponent);
         const taskComp = entity.getComponent(TaskGraphComponent);
         const missionComp = entity.getComponent(MissionComponent);
         if (!navigation) return;
- 
+
+        // Validation: Ships cannot fly!
+        const profile = entity.profileId ? world.profileRegistry.get(entity.profileId) : undefined;
+        if (profile?.type === 'Ship' && cmd.altitudeM !== 0) {
+            navigation.desiredAltitudeM = 0;
+            return;
+        }
+
+        // Validation: Subs cannot fly!
+        if (profile?.type === 'Submarine' && cmd.altitudeM > 0) {
+            navigation.desiredAltitudeM = Math.min(0, cmd.altitudeM);
+            return;
+        }
+
+        navigation.desiredAltitudeM = cmd.altitudeM;
+        if (cmd.isExternal) navigation.navState = NavState.None; // Manual override
+
+        if (cmd.isExternal) {
+            world.recordEvent({
+                type: 'TelemetryUpdated',
+                tick: world.currentTick,
+                entityId: cmd.entityId,
+                data: { altitudeM: cmd.altitudeM }
+            });
+        }
+
+        // Suspend automated tasks only on external override
+        if (cmd.isExternal && taskComp) {
+            for (const node of taskComp.graph.nodes.values()) {
+                if (node.status === TaskStatus.Active || node.status === TaskStatus.Pending) {
+                    node.status = TaskStatus.Suspended;
+                }
+            }
+            TaskGraphManager.updateActiveNodes(taskComp.graph);
+        }
+
+        // Abort mission only on external override
+        if (cmd.isExternal && missionComp) {
+            missionComp.missionType = MissionType.Idle;
+            missionComp.status = MissionStatus.Aborted;
+        }
+    }
+}
+
+export class SetSpeedHandler implements CommandHandler<SetSpeedCommand> {
+    execute(cmd: SetSpeedCommand, world: World): void {
+        const entity = world.getEntity(cmd.entityId);
+        if (!entity) return;
+
+        const navigation = entity.getComponent(NavigationComponent);
+        const taskComp = entity.getComponent(TaskGraphComponent);
+        const missionComp = entity.getComponent(MissionComponent);
+        if (!navigation) return;
+
         const profile = entity.profileId ? world.profileRegistry.get(entity.profileId) : undefined;
         let speed = cmd.speedKts;
- 
+
         // Validation: Clamp to profile max speed
         if (profile?.kinematics?.maxSpeedKts) {
             speed = Math.min(speed, profile.kinematics.maxSpeedKts);
         } else if (profile?.type === 'Ship') {
             speed = Math.min(speed, 40); // Default ship max
         }
- 
+
         navigation.desiredSpeedKts = speed;
         if (cmd.isExternal) navigation.navState = NavState.None; // Manual override
+
+        if (cmd.isExternal) {
+            world.recordEvent({
+                type: 'TelemetryUpdated',
+                tick: world.currentTick,
+                entityId: cmd.entityId,
+                data: { speedKts: speed }
+            });
+        }
 
         // Suspend automated tasks only on external override
         if (cmd.isExternal && taskComp) {

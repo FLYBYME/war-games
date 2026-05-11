@@ -36,11 +36,11 @@ export class LandAtFacilityHandler implements CommandHandler<LandAtFacilityComma
                     aircraftLog.stateDurationTicks = 120; // 2 min landing cycle
                     aircraftLog.currentBaseId = cmd.facilityId;
 
-                    world.events.emit({
+                    world.recordEvent({
                         type: 'AircraftLanded',
                         tick: world.currentTick,
                         entityId: cmd.entityId,
-                        targetId: cmd.facilityId
+                        data: { facilityId: facility.id }
                     });
                 } else {
                     logger.warn(`Landing failed: Aircraft ${cmd.entityId} too far from carrier ${cmd.facilityId}`, { dist });
@@ -116,10 +116,22 @@ export class UpdateLogisticsStateHandler implements CommandHandler<UpdateLogisti
         const entity = world.getEntity(cmd.entityId);
         const log = entity?.getComponent(LogisticsComponent);
         if (log) {
+            const oldState = log.state;
             log.state = cmd.newState as TurnaroundState;
             log.stateStartTick = world.currentTick;
             log.stateDurationTicks = cmd.durationTicks;
             if (cmd.baseId) log.currentBaseId = cmd.baseId;
+
+            world.recordEvent({
+                type: 'MissionStatusChanged',
+                tick: world.currentTick,
+                entityId: cmd.entityId,
+                data: {
+                    missionType: 'Logistics',
+                    oldStatus: oldState,
+                    newStatus: log.state
+                }
+            });
         }
     }
 }
@@ -129,6 +141,9 @@ export class TransferResourcesHandler implements CommandHandler<TransferResource
         const from = world.getEntity(cmd.fromId);
         const to = world.getEntity(cmd.toId);
         if (!from || !to) return;
+
+        let totalFuelKg = 0;
+        const ammoTransfer: [string, number][] = [];
 
         // Handle Fuel
         const fromFuel = from.getComponent(FuelComponent) || from.getComponent(FacilityComponent);
@@ -149,6 +164,8 @@ export class TransferResourcesHandler implements CommandHandler<TransferResource
                 if (toFuel instanceof FuelComponent) toFuel.currentKg += transfer;
                 else (toFuel as FacilityComponent).fuelReservesKg += transfer;
                 
+                totalFuelKg = transfer;
+
                 // Update Kinematics mass if applicable
                 [from, to].forEach(e => {
                     const f = e.getComponent(FuelComponent);
@@ -192,6 +209,7 @@ export class TransferResourcesHandler implements CommandHandler<TransferResource
                 const actualTransfer = Math.min(availableToTransfer, totalSpace);
 
                 if (actualTransfer > 0) {
+                    ammoTransfer.push([profileId, actualTransfer]);
                     if (fromCombat instanceof CombatComponent) {
                         let remainingToSubtract = actualTransfer;
                         for (const mag of fromCombat.magazines) {
@@ -224,6 +242,19 @@ export class TransferResourcesHandler implements CommandHandler<TransferResource
                     }
                 }
             }
+        }
+
+        if (totalFuelKg > 0 || ammoTransfer.length > 0) {
+            world.recordEvent({
+                type: 'ResourceTransferred',
+                tick: world.currentTick,
+                data: {
+                    fromId: from.id,
+                    toId: to.id,
+                    fuelKg: totalFuelKg,
+                    ammoUpdates: ammoTransfer
+                }
+            });
         }
     }
 }

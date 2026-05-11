@@ -288,4 +288,21 @@ export class ScenarioAutomationSystem implements ISystem {
     public getResults() {
         return this.assertionResults;
     }
+
+    public getPendingEvents(): ScenarioEvent[] {
+        return [...this.events];
+    }
+
+    public getTriggeredEvents(): ScenarioEvent[] {
+        return [...this.triggeredEvents];
+    }
+
+    public triggerEvent(eventId: string): boolean {
+        const index = this.events.findIndex(e => e.id === eventId);
+        if (index === -1) return false;
+        
+        const event = this.events.splice(index, 1)[0];
+        this.triggeredEvents.push(event);
+        return true;
+    }
 }

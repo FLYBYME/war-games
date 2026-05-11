@@ -105,8 +105,8 @@ export class World implements IWorldView {
         this.dispatcher.register(SetSpeedCommand, new PhysicsHandlers.SetSpeedHandler());
         this.dispatcher.register(UpdateKinematicsCommand, new PhysicsHandlers.UpdateKinematicsHandler());
         this.dispatcher.register(SetThrottleCommand, new PhysicsHandlers.SetThrottleHandler());
-        this.dispatcher.register(ApplyForceCommand, new PhysicsHandlers.ApplyForceHandler());
         this.dispatcher.register(UpdateThrustCommand, new PhysicsHandlers.UpdateThrustHandler());
+        this.dispatcher.register(ApplyForceCommand, new PhysicsHandlers.ApplyForceHandler());
 
         // Combat
         this.dispatcher.register(FireWeaponCommand, new CombatHandlers.FireWeaponHandler());
@@ -150,19 +150,16 @@ export class World implements IWorldView {
         this.dispatcher.register(SetROECommand, new DoctrineHandlers.SetROEHandler());
         this.dispatcher.register(SetSideROECommand, new DoctrineHandlers.SetSideROEHandler());
         this.dispatcher.register(SetMissionROECommand, new DoctrineHandlers.SetMissionROEHandler());
-
-        // System
-        this.dispatcher.register(SetSimulationSpeedCommand, new SystemHandlers.SetSimulationSpeedHandler());
         this.dispatcher.register(SetMissionCommand, new DoctrineHandlers.SetMissionHandler());
         this.dispatcher.register(SetIntentCommand, new DoctrineHandlers.SetIntentHandler());
         this.dispatcher.register(SetLoadoutCommand, new DoctrineHandlers.SetLoadoutHandler());
         this.dispatcher.register(UpdateWRARulesCommand, new DoctrineHandlers.UpdateWRARulesHandler());
-        this.dispatcher.register(AssignWeaponCommand, new DoctrineHandlers.AssignWeaponHandler());
+
+        // System
+        this.dispatcher.register(SetSimulationSpeedCommand, new SystemHandlers.SetSimulationSpeedHandler());
         this.dispatcher.register(SetEnvironmentCommand, new SystemHandlers.SetEnvironmentHandler());
-        this.dispatcher.register(AddDetectionCommand, new SystemHandlers.AddDetectionHandler());
         this.dispatcher.register(SpawnEntityCommand, new SystemHandlers.SpawnEntityHandler());
         this.dispatcher.register(ChangeSideCommand, new SystemHandlers.ChangeSideHandler());
-        this.dispatcher.register(UpdateEnvironmentCommand, new SystemHandlers.UpdateEnvironmentHandler());
     }
 
     public async tick(dt: number): Promise<void> {
@@ -170,48 +167,26 @@ export class World implements IWorldView {
         const subSteps = this.clock.isHighFidelity ? 10 : 1;
         const subDt = timeStep / subSteps;
 
-        for (let s = 0; s < subSteps; s++) {
+        for (let s = 0; subSteps > s; s++) {
             this.currentTick++;
             this.timestamp += subDt;
 
-            const simulationPhases = [
-                SystemPhase.Environment,
-                SystemPhase.Doctrine,
-                SystemPhase.Decision,
-                SystemPhase.Perception,
-                SystemPhase.Bridge,
-                SystemPhase.Forces,
-                SystemPhase.Physics,
-                SystemPhase.Lifecycle
-            ];
-
             const phaseTimes: Record<string, number> = {};
 
-            // 0. Reset net forces for physics resolution
-            for (const entity of this.entities.values()) {
-                const kin = entity.getComponent(KinematicsComponent);
-                if (kin) kin.netForce = { x: 0, y: 0, z: 0 };
-            }
-
-            // 2. Execute Simulation Loop
             try {
-                for (const phase of simulationPhases) {
+                // 1. Process Systems by Phase
+                for (const [phase, systems] of this.systemsByPhase.entries()) {
                     const phaseStart = performance.now();
-                    const systems = this.systemsByPhase.get(phase) || [];
-                    const phaseCommands: Command[] = [];
-                    
                     for (const system of systems) {
-                        const sysCommands = await system.process(this, subDt);
-                        phaseCommands.push(...sysCommands);
+                        const commands = await system.process(this, subDt);
+                        if (commands.length > 0) {
+                            this.resolveCommands(commands);
+                        }
                     }
-
-                    // Resolve commands immediately after each phase
-                    this.resolveCommands(phaseCommands);
-                    
                     phaseTimes[SystemPhase[phase]] = performance.now() - phaseStart;
                 }
 
-                // 3. Update Spatial Partitioning
+                // 2. Update Spatial Partitioning
                 const spatialStart = performance.now();
                 for (const entity of this.entities.values()) {
                     const transform = entity.getComponent(TransformComponent);
@@ -239,13 +214,10 @@ export class World implements IWorldView {
 
     public prune(): void {
         this.grid.prune();
-        // Tracer handles its own capacity, but we could explicitly clear here if needed.
     }
 
     public resolveCommands(commands: Command[]): void {
-        // Sort by priority
         commands.sort((a, b) => a.priority - b.priority);
-
         for (const cmd of commands) {
             this.dispatcher.dispatch(cmd, this);
             this.tracer.record(this.currentTick, cmd);
@@ -260,20 +232,32 @@ export class World implements IWorldView {
     public addEntity(entity: Entity): void {
         this.entities.set(entity.id, entity);
         const transform = entity.getComponent(TransformComponent);
+        const position = transform?.position || { x: 0, y: 0, z: 0 };
         if (transform) {
-            this.grid.updateEntity(entity.id, transform.position);
+            this.grid.updateEntity(entity.id, position);
         }
+
+        this.recordEvent({
+            type: 'EntitySpawned',
+            tick: this.currentTick,
+            entityId: entity.id,
+            data: {
+                side: entity.side,
+                position: { x: position.x, y: position.y, z: position.z },
+                profileId: entity.profileId || 'Unknown'
+            }
+        });
         logger.info(`Entity added: ${entity.id}`, { side: entity.side });
     }
 
     public removeEntity(id: EntityId): void {
         const entity = this.entities.get(id);
         if (entity) {
-            this.events.emit({
-                type: 'EntityRemoved',
+            this.recordEvent({
+                type: 'EntityDestroyed',
                 tick: this.currentTick,
                 entityId: id,
-                data: {}
+                data: { reason: 'Removed from world' }
             });
             this.entities.delete(id);
             this.grid.removeEntity(id);
@@ -332,9 +316,6 @@ export class World implements IWorldView {
         return WorldStateSchema.parse(json);
     }
 
-    /**
-     * fromJSON: Hydrates a world from serialized data.
-     */
     public static fromJSON(data: WorldState): World {
         const world = new World(undefined, undefined, undefined, undefined, undefined, data.seed || 0);
         world.currentTick = data.currentTick || 0;

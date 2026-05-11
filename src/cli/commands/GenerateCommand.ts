@@ -3,6 +3,18 @@ import { BaseCommand } from '../core/BaseCommand.js';
 import fs from 'fs';
 import path from 'path';
 
+interface ContractDiscovery {
+    exportName: string;
+    domain: string;
+    action: string;
+    description: string;
+    inputType: string;
+    outputType: string;
+    method: string;
+    path: string;
+    isStream: boolean;
+}
+
 export class GenerateCommand extends BaseCommand {
     public readonly name = 'generate';
     public readonly description = 'Generate V2 artifacts (Tools, SDK, CLI)';
@@ -17,7 +29,7 @@ export class GenerateCommand extends BaseCommand {
             .option('-c, --cli', 'Generate V2 CLI tree')
             .option('-a, --all', 'Generate all artifacts (default)', true)
             .option('-l, --list-tools', 'List all discovered tools')
-            .action(async (options) => {
+            .action(async (options: Record<string, unknown>) => {
                 if (options.listTools) {
                     this.listTools();
                     return;
@@ -32,7 +44,7 @@ export class GenerateCommand extends BaseCommand {
 
     private listTools(): void {
         const allContracts = this.discoverContracts();
-        const byDomain: Record<string, any[]> = {};
+        const byDomain: Record<string, ContractDiscovery[]> = {};
         for (const item of allContracts) {
             if (!byDomain[item.domain]) byDomain[item.domain] = [];
             byDomain[item.domain].push(item);
@@ -63,17 +75,17 @@ export class GenerateCommand extends BaseCommand {
         return fileList;
     }
 
-    private discoverContracts(): any[] {
+    private discoverContracts(): ContractDiscovery[] {
         const contractsDir = path.resolve('./src/sdk_v2/contracts');
         const contractFiles = this.findFiles(contractsDir);
-        const allContracts: any[] = [];
+        const allContracts: ContractDiscovery[] = [];
 
         for (const file of contractFiles) {
             const content = fs.readFileSync(file, 'utf-8');
             const contractStarts = [...content.matchAll(/export\s+const\s+([a-zA-Z0-9_]+)\s*=\s*defineContract\s*\(/g)];
 
             for (const match of contractStarts) {
-                const exportName = match[1];
+                const exportName = match[1]!;
                 const startIdx = match.index + match[0].length - 1; // Start at '('
                 
                 // Extract the block including nested parens/braces
@@ -97,11 +109,15 @@ export class GenerateCommand extends BaseCommand {
                 const inputMatch = body.match(/\binputSchema:\s*([a-zA-Z0-9_]+)/);
                 const outputMatch = body.match(/\boutputSchema:\s*([a-zA-Z0-9_]+)/);
                 
-                let inputType = 'any';
-                if (inputMatch && inputMatch[1] !== 'z' && inputMatch[1] !== 'any') inputType = inputMatch[1];
+                let inputType = 'unknown';
+                if (inputMatch && inputMatch[1] !== 'z' && inputMatch[1] !== 'any') {
+                    inputType = inputMatch[1]!;
+                }
                 
-                let outputType = 'any';
-                if (outputMatch && outputMatch[1] !== 'z' && outputMatch[1] !== 'any') outputType = outputMatch[1];
+                let outputType = 'unknown';
+                if (outputMatch && outputMatch[1] !== 'z' && outputMatch[1] !== 'any') {
+                    outputType = outputMatch[1]!;
+                }
 
                 const restMatch = /\brest:\s*\{([\s\S]*?)\}/.exec(body);
                 let method = 'POST';
@@ -109,12 +125,12 @@ export class GenerateCommand extends BaseCommand {
                 let isStream = false;
 
                 if (restMatch) {
-                    const restBody = restMatch[1];
+                    const restBody = restMatch[1]!;
                     const m = /\bmethod:\s*['"]([^'"]+)['"]/.exec(restBody);
                     const p = /\bpath:\s*['"]([^'"]+)['"]/.exec(restBody);
                     const s = /\bisStream:\s*(true|false)/.exec(restBody);
-                    if (m) method = m[1];
-                    if (p) pathStr = p[1];
+                    if (m) method = m[1]!;
+                    if (p) pathStr = p[1]!;
                     if (s) isStream = s[1] === 'true';
                 }
 
@@ -122,12 +138,10 @@ export class GenerateCommand extends BaseCommand {
                     const rawDesc = descMatch ? (descMatch[1] || descMatch[2] || descMatch[3] || '') : '';
                     const description = rawDesc.replace(/\\'/g, "'").replace(/`/g, '\\`').replace(/\$\{/g, '\\${');
 
-                    console.log(`  Discovered: ${domainMatch[1]}.${actionMatch[1]} (Input: ${inputType}, Output: ${outputType}, Stream: ${isStream})`);
-
                     allContracts.push({
                         exportName,
-                        domain: domainMatch[1],
-                        action: actionMatch[1],
+                        domain: domainMatch[1]!,
+                        action: actionMatch[1]!,
                         description,
                         inputType,
                         outputType,
@@ -147,7 +161,7 @@ export class GenerateCommand extends BaseCommand {
         if (!fs.existsSync(toolsDir)) fs.mkdirSync(toolsDir, { recursive: true });
 
         const allContracts = this.discoverContracts();
-        const byDomain: Record<string, any[]> = {};
+        const byDomain: Record<string, ContractDiscovery[]> = {};
         for (const item of allContracts) {
             if (!byDomain[item.domain]) byDomain[item.domain] = [];
             byDomain[item.domain].push(item);
@@ -178,25 +192,25 @@ export class GenerateCommand extends BaseCommand {
         if (!fs.existsSync(outputDir)) fs.mkdirSync(outputDir, { recursive: true });
 
         const allContracts = this.discoverContracts();
-        const byDomain: Record<string, any[]> = {};
+        const byDomain: Record<string, ContractDiscovery[]> = {};
         for (const item of allContracts) {
             if (!byDomain[item.domain]) byDomain[item.domain] = [];
             byDomain[item.domain].push(item);
         }
 
-        let code = `import { z } from 'zod';\nimport * as Contracts from '../contracts/index.js';\n\nexport class WarGamesClientV2 {\n    constructor(private baseUrl: string) {}\n\n    private async request<TOut>(method: string, path: string, args: any): Promise<TOut> {\n        let url = this.baseUrl + path;\n        const options: RequestInit = { method, headers: { 'Content-Type': 'application/json' } };\n        if (method === 'GET') {\n            const queryParams = new URLSearchParams();\n            for (const [key, value] of Object.entries(args)) {\n                if (value === undefined) continue;\n                queryParams.append(key, typeof value === 'object' ? JSON.stringify(value) : String(value));\n            }\n            const qs = queryParams.toString();\n            if (qs) url += '?' + qs;\n        } else options.body = JSON.stringify(args);\n        const response = await fetch(url, options);\n        if (!response.ok) throw new Error(\`Request failed: \${response.status} - \${await response.text()}\`);\n        return response.json();\n    }\n\n    private async *stream<TOut>(method: string, path: string, args: any): AsyncIterable<TOut> {\n        let url = this.baseUrl + path;\n        const options: RequestInit = { method, headers: { 'Content-Type': 'application/json' } };\n        \n        if (method === 'GET') {\n            const queryParams = new URLSearchParams();\n            for (const [key, value] of Object.entries(args)) {\n                if (value === undefined) continue;\n                queryParams.append(key, typeof value === 'object' ? JSON.stringify(value) : String(value));\n            }\n            const qs = queryParams.toString();\n            if (qs) url += '?' + qs;\n        } else {\n            options.body = JSON.stringify(args);\n        }\n\n        const response = await fetch(url, options);\n        if (!response.ok) throw new Error(\`Stream failed: \${response.status} - \${await response.text()}\`);\n        if (!response.body) throw new Error('Response body is empty');\n\n        const reader = response.body.getReader();\n        const decoder = new TextDecoder();\n        let buffer = '';\n\n        while (true) {\n            const { done, value } = await reader.read();\n            if (done) break;\n            buffer += decoder.decode(value, { stream: true });\n            const lines = buffer.split('\\n');\n            buffer = lines.pop() || '';\n            for (const line of lines) {\n                if (line.startsWith('data: ')) {\n                    try { yield JSON.parse(line.substring(6)); } catch (e) {} \n                }\n            }\n        }\n    }\n\n    public api = {\n`;
+        let code = `import { z } from 'zod';\nimport * as Contracts from '../contracts/index.js';\n\nexport class WarGamesClientV2 {\n    constructor(private apiServerUrl: string, private terrainServerUrl: string = apiServerUrl) {}\n\n    private getBaseUrl(domain: string, args: Record<string, unknown>): string {\n        // Geodetic tools (no matchId in env/map) route to the Terrain Server\n        const isGeodetic = (domain === 'env' || domain === 'map') && !args.matchId;\n        return isGeodetic ? this.terrainServerUrl : this.apiServerUrl;\n    }\n\n    private async request<TOut>(domain: string, method: string, path: string, args: Record<string, unknown>): Promise<TOut> {\n        let url = this.getBaseUrl(domain, args) + path;\n        const options: RequestInit = { method, headers: { 'Content-Type': 'application/json' } };\n        if (method === 'GET') {\n            const queryParams = new URLSearchParams();\n            for (const [key, value] of Object.entries(args)) {\n                if (value === undefined) continue;\n                queryParams.append(key, typeof value === 'object' ? JSON.stringify(value) : String(value));\n            }\n            const qs = queryParams.toString();\n            if (qs) url += '?' + qs;\n        } else options.body = JSON.stringify(args);\n        const response = await fetch(url, options);\n        if (!response.ok) throw new Error(\`Request failed: \${response.status} - \${await response.text()}\`);\n        return response.json() as Promise<TOut>;\n    }\n\n    private async *stream<TOut>(domain: string, method: string, path: string, args: Record<string, unknown>): AsyncIterable<TOut> {\n        let url = this.getBaseUrl(domain, args) + path;\n        const options: RequestInit = { method, headers: { 'Content-Type': 'application/json' } };\n        \n        if (method === 'GET') {\n            const queryParams = new URLSearchParams();\n            for (const [key, value] of Object.entries(args)) {\n                if (value === undefined) continue;\n                queryParams.append(key, typeof value === 'object' ? JSON.stringify(value) : String(value));\n            }\n            const qs = queryParams.toString();\n            if (qs) url += '?' + qs;\n        } else options.body = JSON.stringify(args);\n\n        const response = await fetch(url, options);\n        if (!response.ok) throw new Error(\`Stream failed: \${response.status}\`);\n        if (!response.body) throw new Error('Response body is null');\n\n        const reader = response.body.getReader();\n        const decoder = new TextDecoder();\n        let buffer = '';\n\n        while (true) {\n            const { value, done } = await reader.read();\n            if (done) break;\n            buffer += decoder.decode(value, { stream: true });\n            const lines = buffer.split('\\n');\n            buffer = lines.pop() || '';\n            for (const line of lines) {\n                if (line.trim()) yield JSON.parse(line) as TOut;\n            }\n        }\n    }\n\n    public api = {\n`;
         for (const [domain, methods] of Object.entries(byDomain)) {
             code += `        ${domain}: {\n`;
             for (const m of methods) {
                 const pathResolver = `\`${m.path.replace(/:([a-zA-Z0-9_]+)/g, '${args.$1}')}\``;
                 const isPlainAny = (s: string) => s === 'any' || s === 'z.any()' || s === 'z.unknown()' || s === 'unknown';
-                const inputType = isPlainAny(m.inputType) ? 'any' : `z.infer<typeof Contracts.${m.inputType}>`;
-                const outputType = isPlainAny(m.outputType) ? 'any' : `z.infer<typeof Contracts.${m.outputType}>`;
+                const inputType = isPlainAny(m.inputType) ? 'Record<string, unknown>' : `z.infer<typeof Contracts.${m.inputType}>`;
+                const outputType = isPlainAny(m.outputType) ? 'unknown' : `z.infer<typeof Contracts.${m.outputType}>`;
                 
                 if (m.isStream) {
-                    code += `            ${m.action}: (args: ${inputType}): AsyncIterable<${outputType}> => this.stream('${m.method}', ${pathResolver}, args),\n`;
+                    code += `            ${m.action}: (args: ${inputType}): AsyncIterable<${outputType}> => this.stream('${domain}', '${m.method}', ${pathResolver}, args as Record<string, unknown>),\n`;
                 } else {
-                    code += `            ${m.action}: async (args: ${inputType}): Promise<${outputType}> => this.request('${m.method}', ${pathResolver}, args),\n`;
+                    code += `            ${m.action}: async (args: ${inputType}): Promise<${outputType}> => this.request('${domain}', '${m.method}', ${pathResolver}, args as Record<string, unknown>),\n`;
                 }
             }
             code += `        },\n`;
@@ -212,7 +226,7 @@ export class GenerateCommand extends BaseCommand {
         if (!fs.existsSync(outputDir)) fs.mkdirSync(outputDir, { recursive: true });
 
         const allContracts = this.discoverContracts();
-        const byDomain: Record<string, any[]> = {};
+        const byDomain: Record<string, ContractDiscovery[]> = {};
         for (const item of allContracts) {
             if (!byDomain[item.domain]) byDomain[item.domain] = [];
             byDomain[item.domain].push(item);
@@ -224,14 +238,14 @@ export class GenerateCommand extends BaseCommand {
             code += `    if (!${domain}) ${domain} = program.command('${domain}').description('${domain.toUpperCase()} domain tools');\n`;
             for (const m of methods) {
                 const isPlainAny = (s: string) => s === 'any' || s === 'z.any()' || s === 'z.unknown()' || s === 'unknown';
-                const inputSchema = isPlainAny(m.inputType) ? 'z.any()' : `Contracts.${m.inputType}`;
+                const inputSchema = isPlainAny(m.inputType) ? 'z.unknown()' : `Contracts.${m.inputType}`;
                 
                 if (m.isStream) {
-                    code += `    const ${domain}_${m.action} = ${domain}.command('${m.action}').description(\`${m.description}\`).action(async (o) => {\n        try {\n            const stream = client.api.${domain}.${m.action}(ZodToCliMapper.parseOptions(o, ${inputSchema} as any));\n            for await (const event of stream) {\n                console.dir(event, { depth: null });\n            }\n        } catch (err: any) { console.error(\`\\n\${C.red}\${C.bold}✖ Error:\${C.reset} \${err.message}\`); process.exit(1); }\n    });\n`;
+                    code += `    const ${domain}_${m.action} = ${domain}.command('${m.action}').description(\`${m.description}\`).action(async (o) => {\n        try {\n            const stream = client.api.${domain}.${m.action}(ZodToCliMapper.parseOptions(o as Record<string, unknown>, ${inputSchema}));\n            for await (const event of stream) {\n                console.dir(event, { depth: null });\n            }\n        } catch (err: unknown) {\n            const message = err instanceof Error ? err.message : String(err);\n            console.error(\`\\n\${C.red}\${C.bold}✖ Error:\${C.reset} \${message}\`);\n            process.exit(1);\n        }\n    });\n`;
                 } else {
-                    code += `    const ${domain}_${m.action} = ${domain}.command('${m.action}').description(\`${m.description}\`).action(async (o) => {\n        try { const res = await client.api.${domain}.${m.action}(ZodToCliMapper.parseOptions(o, ${inputSchema} as any)); console.dir(res, { depth: null }); } catch (err: any) { console.error(\`\\n\${C.red}\${C.bold}✖ Error:\${C.reset} \${err.message}\`); process.exit(1); }\n    });\n`;
+                    code += `    const ${domain}_${m.action} = ${domain}.command('${m.action}').description(\`${m.description}\`).action(async (o) => {\n        try {\n            const res = await client.api.${domain}.${m.action}(ZodToCliMapper.parseOptions(o as Record<string, unknown>, ${inputSchema}));\n            console.dir(res, { depth: null });\n        } catch (err: unknown) {\n            const message = err instanceof Error ? err.message : String(err);\n            console.error(\`\\n\${C.red}\${C.bold}✖ Error:\${C.reset} \${message}\`);\n            process.exit(1);\n        }\n    });\n`;
                 }
-                code += `    ZodToCliMapper.mapSchemaToOptions(${domain}_${m.action}, ${inputSchema} as any);\n`;
+                code += `    ZodToCliMapper.mapSchemaToOptions(${domain}_${m.action}, ${inputSchema});\n`;
             }
         }
         code += `}\n`;

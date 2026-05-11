@@ -57,6 +57,11 @@ export class IDE {
                     default: '/api/v2',
                     description: 'The base URL of the API server. Can be relative (/api/v2) or absolute (http://ip:3000/api/v2).',
                 },
+                'map.terrainServer': {
+                    type: 'string',
+                    default: window.location.origin,
+                    description: 'The base URL of the terrain server.',
+                },
             },
         });
 
@@ -84,7 +89,10 @@ export class IDE {
         this.monaco = new MonacoService(this);
         this.shortcuts = new ShortcutManager(this);
 
-        this.client = new WarGamesClientV2(this.settings.get<string>('core.apiBase'));
+        const apiBase = this.settings.get<string>('core.apiBase');
+        const terrainBase = this.settings.get<string>('map.terrainServer') || window.location.origin;
+        
+        this.client = new WarGamesClientV2(apiBase, terrainBase);
         this.matches = new MatchService(this.client);
         this.selection = new SelectionService();
         this.stream = new SimStreamService(this.client);

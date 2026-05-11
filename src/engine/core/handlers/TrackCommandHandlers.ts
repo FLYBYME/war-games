@@ -6,11 +6,18 @@ import { DetectionComponent } from '../../components/Sensors.js';
 import type { ESMBearing } from '../Types.js';
 
 export class CreateTrackHandler implements CommandHandler<CreateTrackCommand> {
-    execute(cmd: CreateTrackCommand, _world: World): void {
-        const entity = _world.getEntity(cmd.entityId);
+    execute(cmd: CreateTrackCommand, world: World): void {
+        const entity = world.getEntity(cmd.entityId);
         const tracks = entity?.getComponent(TrackComponent);
         if (tracks) {
             tracks.tracks.set(cmd.track.id, cmd.track);
+            
+            world.recordEvent({
+                type: 'GenericEvent',
+                tick: world.currentTick,
+                entityId: cmd.entityId,
+                data: { type: 'TrackCreated', trackId: cmd.track.id }
+            });
         }
     }
 }
@@ -29,11 +36,18 @@ export class UpdateTrackHandler implements CommandHandler<UpdateTrackCommand> {
 }
 
 export class DropTrackHandler implements CommandHandler<DropTrackCommand> {
-    execute(cmd: DropTrackCommand, _world: World): void {
-        const entity = _world.getEntity(cmd.entityId);
+    execute(cmd: DropTrackCommand, world: World): void {
+        const entity = world.getEntity(cmd.entityId);
         const tracks = entity?.getComponent(TrackComponent);
         if (tracks) {
             tracks.tracks.delete(cmd.trackId);
+
+            world.recordEvent({
+                type: 'GenericEvent',
+                tick: world.currentTick,
+                entityId: cmd.entityId,
+                data: { type: 'TrackDropped', trackId: cmd.trackId }
+            });
         }
     }
 }

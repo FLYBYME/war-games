@@ -54,8 +54,9 @@ export class ZeroCopyElevationService {
     }
 
     private getFileDescriptor(path: string): number {
-        if (this.fileHandles.has(path)) {
-            return this.fileHandles.get(path)!;
+        const existing = this.fileHandles.get(path);
+        if (existing !== undefined) {
+            return existing;
         }
         
         const fd = fs.openSync(path, 'r');
