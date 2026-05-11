@@ -80,38 +80,44 @@ export class SpatialDatabase {
         const startTime = Date.now();
         let count = 0;
 
-        this.db.exec('BEGIN TRANSACTION');
         this.db.exec('PRAGMA synchronous = OFF');
+        this.db.exec('BEGIN TRANSACTION');
 
-        const resolutions = fs.readdirSync(rootDir);
-        for (const resDir of resolutions) {
-            if (!resDir.startsWith('res_')) continue;
-            const res = parseInt(resDir.split('_')[1]);
-            const resPath = path.join(rootDir, resDir);
-            
-            const lats = fs.readdirSync(resPath);
-            for (const latDir of lats) {
-                const lat = parseInt(latDir);
-                if (isNaN(lat)) continue;
-                const latPath = path.join(resPath, latDir);
+        try {
+            const resolutions = fs.readdirSync(rootDir);
+            for (const resDir of resolutions) {
+                if (!resDir.startsWith('res_')) continue;
+                const res = parseInt(resDir.split('_')[1]);
+                const resPath = path.join(rootDir, resDir);
                 
-                const files = fs.readdirSync(latPath);
-                for (const file of files) {
-                    if (!file.endsWith('.wgt')) continue;
-                    const lon = parseInt(file.replace('.wgt', ''));
-                    if (isNaN(lon)) continue;
-
-                    const filePath = path.join(latPath, file);
-                    const data = fs.readFileSync(filePath);
+                const lats = fs.readdirSync(resPath);
+                for (const latDir of lats) {
+                    const lat = parseInt(latDir);
+                    if (isNaN(lat)) continue;
+                    const latPath = path.join(resPath, latDir);
                     
-                    this.putDegreeTile(lat, lon, res, data);
-                    count++;
+                    const files = fs.readdirSync(latPath);
+                    for (const file of files) {
+                        if (!file.endsWith('.wgt')) continue;
+                        const lon = parseInt(file.replace('.wgt', ''));
+                        if (isNaN(lon)) continue;
+
+                        const filePath = path.join(latPath, file);
+                        const data = fs.readFileSync(filePath);
+                        
+                        this.putDegreeTile(lat, lon, res, data);
+                        count++;
+                    }
                 }
             }
-        }
 
-        this.db.exec('COMMIT');
-        this.db.exec('PRAGMA synchronous = NORMAL');
+            this.db.exec('COMMIT');
+        } catch (err) {
+            this.db.exec('ROLLBACK');
+            throw err;
+        } finally {
+            this.db.exec('PRAGMA synchronous = NORMAL');
+        }
         
         const duration = (Date.now() - startTime) / 1000;
         console.log(`✅ SpatialDB: Ingested ${count} tiles in ${duration.toFixed(2)}s`);
