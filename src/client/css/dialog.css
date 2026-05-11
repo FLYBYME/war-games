@@ -1,0 +1,319 @@
+/* ── Dialog / Modal ────────────────────────────────────────── */
+
+/* Overlay */
+.dialog-overlay {
+    position: fixed;
+    inset: 0;
+    z-index: 20000;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background: rgba(0, 0, 0, 0.55);
+    animation: dialog-fade-in 0.15s ease;
+}
+
+.dialog-overlay.dialog-closing {
+    animation: dialog-fade-out 0.15s ease forwards;
+}
+
+/* Card */
+.dialog-card {
+    width: 400px;
+    max-width: 90vw;
+    border-radius: 8px;
+    background: var(--bg-panel, #252526);
+    border: 1px solid var(--border-color, #454545);
+    box-shadow: 0 8px 32px rgba(0, 0, 0, 0.5);
+    overflow: hidden;
+    animation: dialog-slide-in 0.15s ease;
+}
+
+.dialog-closing .dialog-card {
+    animation: dialog-slide-out 0.15s ease forwards;
+}
+
+/* Header */
+.dialog-header {
+    padding: 14px 18px;
+    font-size: 14px;
+    font-weight: 600;
+    color: #fff;
+    border-bottom: 1px solid rgba(255, 255, 255, 0.06);
+}
+
+/* Body */
+.dialog-body {
+    padding: 18px;
+}
+
+.dialog-message {
+    margin: 0 0 12px;
+    font-size: 13px;
+    color: var(--text-main, #ccc);
+    line-height: 1.5;
+}
+
+/* Input */
+.dialog-input {
+    width: 100%;
+    padding: 7px 10px;
+    border: 1px solid var(--border-color, #454545);
+    border-radius: 4px;
+    background: var(--bg-input, #3c3c3c);
+    color: var(--text-main, #ccc);
+    font-size: 13px;
+    font-family: var(--font-code, monospace);
+    outline: none;
+    box-sizing: border-box;
+    transition: border-color 0.15s;
+}
+
+.dialog-input:focus {
+    border-color: var(--accent, #007acc);
+}
+
+/* Footer */
+.dialog-footer {
+    display: flex;
+    justify-content: flex-end;
+    gap: 8px;
+    padding: 12px 18px;
+    border-top: 1px solid rgba(255, 255, 255, 0.06);
+}
+
+/* Buttons */
+.dialog-btn {
+    padding: 6px 18px;
+    font-size: 13px;
+    border-radius: 4px;
+    border: none;
+    cursor: pointer;
+    font-family: inherit;
+    transition: background 0.12s, color 0.12s;
+}
+
+.dialog-btn-primary {
+    background: var(--accent, #007acc);
+    color: #fff;
+}
+
+.dialog-btn-primary:hover {
+    background: #1a8ad4;
+}
+
+.dialog-btn-secondary {
+    background: transparent;
+    color: var(--text-muted, #858585);
+    border: 1px solid var(--border-color, #454545);
+}
+
+.dialog-btn-secondary:hover {
+    color: #fff;
+    border-color: #888;
+}
+
+/* Animations */
+@keyframes dialog-fade-in {
+    from {
+        opacity: 0;
+    }
+
+    to {
+        opacity: 1;
+    }
+}
+
+@keyframes dialog-fade-out {
+    from {
+        opacity: 1;
+    }
+
+    to {
+        opacity: 0;
+    }
+}
+
+@keyframes dialog-slide-in {
+    from {
+        transform: translateY(-12px) scale(0.97);
+        opacity: 0;
+    }
+
+    to {
+        transform: translateY(0) scale(1);
+        opacity: 1;
+    }
+}
+
+@keyframes dialog-slide-out {
+    from {
+        transform: translateY(0) scale(1);
+        opacity: 1;
+    }
+
+    to {
+        transform: translateY(-12px) scale(0.97);
+        opacity: 0;
+    }
+}
+
+/* Destructive / Danger Button */
+.dialog-btn-danger {
+    background: #e51400;
+    /* Red */
+    color: #fff;
+    border: none;
+}
+
+.dialog-btn-danger:hover {
+    background: #f14c4c;
+}
+
+.dialog-btn-danger:active {
+    background: #d11200;
+}
+
+/* ── Quick Pick System ─────────────────────────────────────── */
+
+.quick-pick-overlay {
+    position: fixed;
+    inset: 0;
+    z-index: 21000;
+    display: flex;
+    justify-content: center;
+    background: transparent;
+    /* No dark backdrop */
+}
+
+.quick-pick-widget {
+    position: fixed;
+    top: 50px;
+    width: 600px;
+    max-width: 90vw;
+    background: var(--bg-panel, #252526);
+    border: 1px solid var(--border-color, #454545);
+    border-radius: 6px;
+    box-shadow: 0 10px 40px rgba(0, 0, 0, 0.5);
+    display: flex;
+    flex-direction: column;
+    animation: dialog-fade-in 0.1s ease, dialog-slide-in 0.1s ease;
+}
+
+.quick-pick-title {
+    padding: 8px 12px;
+    font-size: 11px;
+    text-transform: uppercase;
+    color: var(--text-muted, #858585);
+    background: rgba(0, 0, 0, 0.1);
+    border-bottom: 1px solid var(--border-color, #454545);
+}
+
+.quick-pick-input {
+    width: 100%;
+    border: none;
+    border-bottom: 1px solid var(--border-color, #454545);
+    background: var(--bg-input, #3c3c3c);
+    color: var(--text-main, #cccccc);
+    padding: 10px 14px;
+    font-size: 14px;
+    outline: none;
+    box-sizing: border-box;
+}
+
+.quick-pick-input::placeholder {
+    color: rgba(255, 255, 255, 0.3);
+}
+
+.quick-pick-list {
+    max-height: 400px;
+    overflow-y: auto;
+    padding: 6px 0;
+}
+
+.quick-pick-message {
+    padding: 10px 14px;
+    color: var(--text-muted, #858585);
+    font-size: 13px;
+    text-align: center;
+}
+
+.quick-pick-category {
+    padding: 4px 14px;
+    font-size: 10px;
+    text-transform: uppercase;
+    color: var(--text-muted, #858585);
+    font-weight: bold;
+    margin-top: 4px;
+}
+
+.quick-pick-item {
+    display: flex;
+    align-items: flex-start;
+    padding: 6px 14px;
+    cursor: pointer;
+    color: var(--text-main, #cccccc);
+    transition: background 0.05s, color 0.05s;
+    user-select: none;
+}
+
+.quick-pick-item.active {
+    background: var(--accent, #007acc);
+    color: #ffffff;
+}
+
+.quick-pick-item-icon {
+    width: 20px;
+    flex-shrink: 0;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    margin-right: 8px;
+    font-size: 13px;
+    color: inherit;
+    padding-top: 2px;
+}
+
+.quick-pick-item-content {
+    flex-grow: 1;
+    display: flex;
+    flex-direction: column;
+    min-width: 0;
+}
+
+.quick-pick-item-top {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+}
+
+.quick-pick-item-label {
+    font-size: 13px;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+
+.quick-pick-item-description {
+    font-size: 12px;
+    color: rgba(255, 255, 255, 0.5);
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+
+.quick-pick-item.active .quick-pick-item-description {
+    color: rgba(255, 255, 255, 0.8);
+}
+
+.quick-pick-item-detail {
+    font-size: 11px;
+    color: rgba(255, 255, 255, 0.4);
+    margin-top: 2px;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+
+.quick-pick-item.active .quick-pick-item-detail {
+    color: rgba(255, 255, 255, 0.7);
+}

@@ -90,7 +90,6 @@ export class CombatSystem implements ISystem {
                     // We use a default profile for slewing if no weapon is loaded, or the actual weapon profile
                     const solution = this.calculateSolution(world, weaponProfile || { guidance: GuidanceType.Ballistic, maxSpeedKts: 2000 } as unknown as WeaponProfile, transform.position, shooterVel, targetPos, targetVel, env);
                     
-                    let isAligned = false;
                     if (solution) {
                         // Transform world-relative solution to body-relative
                         let relativeAz = solution.azimuthDeg - transform.rotation;
@@ -100,33 +99,7 @@ export class CombatSystem implements ISystem {
                         // Simple pitch subtraction
                         const relativeEl = solution.elevationDeg - transform.pitch;
 
-                        isAligned = this.updateMountSlew(mount, relativeAz, relativeEl, _dt);
-                    }
-
-                    // 2. Engagement Logic
-                    const lastFire = mount.lastFireTick || 0;
-                    if (world.currentTick - lastFire < mount.reloadTicks) continue;
-                    if (!magazine || magazine.currentCount <= 0) continue;
-                    if (!weaponProfile) continue;
-
-                    const dist = VectorMath.distance(transform.position, targetPos);
-                    const shooterAlt = transform.position.z;
-                    const maxRange = WeaponProfileRegistry.getEffectiveMaxRange(weaponProfile, shooterAlt);
-
-                    if (dist <= maxRange && isAligned) {
-                        logger.info(`Manual engagement`, { shooterId: entity.id, targetId: targetId, weapon: weaponProfile.id });
-                        commands.push(new FireWeaponCommand(entity.id, i, targetId as string));
-                        
-                        world.recordEvent({
-                            tick: world.currentTick,
-                            type: 'WeaponFired',
-                            entityId: entity.id,
-                            targetId: targetId,
-                            data: {
-                                weaponProfileId: weaponProfile.id,
-                                mountIndex: i
-                            }
-                        });
+                        this.updateMountSlew(mount, relativeAz, relativeEl, _dt);
                     }
                 }
             }

@@ -1,0 +1,140 @@
+/* --- RESIZE HANDLES & ANIMATIONS --- */
+
+@keyframes blink {
+
+    0%,
+    100% {
+        opacity: 1;
+    }
+
+    50% {
+        opacity: 0;
+    }
+}
+
+@keyframes bounce {
+
+    0%,
+    80%,
+    100% {
+        transform: translateY(0);
+    }
+
+    40% {
+        transform: translateY(-6px);
+    }
+}
+
+.terminal-cursor {
+    animation: blink 1s infinite;
+    display: inline-block;
+    width: 8px;
+    height: 15px;
+    background: var(--text-main);
+    vertical-align: middle;
+    margin-left: 5px;
+}
+
+/* Resize Handles */
+.resize-handle {
+    background: transparent;
+    transition: background-color 0.15s;
+    flex-shrink: 0;
+    z-index: 100;
+}
+
+.resize-handle:hover,
+.resize-handle.active {
+    background: var(--accent, #007acc);
+}
+
+.resize-handle-h {
+    width: 4px;
+    cursor: col-resize;
+}
+
+.resize-handle-v {
+    height: 4px;
+    cursor: row-resize;
+}
+
+/* Global resize state */
+body.resizing {
+    user-select: none !important;
+    pointer-events: none;
+}
+
+body.resizing .resize-handle {
+    pointer-events: auto;
+}
+
+body.resizing-h {
+    cursor: col-resize !important;
+}
+
+body.resizing-v {
+    cursor: row-resize !important;
+}
+
+:root {
+    /* Default VS Code-like Dark Theme Variables */
+    --menu-bg: #3c3c3c;
+    --menu-hover-bg: #007acc;
+    /* Blue accent */
+    --menu-hover-text: #ffffff;
+    --menu-text: #cccccc;
+    --menu-text-disabled: #858585;
+    --menu-border: #454545;
+    --menu-shadow: rgba(0, 0, 0, 0.35);
+    --menu-font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+}
+
+/* --- MENU BAR CONTAINER (DEPRECATED) ---
+.menu-bar-container {
+    display: flex;
+    align-items: center;
+    height: 30px;
+    width: 100%;
+    background-color: var(--menu-bg);
+    font-family: var(--menu-font-family);
+    font-size: 13px;
+    user-select: none;
+    box-sizing: border-box;
+}
+*/
+
+/* --- TOP LEVEL ITEMS & DROPDOWNS (DEPRECATED: NOW HANDLED BY ui-lib) ---
+.menu-item { ... }
+.menu-dropdown { ... }
+.menu-dropdown-item { ... }
+.menu-icon { ... }
+.menu-label { ... }
+.menu-shortcut { ... }
+.menu-separator { ... }
+@keyframes menu-flash-anim { ... }
+*/
+
+.ide-btn-block {
+    width: 100%;
+    padding: 8px 12px;
+    background: var(--bg-input);
+    border: 1px solid var(--border-color);
+    color: var(--text-main);
+    border-radius: 4px;
+    cursor: pointer;
+    text-align: left;
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    font-size: 13px;
+    transition: filter 0.2s;
+}
+
+.ide-btn-block:hover {
+    filter: brightness(1.2);
+}
+
+.ide-btn-block i {
+    width: 16px;
+    text-align: center;
+}

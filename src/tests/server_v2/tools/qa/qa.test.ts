@@ -52,13 +52,6 @@ describe('QA Tools Unit Tests', () => {
                 yield { type: 'content', text: 'Analysis complete.' };
             });
 
-            handle.queryParquet = vi.fn(async () => [
-                { side: 'Blue', entityId: 'b1', destroyedAtTick: 100 },
-                { side: 'Red', entityId: 'r1', destroyedAtTick: 200 },
-                { tick: 1, x: 100, y: 100, z: 0, speedKts: 30, heading: 90, hp: 100, isDestroyed: false, fuelPct: 1, missionType: 'Patrol', missionStatus: 'Active' },
-                { tick: 2, x: 200, y: 100, z: 0, speedKts: 30, heading: 90, hp: 100, isDestroyed: false, fuelPct: 1, missionType: 'Patrol', missionStatus: 'Active' }
-            ]);
-
             const input = {
                 weaponProfileId: 'aim-9x',
                 targetProfileId: 'f16',

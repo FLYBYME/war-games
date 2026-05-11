@@ -122,6 +122,11 @@ export class MatchHandle implements IMatchHandle {
     get currentTick(): number {
         return this.world.currentTick;
     }
+    
+    public async flush(): Promise<void> {
+        await this.telemetryWriter?.close();
+        await this.eventWriter?.close();
+    }
 }
 
 export function isMatchHandle(handle: IMatchHandle): handle is MatchHandle {

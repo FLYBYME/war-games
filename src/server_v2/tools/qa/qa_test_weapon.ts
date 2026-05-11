@@ -9,10 +9,13 @@ import { combat_fire } from '../combat/combat_fire.js';
 import { sim_step } from '../sim/sim_step.js';
 import { sensor_add_detection } from '../sensor/sensor_add_detection.js';
 import { TransformComponent } from '../../../engine/components/Physics.js';
+import { GuidanceComponent } from '../../../engine/components/Guidance.js';
 import { VectorMath } from '../../../engine/math/VectorMath.js';
 import { history_get_entity_samples } from '../history/history_get_entity_samples.js';
+import { sim_update } from '../sim/sim_update.js';
 
 export const qa_test_weapon = defineTool(qaTestWeaponContract, async (input, ctx) => {
+    ctx.app.log.info(`[QA] Starting weapon test with input: ${JSON.stringify(input)}`);
     // 1. Create sandbox match
     ctx.app.log.info(`[QA] Creating match...`);
     const match = await ctx.app.matchService.createMatch(
@@ -21,9 +24,11 @@ export const qa_test_weapon = defineTool(qaTestWeaponContract, async (input, ctx
     );
 
     const matchId = match.id;
+    match.isPaused = true; // Stop the background runner from ticking this match
     const world = match.world;
     const shooterId = 'range-shooter';
     const targetId = 'range-target';
+    const enableAnalysis = input.enableAnalysis;
 
     // 1.5 Validate weapon profile exists
     const weaponProfile = world.weaponProfiles.get(input.weaponProfileId);
@@ -55,7 +60,7 @@ export const qa_test_weapon = defineTool(qaTestWeaponContract, async (input, ctx
             }],
             magazines: [{
                 name: 'Test-Mag',
-                capacity: input.rounds + 10,
+                capacity: input.rounds,
                 weaponProfileId: input.weaponProfileId
             }]
         }
@@ -71,25 +76,26 @@ export const qa_test_weapon = defineTool(qaTestWeaponContract, async (input, ctx
         matchId,
         id: shooterId,
         profileId: shooterProfileId,
-        side: 'Blue',
+        side: Side.Blue,
         position: shooterPos,
         heading: 0,
         speedKts: 0
     }, ctx);
 
-    await entity_create.call({
+    const targetMatch = await entity_create.call({
         matchId,
-        id: targetId,
         profileId: input.targetProfileId,
-        side: 'Red',
+        id: targetId,
+        side: Side.Red,
         position: targetPos,
-        heading: 0,
-        speedKts: 0
+        mission: undefined // Keep stationary for weapon test
     }, ctx);
 
     // 4. Setup Monitoring
-    const impacts: Vector3[] = [];
+    const targetImpacts: Vector3[] = [];
+    const terrainImpacts: Vector3[] = [];
     const firedMunitions = new Set<string>();
+    const munitionStats = new Map<string, { maxAlt: number, status: string, impactPos?: Vector3, impactType?: 'Target' | 'Terrain' }>();
     let firstMunitionId: string | undefined;
     let outcome = 'Running';
 
@@ -105,11 +111,10 @@ export const qa_test_weapon = defineTool(qaTestWeaponContract, async (input, ctx
         if (data.munitionId) {
             ctx.app.log.info(`[QA] EVENT: WeaponFired - munitionId: ${data.munitionId}`);
             firedMunitions.add(data.munitionId);
+            munitionStats.set(data.munitionId, { maxAlt: 0, status: 'InFlight' });
             if (!firstMunitionId) firstMunitionId = data.munitionId;
-            
+
             // Only add detection for the projectile if it has its own seeker (Missiles)
-            // For now, we assume all munitions benefit from a shared track if available, 
-            // but we'll add it for missiles to be safe.
             const weaponProfile = world.weaponProfiles.get(data.weaponProfileId);
             if (weaponProfile?.type === 'Missile') {
                 void sensor_add_detection.call({
@@ -118,37 +123,43 @@ export const qa_test_weapon = defineTool(qaTestWeaponContract, async (input, ctx
                     targetId
                 }, ctx).catch(err => ctx.app.log.error(`[QA] Failed to add detection: ${err.message}`));
             }
-        } else {
-             ctx.app.log.debug(`[QA] WeaponFired event from shooter (no munitionId yet)`);
         }
     });
 
     world.events.on('Detonation', (event: any) => {
         if (firedMunitions.has(event.entityId)) {
             ctx.app.log.info(`[QA] EVENT: Detonation of ${event.entityId} at ${JSON.stringify(event.data.position)}`);
-            if (event.data.position) impacts.push(event.data.position);
-            outcome = 'Impact';
+            const stats = munitionStats.get(event.entityId);
+            if (stats) {
+                stats.status = 'Detonated';
+                stats.impactPos = event.data.position;
+                stats.impactType = 'Target';
+            }
+            if (event.data.position) targetImpacts.push(event.data.position);
         }
     });
 
     world.events.on('Impact', async (event: any) => {
-        // For munitions, we usually get a Detonation. For direct fire (Guns), we might get Impact.
-        // We filter by checking if the entityId (the victim) is our target OR if the source was a munition.
-        // In this engine, projectiles themselves emit Detonation, while Impact is emitted by the victim.
-        // If we want to record the position of a direct-hit, we might need more data.
         if (event.data.position && (event.data.targetId === 'TERRAIN' || event.entityId === targetId)) {
-            // If we can't tie it back to a specific munition, we check if any active munitions are near this position
             const pos = event.data.position;
             const activeMunitions = Array.from(world.getEntities()).filter(e => firedMunitions.has(e.id));
-            const isFromMunition = activeMunitions.some(m => {
+            const sourceMunition = activeMunitions.find(m => {
                 const mPos = m.getComponent(TransformComponent)?.position;
                 return mPos && VectorMath.distance(mPos, pos) < 50;
             });
 
-            if (isFromMunition) {
-                ctx.app.log.info(`[QA] EVENT: Impact of munition at ${JSON.stringify(pos)}`);
-                impacts.push(pos);
-                outcome = 'Impact';
+            if (sourceMunition) {
+                const isTarget = event.entityId === targetId;
+                ctx.app.log.info(`[QA] EVENT: ${isTarget ? 'Target' : 'Terrain'} Impact of ${sourceMunition.id} at ${JSON.stringify(pos)}`);
+                const stats = munitionStats.get(sourceMunition.id);
+                if (stats) {
+                    stats.status = isTarget ? 'Impacted' : 'Ground-Hit';
+                    stats.impactPos = pos;
+                    stats.impactType = isTarget ? 'Target' : 'Terrain';
+                }
+
+                if (isTarget) targetImpacts.push(pos);
+                else terrainImpacts.push(pos);
             }
         }
     });
@@ -156,151 +167,241 @@ export const qa_test_weapon = defineTool(qaTestWeaponContract, async (input, ctx
     // 5. Execution Loop
     ctx.app.log.info(`[QA] Starting execution loop...`);
 
-    // Warmup: let entities stabilize
-    await sim_step.call({ matchId, ticks: 10 }, ctx);
-
-    // Fire the weapon
-    try {
-        ctx.app.log.info(`[QA] Attempting FireWeapon...`);
-        await combat_fire.call({
-            matchId,
-            entityId: shooterId,
-            mountIndex: 0,
-            targetId
-        }, ctx);
-        ctx.app.log.info(`[QA] FireWeapon succeeded.`);
-    } catch (err: any) {
-        ctx.app.log.error(`[QA] FireWeapon failed: ${err.message}`);
-        await sim_step.call({ matchId, ticks: 1 }, ctx);
-        try {
-            await combat_fire.call({
-                matchId,
-                entityId: shooterId,
-                mountIndex: 0,
-                targetId
-            }, ctx);
-            ctx.app.log.info(`[QA] FireWeapon succeeded on retry.`);
-        } catch (retryErr: any) {
-            ctx.app.log.error(`[QA] FireWeapon failed on retry: ${retryErr.message}`);
-            outcome = `Fire Failed: ${retryErr.message}`;
-        }
-    }
-
-    // Step simulation until resolved
     let ticks = 0;
-    const maxTicks = 5000;
+    const maxTicks = 15000;
+    let hasFiredAll = false;
+
     while (ticks < maxTicks) {
+        // Attempt to fire if we haven't successfully released yet
+        if (firedMunitions.size < input.rounds) {
+            try {
+                await combat_fire.call({
+                    matchId,
+                    entityId: shooterId,
+                    mountIndex: 0,
+                    targetId
+                }, ctx);
+            } catch (err: any) {
+                // Ignore alignment errors during loop
+            }
+        } else {
+            hasFiredAll = true;
+        }
+
         await sim_step.call({ matchId, ticks: 1 }, ctx);
         ticks++;
 
-        if (ticks % 100 === 0) {
-            ctx.app.log.info(`[QA] Sim Progress: ${ticks} ticks, outcome: ${outcome}, impacts: ${impacts.length}, active munitions: ${Array.from(world.getEntities()).filter(e => firedMunitions.has(e.id)).length}`);
+        // Detailed terminal phase logging and peak tracking
+        const activeEntities = Array.from(world.getEntities());
+        const activeMunitions = activeEntities.filter(e => firedMunitions.has(e.id));
+
+        for (const m of activeMunitions) {
+            const transform = m.getComponent(TransformComponent);
+            if (!transform) continue;
+
+            const stats = munitionStats.get(m.id);
+            if (stats) {
+                stats.maxAlt = Math.max(stats.maxAlt, transform.position.z);
+            }
+
+            const target = world.getEntity(targetId);
+            const targetPos = target?.getComponent(TransformComponent)?.position;
+            const distToTarget = targetPos ? VectorMath.distance(transform.position, targetPos) : -1;
+
+            if (distToTarget < 2000 && ticks % 100 === 0) {
+                const guidance = m.getComponent(GuidanceComponent);
+                ctx.app.log.info(`[QA] Terminal Phase: ${m.id} dist=${Math.round(distToTarget)}m alt=${Math.round(transform.position.z)}m lock=${guidance?.hasLock}`);
+            }
         }
 
-        if (outcome === 'Impact') break;
+        if (ticks % 100 === 0) {
+            ctx.app.log.info(`[QA] Sim Progress: ${ticks} ticks, target impacts: ${targetImpacts.length}, ground impacts: ${terrainImpacts.length}, active munitions: ${activeMunitions.length}/${firedMunitions.size}`);
+        }
 
-        const activeMunitions = Array.from(world.getEntities()).filter(e => firedMunitions.has(e.id));
-        if (firedMunitions.size > 0 && activeMunitions.length === 0) {
-            if (impacts.length === 0) outcome = 'Miss';
+        // Only exit when ALL munitions are fired AND all have resolved
+        if (hasFiredAll && activeMunitions.length === 0) {
+            outcome = targetImpacts.length > 0 ? 'Impact' : 'Miss';
             ctx.app.log.info(`[QA] All munitions resolved. Outcome: ${outcome}`);
             break;
         }
     }
     ctx.app.log.info(`[QA] Simulation ended after ${ticks} ticks.`);
 
-    if (ticks >= maxTicks && outcome === 'Running') outcome = 'Timeout';
+    if (ticks >= maxTicks && firedMunitions.size < input.rounds) outcome = 'Timeout';
 
     // 6. Calculate Metrics
     ctx.app.log.info(`[QA] Calculating metrics...`);
+
+    const currentMatch = ctx.app.matchService.getMatch(matchId);
+    const targetEntity = currentMatch.world.getEntity(targetId);
+    const finalTargetPos = targetEntity?.getComponent(TransformComponent)?.position || targetPos;
+
+    await currentMatch.flush();
     let biasM = 0;
     let cep50M = 0;
 
-    if (impacts.length > 0) {
-        const mip = impacts.reduce((acc, pos) => ({
-            x: acc.x + pos.x / impacts.length,
-            y: acc.y + pos.y / impacts.length,
-            z: acc.z + pos.z / impacts.length
+    if (targetImpacts.length > 0) {
+        const mip = targetImpacts.reduce((acc, pos) => ({
+            x: acc.x + pos.x / targetImpacts.length,
+            y: acc.y + pos.y / targetImpacts.length,
+            z: acc.z + pos.z / targetImpacts.length
         }), { x: 0, y: 0, z: 0 });
 
         const bias = {
-            x: mip.x - targetPos.x,
-            y: mip.y - targetPos.y,
-            z: mip.z - targetPos.z
+            x: mip.x - finalTargetPos.x,
+            y: mip.y - finalTargetPos.y,
+            z: mip.z - finalTargetPos.z
         };
         biasM = Math.sqrt(bias.x ** 2 + bias.y ** 2 + bias.z ** 2);
 
-        const distances = impacts.map(pos => {
+        const distances = targetImpacts.map(pos => {
             return Math.sqrt((pos.x - mip.x) ** 2 + (pos.y - mip.y) ** 2 + (pos.z - mip.z) ** 2);
         });
         distances.sort((a, b) => a - b);
         cep50M = distances[Math.floor(distances.length * 0.5)] || 0;
     }
 
-    let flightSamples: any[] = [];
-    if (firstMunitionId) {
+    // Comprehensive Metric Calculation across ALL munitions from DB
+    const munitionHistory = new Map<string, { samples: any[], maxAlt: number, minAlt: number, avgAlt: number, finalAlt: number }>();
+
+    for (const munitionId of firedMunitions) {
         const historyResponse = await history_get_entity_samples.call({
-            batchId: matchId, // Fixed: use batchId
-            entityId: firstMunitionId,
-            sampleCount: 500
+            batchId: matchId,
+            entityId: munitionId,
+            sampleCount: 200 // Reasonable for summary
         }, ctx);
-        flightSamples = historyResponse.samples || [];
-        ctx.app.log.info(`[QA] Flight Data retrieved for ${firstMunitionId}: ${flightSamples.length} samples.`);
+
+        const samples = historyResponse.samples || [];
+        if (samples.length > 0) {
+            const altitudes = samples.map((f: any) => f.position.z);
+            munitionHistory.set(munitionId, {
+                samples,
+                maxAlt: Math.max(...altitudes),
+                minAlt: Math.min(...altitudes),
+                avgAlt: altitudes.reduce((a: number, b: number) => a + b, 0) / altitudes.length,
+                finalAlt: samples[samples.length - 1].position.z
+            });
+        }
     }
 
+    const allHistoricalStats = Array.from(munitionHistory.values());
+    const globalMaxAlt = allHistoricalStats.length > 0 ? Math.max(...allHistoricalStats.map(s => s.maxAlt)) : 0;
+    const globalMinAlt = allHistoricalStats.length > 0 ? Math.min(...allHistoricalStats.map(s => s.minAlt)) : 0;
+    const globalAvgMaxAlt = allHistoricalStats.length > 0 ? allHistoricalStats.reduce((acc, s) => acc + s.maxAlt, 0) / allHistoricalStats.length : 0;
 
-    // 7. AI Agent Analysis
-    ctx.app.log.info(`[QA] Invoking AI Agent...`);
-    const agents = await ctx.app.agentService.listAgents();
-    const agent = agents.find(a => a.name === 'Qa Analyst');
-    
-    if (!agent) {
-        ctx.app.log.warn(`[QA] 'Qa Analyst' agent not found. Run 'npm run cli -- agent seed' to populate.`);
-        throw new Error("QA Analyst agent not found. Please seed the agents first.");
-    }
-
-    const thread = await ctx.app.agentService.createThread({
-        agentId: agent.id,
-        matchId: matchId,
-        name: `Analysis of ${input.weaponProfileId} Test`
+    // Detect Flight Anomalies (e.g., any round deviating > 15% from avg max alt)
+    const anomalies: string[] = [];
+    munitionHistory.forEach((stats, id) => {
+        const deviation = Math.abs(stats.maxAlt - globalAvgMaxAlt) / (globalAvgMaxAlt || 1);
+        if (deviation > 0.15) {
+            anomalies.push(`${id} peak altitude (${stats.maxAlt.toFixed(1)}m) deviated by ${(deviation * 100).toFixed(1)}%`);
+        }
     });
+
+    const firstMunitionData = firstMunitionId ? munitionHistory.get(firstMunitionId) : undefined;
+    const firstMunitionSamples = firstMunitionData?.samples || [];
 
     const prompt = `
 [WEAPON TEST RESULTS]
+Match ID: ${matchId}
 Weapon: ${input.weaponProfileId}
-Outcome: ${outcome}
-Range: ${input.rangeM}m
-Impacts: ${JSON.stringify(impacts)}
-Bias: ${biasM.toFixed(2)}m
-CEP(50): ${cep50M.toFixed(2)}m
-Ticks: ${ticks}
-Flight Samples: ${flightSamples.length}
+Target ID: ${targetId}
+Outcome: ${outcome} (Target Impacts: ${targetImpacts.length}, Ground Hits: ${terrainImpacts.length})
+Rounds Fired: ${firedMunitions.size} / ${input.rounds}
 
-[TELEMETRY SUMMARY]
-${flightSamples.slice(0, 5).map(f => `Tick ${f.tick}: ${JSON.stringify(f.position)}`).join('\n')}
+[AGGREGATE PERFORMANCE (Target Hits Only)]
+Bias (Mean Impact Point): ${biasM.toFixed(2)}m
+CEP(50): ${cep50M.toFixed(2)}m
+
+[FLIGHT ENVELOPE (Across All Rounds)]
+Global Peak Altitude: ${globalMaxAlt.toFixed(2)}m
+Average Peak Altitude: ${globalAvgMaxAlt.toFixed(2)}m
+Global Min Altitude: ${globalMinAlt.toFixed(2)}m
+
+[MUNITION REGISTRY & FLIGHT STATS]
+${Array.from(munitionHistory.entries()).map(([id, s]) => {
+        const simStats = munitionStats.get(id);
+        return `- ${id}: status=${simStats?.status}, type=${simStats?.impactType || 'N/A'}, peakAlt=${s.maxAlt.toFixed(1)}m, impactAlt=${s.finalAlt.toFixed(1)}m`;
+    }).join('\n')}
+
+${anomalies.length > 0 ? `[FLIGHT ANOMALIES DETECTED]\n${anomalies.map(a => `! ${a}`).join('\n')}` : '[NO SIGNIFICANT FLIGHT ANOMALIES]'}
+
+[REPRESENTATIVE TRAJECTORY (Munition: ${firstMunitionId})]
+Samples: ${firstMunitionSamples.length}
+${firstMunitionSamples.slice(0, 3).map((f: any) => `Tick ${f.tick}: ${JSON.stringify(f.position)}`).join('\n')}
 ...
-${flightSamples.slice(-5).map(f => `Tick ${f.tick}: ${JSON.stringify(f.position)}`).join('\n')}
+${firstMunitionSamples.slice(-3).map((f: any) => `Tick ${f.tick}: ${JSON.stringify(f.position)}`).join('\n')}
 
 Please analyze these results for any logic errors or performance anomalies. 
-Check if the weapon reached the target, if the accuracy is within expected parameters for this type of system, and if the simulation resolved correctly.
+Check if the munitions reached the target, if accuracy and flight profiles are consistent across all ${firedMunitions.size} rounds, and if the simulation resolved correctly.
+
+You must use the bug report tool to report any issues but search for a similar bug first.
 `;
 
+    console.log(`[QA] Prompt: ${prompt}`);
+
+    // 7. AI Agent Analysis
     let agentAnalysis = "";
-    for await (const event of ctx.app.agentService.runAgentStream(thread.id, prompt)) {
-        if (event.type === 'content') {
-            agentAnalysis += event.text;
+    if (enableAnalysis) {
+        ctx.app.log.info(`[QA] Invoking AI Agent...`);
+        const agents = await ctx.app.agentService.listAgents();
+        const agent = agents.find(a => a.name === 'Qa Analyst');
+
+        if (!agent) {
+            ctx.app.log.warn(`[QA] 'Qa Analyst' agent not found. Run 'npm run cli -- agent seed' to populate.`);
+            ctx.app.matchService.deleteMatch(matchId);
+            throw new Error("QA Analyst agent not found. Please seed the agents first.");
+        }
+
+        const thread = await ctx.app.agentService.createThread({
+            agentId: agent.id,
+            matchId: matchId,
+            name: `Analysis of ${input.weaponProfileId} Test`
+        });
+
+
+        const agentStream = ctx.app.agentService.runAgentStream(thread.id, prompt);
+
+
+        for await (const event of agentStream) {
+            switch (event.type) {
+                case 'thinking':
+                    process.stdout.write(`\x1b[90m${event.text}\x1b[0m`);
+                    break;
+                case 'content':
+                    process.stdout.write(event.text || '');
+                    agentAnalysis += event.text;
+                    break;
+                case 'tool_call':
+                    console.log(`\n\x1b[33m[TOOL CALL]\x1b[0m ${event.name}(${JSON.stringify(event.args)})`);
+                    break;
+                case 'tool_result':
+                    console.log(`\x1b[32m[TOOL RESULT]\x1b[0m ${event.name} returned data: \n ${JSON.stringify(event.result)}`);
+                    break;
+                case 'done':
+                    console.log(`\n\x1b[36m[AGENT DONE]\x1b[0m Message ID: ${event.messageId}`);
+                    break;
+                case 'error':
+                    console.error(`\n\x1b[31m[AGENT ERROR]\x1b[0m ${JSON.stringify(event, null, 2)}`);
+                    break;
+            }
         }
     }
+
+    // Clean up
+    await match.flush();
+    ctx.app.matchService.deleteMatch(matchId);
 
     return {
         matchId,
         outcome,
         metrics: {
-            impacts,
+            impacts: targetImpacts,
             biasM,
             cep50M,
             munitionsFired: firedMunitions.size
         },
-        agentAnalysis
+        agentAnalysis: agentAnalysis
     };
 });
 

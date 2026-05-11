@@ -83,6 +83,7 @@ export class OllamaAdapter extends EventEmitter {
             messages: this.messages,
             tools: tools.length > 0 ? tools : undefined,
             stream: true,
+            think: false,
             options: {
                 temperature: 0.1
             }
@@ -120,7 +121,7 @@ export class OllamaAdapter extends EventEmitter {
 
         this.addMessage(fullMessage);
         this.emit('chat:finished', fullMessage.content);
-        
+
         yield {
             type: 'finished',
             content: fullMessage.content,

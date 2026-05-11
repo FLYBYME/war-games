@@ -268,8 +268,10 @@ export class EntityManager {
 
     private getPlatformDefaults(type: string) {
         switch (type) {
-            case 'Weapon': return { wingspanM: 1, wingAreaS: 0.5, dragCoeffCd: 0.02, liftCoeffCl: 0.3, maxG: 50 };
-            case 'Helicopter': return { wingspanM: 12, wingAreaS: 30, dragCoeffCd: 0.05, liftCoeffCl: 0.8, maxG: 4 };
+            case 'Weapon': return { wingspanM: 1, wingAreaS: 0.2, dragCoeffCd: 0.02, liftCoeffCl: 0.1, maxG: 50 };
+            case 'Aircraft': return { wingspanM: 12, wingAreaS: 35, dragCoeffCd: 0.015, liftCoeffCl: 0.5, maxG: 9 };
+            case 'Helicopter': return { wingspanM: 4, wingAreaS: 40, dragCoeffCd: 0.04, liftCoeffCl: 0.4, maxG: 4 };
+            case 'Ship': return { wingspanM: 0, wingAreaS: 0, dragCoeffCd: 0, liftCoeffCl: 0, maxG: 0 };
             default: return { wingspanM: 10, wingAreaS: 25, dragCoeffCd: 0.02, liftCoeffCl: 0.5, maxG: 9 };
         }
     }

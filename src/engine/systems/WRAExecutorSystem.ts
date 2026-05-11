@@ -9,6 +9,7 @@ import { WeaponProfileRegistry } from '../core/WeaponProfileRegistry.js';
 import { VectorMath } from '../math/VectorMath.js';
 import { logger } from '../core/Logger.js';
 import { GuidanceComponent } from '../components/Guidance.js';
+import { CollisionComponent } from '../components/Collision.js';
 
 /**
  * WRAExecutorSystem: Evaluates WRA rules and triggers automated engagements.
@@ -68,6 +69,11 @@ export class WRAExecutorSystem implements ISystem {
                 }
 
                 if (!isHostile) continue;
+                if (track.trueEntityId === entity.id) continue; // Don't target yourself
+                
+                // Extra safety: don't target same side
+                const targetEntity = world.getEntity(track.trueEntityId);
+                if (targetEntity && targetEntity.side === entity.side) continue;
 
                 // 2. WRA Rule Matching
                 const targetType = track.classification || 'Unknown';
@@ -173,7 +179,12 @@ export class WRAExecutorSystem implements ISystem {
 
                             const inFlightCount = [...world.getEntities()].filter(e => {
                                 const g = e.getComponent(GuidanceComponent) as GuidanceComponent;
-                                return g && g.targetId === track.trueEntityId;
+                                const isProjectile = e.profileId?.includes('projectile') || e.profileId?.includes('shell');
+                                const col = e.getComponent(CollisionComponent);
+                                
+                                // Count if it's guided towards target OR if it's an unguided shell from us
+                                return (g && g.targetId === track.trueEntityId) || 
+                                       (isProjectile && col?.ownerId === entity.id);
                             }).length + commandedThisTick;
 
                             const requiredQty = rule.quantity !== undefined ? rule.quantity : 1;

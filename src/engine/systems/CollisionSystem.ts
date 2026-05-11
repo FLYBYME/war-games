@@ -38,7 +38,12 @@ export class CollisionSystem implements ISystem {
 
             // 1. Entity-Entity Collisions
             const isMissile = collision.layer === 'missile';
-            const searchRadius = isMissile ? 30 : collision.radiusMeters * 5;
+            const kinematics = entity.getComponent(KinematicsComponent);
+            const velocityMag = kinematics ? VectorMath.magnitude(kinematics.velocity) : 0;
+            
+            // Search radius must cover the distance traveled in one tick for CCD to work
+            // Expanded further to account for proximity fuse and high-speed intercepts
+            const searchRadius = isMissile ? Math.max(250, velocityMag * _dt + 200) : collision.radiusMeters * 5;
             const nearbyIds = this.spatialGrid.getNearbyEntities(transform.position, searchRadius);
 
             for (const otherId of nearbyIds) {
@@ -117,13 +122,17 @@ export class CollisionSystem implements ISystem {
                         const closest = VectorMath.closestPointOnSegment(otherTransform.position, prevPos, transform.position);
                         const distToClosestSq = VectorMath.distanceSq(closest, otherTransform.position);
 
-                        // Proximity Fuse: If missile (layer 'missile') and target is Air, expand hit radius to 15m
+                        // Proximity Fuse: If missile (layer 'missile') and target is Air, expand hit radius to 200m
                         const isMissile = collision.layer === 'missile';
                         const otherProfile = otherEntity.profileId ? profileRegistry.get(otherEntity.profileId) : undefined;
                         const isAirTarget = otherProfile?.type === 'Aircraft' || otherProfile?.type === 'Helicopter';
 
-                        const effectiveMinDist = (isMissile && isAirTarget) ? Math.max(minDistance, 15) : minDistance;
+                        const effectiveMinDist = (isMissile && isAirTarget) ? Math.max(minDistance, 200) : minDistance;
                         hasCollided = distToClosestSq <= effectiveMinDist * effectiveMinDist;
+                        
+                        if (isMissile && VectorMath.distance(transform.position, otherTransform.position) < 500) {
+                            console.log(`[COLLISION] Missile ${entity.id} near ${otherId} | dist=${Math.round(Math.sqrt(distToClosestSq))}m | fuse=${effectiveMinDist}m | hit=${hasCollided}`);
+                        }
                     } else {
                         // Discrete Sphere-Sphere Intersection
                         const distSq = VectorMath.distanceSq(transform.position, otherTransform.position);

@@ -28,8 +28,10 @@ export function createMockEntity(id: string, side: string = 'Blue'): any {
 export function createMockMatchHandle(overrides: Partial<IMatchHandle> = {}): IMatchHandle {
     const entities = new Map<string, any>();
     
-    const world: IWorldView = {
-        currentTick: 0,
+    let tickValue = 0;
+    const world: any = {
+        get currentTick() { return tickValue; },
+        set currentTick(v: number) { tickValue = v; },
         timestamp: 0,
         isPaused: false,
         stats: {
@@ -46,7 +48,9 @@ export function createMockMatchHandle(overrides: Partial<IMatchHandle> = {}): IM
         } as any,
         events: {
             emit: vi.fn(),
-            on: vi.fn()
+            on: vi.fn(),
+            onAny: vi.fn(),
+            offAny: vi.fn()
         } as any,
         getEntity: vi.fn((id: string) => entities.get(id)),
         getEntities: vi.fn(() => entities.values()),
@@ -64,7 +68,9 @@ export function createMockMatchHandle(overrides: Partial<IMatchHandle> = {}): IM
             integer: vi.fn(() => Math.floor(Math.random() * 1000000))
         } as any,
         getTracerSize: vi.fn(() => 0),
-        getOctreeNodeCount: vi.fn(() => 0)
+        getOctreeNodeCount: vi.fn(() => 0),
+        tick: vi.fn(async (_dt: number) => { tickValue++; }),
+        step: vi.fn(async () => { tickValue++; })
     };
 
     const handle: IMatchHandle = {
@@ -75,6 +81,7 @@ export function createMockMatchHandle(overrides: Partial<IMatchHandle> = {}): IM
         currentTick: 0,
         timeCompression: 1,
         world,
+        flush: vi.fn(async () => {}),
         ...overrides
     };
     

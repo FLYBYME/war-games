@@ -89,6 +89,25 @@ export class VectorMath {
     }
 
     /**
+     * rotateAroundAxis: Rotates a vector around an arbitrary axis.
+     * Angle in degrees.
+     */
+    public static rotateAroundAxis(v: Vector3, axis: Vector3, angleDeg: number): Vector3 {
+        const theta = angleDeg * Physics.DEG_TO_RAD;
+        const cosTheta = Math.cos(theta);
+        const sinTheta = Math.sin(theta);
+        const u = this.normalize(axis);
+
+        // Rodrigues' rotation formula: v_rot = v*cos(theta) + (u x v)*sin(theta) + u*(u . v)*(1 - cos(theta))
+        const term1 = this.multiplyScalar(v, cosTheta);
+        const term2 = this.multiplyScalar(this.cross(u, v), sinTheta);
+        const term3 = this.multiplyScalar(u, this.dot(u, v) * (1 - cosTheta));
+
+        return this.add(term1, this.add(term2, term3));
+    }
+
+
+    /**
      * rotateEulerInverse: The inverse rotation (World to Body).
      */
     public static rotateEulerInverse(v: Vector3, yaw: number, pitch: number, roll: number): Vector3 {

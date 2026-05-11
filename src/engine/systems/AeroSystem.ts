@@ -67,19 +67,22 @@ export class AeroSystem implements ISystem {
                     q = 0.5 * env.airDensity * vEff * vEff;
                 }
                 
-                // Lift: Simplified AoA-dependent lift curve
-                // Cl = Cl_0 + Cl_alpha * alpha
-                const cl0 = aero.liftCoeffCl > 0 ? 0.1 : 0; 
-                const clSlope = aero.liftCoeffCl > 0 ? 2 * Math.PI : 0;
-                let cl = cl0 + clSlope * aoa;
+                // Lift: Symmetric airfoil for munitions/missiles (Cl=0 at AoA=0)
+                // In a pro sim, we'd use a cl0 > 0 for high-lift wings, but for missiles it must be 0.
+                // Symmetric fins have a lower clSlope than large wings.
+                const clSlope = aero.liftCoeffCl > 0 ? 3.0 : 0;
+                let cl = clSlope * aoa;
 
                 // Drag: Cd = Cd_base + K * Cl^2 + WaveDrag
                 let cd = aero.dragCoeffCd + aero.inducedDragFactor * (cl * cl);
 
-                // Simple Wave Drag
+                // Simple Wave Drag (Supersonic penalty)
                 if (aero.machNumber > 0.8) {
-                    const waveDrag = Math.pow(Math.max(0, aero.machNumber - 0.8), 2) * 0.5;
-                    cd += waveDrag;
+                    // Gradual increase peaking at Mach 1.0, then tapering or holding.
+                    // Real Cd peaks at Mach 1 and then actually decreases slightly.
+                    const transonicPeak = Math.max(0, 1.0 - Math.abs(aero.machNumber - 1.0)) * 0.5;
+                    const supersonicBase = aero.machNumber > 1.0 ? 0.2 : 0;
+                    cd += (transonicPeak + supersonicBase);
                 }
 
                 // 4. Generate Forces

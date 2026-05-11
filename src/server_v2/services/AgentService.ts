@@ -69,7 +69,7 @@ export class AgentService {
 
         // 2. Build History for LLM
         const history = await this.getThreadHistory(threadId);
-        
+
         // 3. Setup Adapter
         let systemPrompt = agent.systemPrompt;
         if (thread.matchId) {
@@ -83,7 +83,7 @@ export class AgentService {
             model: agent.model,
             system: systemPrompt,
         });
-        
+
         for (const m of history) {
             if (m.role !== 'system') {
                 adapter.addMessage({
@@ -104,7 +104,7 @@ export class AgentService {
         // 4. Run Loop
         let isProcessing = true;
         let currentPrompt = prompt;
-        
+
         // Dynamic import of SDK to avoid circular dependencies or build issues if it's not generated yet
         const { WarGamesClientV2 } = await import('../../sdk_v2/generated/WarGamesClientV2.js');
         const client = new WarGamesClientV2(sdkBaseUrl);
@@ -139,10 +139,10 @@ export class AgentService {
                         const domainApi = (client.api as any)[tc.name.split('_')[0]];
                         const action = tc.name.split('_').slice(1).join('_');
                         const result = await domainApi[action](tc.arguments);
-                        
+
                         results.push(result);
                         yield { type: 'tool_result', name: tc.name, result, callId: crypto.randomUUID() };
-                        
+
                         adapter.addMessage({
                             role: 'tool',
                             content: JSON.stringify(result)
@@ -157,7 +157,7 @@ export class AgentService {
                         });
                     }
                 }
-                
+
                 // Continue the loop with a prompt to process tool results
                 currentPrompt = "Based on the tool results, continue.";
             } else {
@@ -192,7 +192,7 @@ export class AgentService {
         const fs = await import('fs/promises');
         const path = await import('path');
         const promptsDir = path.join(process.cwd(), 'src', 'server_v2', 'prompts');
-        
+
         let created = 0;
         let updated = 0;
 
@@ -218,7 +218,7 @@ export class AgentService {
                     await this.createAgent({
                         name,
                         systemPrompt,
-                        model: 'qwen3.5:2b', // Default for now
+                        model: 'qwen3.5:14b', // Default for now
                         config: { temperature: 0.1 }
                     });
                     created++;

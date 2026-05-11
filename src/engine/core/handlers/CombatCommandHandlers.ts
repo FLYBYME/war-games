@@ -108,6 +108,7 @@ export class FireWeaponHandler implements CommandHandler<FireWeaponCommand> {
                 world.stats.munitionsExpended++;
                 // Update lastFireTick to reset reload timer
                 combat.mounts[cmd.mountIndex].lastFireTick = world.currentTick;
+                combat.mounts[cmd.mountIndex].currentTargetId = undefined; // Clear target after manual fire
 
                 let munitionEntity;
                 // Use MunitionFactory for spawning

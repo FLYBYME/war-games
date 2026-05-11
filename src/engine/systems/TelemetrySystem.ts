@@ -23,7 +23,6 @@ export class TelemetrySystem implements ISystem {
 
     private events: SimulationEvent[] = [];
 
-
     private sideLosses: Map<Side, number> = new Map([
         [Side.Blue, 0],
         [Side.Red, 0],
@@ -32,28 +31,21 @@ export class TelemetrySystem implements ISystem {
     private munitionsExpended: number = 0;
     private subscribed = false;
     private tombstones: Map<string, KinematicSnapshot[]> = new Map();
+    
+    private pendingTelemetry: any[] = [];
+    private pendingEvents: any[] = [];
 
     public async process(world: IWorldView, _dt: number): Promise<Command[]> {
-        // Telemetry is reactive; process is mostly a no-op unless we do periodic aggregation.
-        // During the first run, we subscribe to the world event bus.
         if (!this.subscribed) {
             world.events.onAny((event: SimulationEvent) => {
                 this.recordEvent(event, world);
             });
             world.events.on('WeaponFired', () => {
                 this.munitionsExpended++;
-                if (this.externalWriter) {
-                    this.externalWriter.writeEvent({ 
-                        type: 'WeaponFired', 
-                        tick: world.currentTick, 
-                        data: JSON.stringify({}) 
-                    } as any);
-                }
             });
             this.subscribed = true;
         }
 
-        // 1. Capture Kinematics for units with TelemetryComponent
         for (const entity of world.getEntities()) {
             const tel = entity.getComponent(TelemetryComponent);
             const transform = entity.getComponent(TransformComponent);
@@ -63,7 +55,7 @@ export class TelemetrySystem implements ISystem {
             const mission = entity.getComponent(MissionComponent);
 
             if (tel && transform) {
-                const speed = kin ? (VectorMath.magnitude(kin.velocity) * 1.94384) : 0; // m/s to knots
+                const speed = kin ? (VectorMath.magnitude(kin.velocity) * 1.94384) : 0;
                 const fuelPct = (fuel && fuel.maxKg > 0) ? (fuel.currentKg / fuel.maxKg) : 1.0;
                 
                 tel.history.push({
@@ -85,7 +77,7 @@ export class TelemetrySystem implements ISystem {
                 }
 
                 if (this.externalWriter) {
-                    this.externalWriter.writeTelemetry({
+                    this.pendingTelemetry.push({
                         tick: world.currentTick,
                         entityId: entity.id,
                         side: entity.getComponent(SideComponent)?.side || entity.side || 'Neutral',
@@ -99,17 +91,25 @@ export class TelemetrySystem implements ISystem {
                         fuelPct,
                         missionType: mission?.missionType,
                         missionStatus: mission?.status
-                    }).catch(console.error);
+                    });
                 }
             }
+        }
+
+        if (this.externalWriter) {
+            for (const data of this.pendingTelemetry) {
+                await this.externalWriter.writeTelemetry(data);
+            }
+            for (const data of this.pendingEvents) {
+                await this.externalWriter.writeEvent(data);
+            }
+            this.pendingTelemetry = [];
+            this.pendingEvents = [];
         }
 
         return [];
     }
 
-    /**
-     * recordEvent: Manual entry for tactical events (can be called by other systems).
-     */
     public recordEvent(event: SimulationEvent, world?: IWorldView): void {
         const ignore = ['TickCompleted', 'ViewStateUpdated', 'metrics:performance'];
         if (ignore.includes(event.type)) return;
@@ -121,8 +121,7 @@ export class TelemetrySystem implements ISystem {
             // The Parquet database on disk is the source of truth for destroyed units.
         }
         
-        // Handle side losses (e.g. from EntityDestroyed)
-        const e = event as any; // Narrowing union access for telemetry purposes
+        const e = event as any;
         if (event.type === 'EntityDestroyed' && e.data) {
             const side = e.data.side || Side.Neutral;
             const value = e.data.pointValue || 100;
@@ -135,13 +134,12 @@ export class TelemetrySystem implements ISystem {
         }
 
         if (this.externalWriter) {
-            const e = event as any;
-            this.externalWriter.writeEvent({
+            this.pendingEvents.push({
                 tick: world?.currentTick || 0,
                 type: event.type,
                 entityId: e.entityId,
                 data: JSON.stringify(e.data || {})
-            } as any).catch(console.error);
+            } as any);
         }
     }
 

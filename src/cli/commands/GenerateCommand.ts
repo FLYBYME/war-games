@@ -227,9 +227,9 @@ export class GenerateCommand extends BaseCommand {
                 const inputSchema = isPlainAny(m.inputType) ? 'z.any()' : `Contracts.${m.inputType}`;
                 
                 if (m.isStream) {
-                    code += `    const ${domain}_${m.action} = ${domain}.command('${m.action}').description(\`${m.description}\`).action(async (o) => {\n        try {\n            const stream = client.api.${domain}.${m.action}(ZodToCliMapper.parseOptions(o, ${inputSchema} as any));\n            for await (const event of stream) {\n                console.log(JSON.stringify(event, null, 2));\n            }\n        } catch (err: any) { console.error(\`\\n\${C.red}\${C.bold}✖ Error:\${C.reset} \${err.message}\`); process.exit(1); }\n    });\n`;
+                    code += `    const ${domain}_${m.action} = ${domain}.command('${m.action}').description(\`${m.description}\`).action(async (o) => {\n        try {\n            const stream = client.api.${domain}.${m.action}(ZodToCliMapper.parseOptions(o, ${inputSchema} as any));\n            for await (const event of stream) {\n                console.dir(event, { depth: null });\n            }\n        } catch (err: any) { console.error(\`\\n\${C.red}\${C.bold}✖ Error:\${C.reset} \${err.message}\`); process.exit(1); }\n    });\n`;
                 } else {
-                    code += `    const ${domain}_${m.action} = ${domain}.command('${m.action}').description(\`${m.description}\`).action(async (o) => {\n        try { const res = await client.api.${domain}.${m.action}(ZodToCliMapper.parseOptions(o, ${inputSchema} as any)); console.log(JSON.stringify(res, null, 2)); } catch (err: any) { console.error(\`\\n\${C.red}\${C.bold}✖ Error:\${C.reset} \${err.message}\`); process.exit(1); }\n    });\n`;
+                    code += `    const ${domain}_${m.action} = ${domain}.command('${m.action}').description(\`${m.description}\`).action(async (o) => {\n        try { const res = await client.api.${domain}.${m.action}(ZodToCliMapper.parseOptions(o, ${inputSchema} as any)); console.dir(res, { depth: null }); } catch (err: any) { console.error(\`\\n\${C.red}\${C.bold}✖ Error:\${C.reset} \${err.message}\`); process.exit(1); }\n    });\n`;
                 }
                 code += `    ZodToCliMapper.mapSchemaToOptions(${domain}_${m.action}, ${inputSchema} as any);\n`;
             }

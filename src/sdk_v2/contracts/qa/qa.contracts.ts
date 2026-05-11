@@ -11,6 +11,7 @@ export const TestWeaponInputSchema = z.object({
     rangeM: z.number().default(10000).describe("Horizontal distance to target in meters"),
     altitudeM: z.number().default(500).describe("Target altitude in meters"),
     rounds: z.number().default(1).describe("Number of rounds to fire"),
+    enableAnalysis: z.boolean().default(true).describe("Whether to perform AI analysis"),
 });
 
 export const TestWeaponOutputSchema = z.object({

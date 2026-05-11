@@ -63,10 +63,11 @@ export interface IMatchHandle {
     readonly id: string;
     readonly name: string;
     readonly scenarioId: string;
-    readonly isPaused: boolean;
+    isPaused: boolean;
     readonly currentTick: number;
-    readonly timeCompression: number;
+    timeCompression: number;
     readonly world: IWorldView;
+    flush(): Promise<void>;
 }
 
 import { TerrainService } from '../services/TerrainService.js';

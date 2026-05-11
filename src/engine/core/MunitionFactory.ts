@@ -46,6 +46,8 @@ export class MunitionFactory {
         const env = shooter.getComponent(EnvironmentComponent) as EnvironmentComponent;
         const projectileProfile = world.profileRegistry.get(projectileProfileId);
 
+        const isMissile = weaponProfile.type === 'Missile';
+        
         const solution = FireControl.calculateAdvancedBallisticSolution(
             shooterTransform.position,
             shooterVel,
@@ -63,7 +65,21 @@ export class MunitionFactory {
         };
 
         const isVLS = mountName.toLowerCase().includes('vls') || weaponProfile.id.toLowerCase().includes('vls');
-        const launchPitch = isVLS ? 85 : solution.elevationDeg;
+        
+        // Guided missiles should point directly at the target (or predicted intercept) 
+        // without ballistic drop compensation, as their guidance system handles the lift/climb.
+        // Starting with ballistic drop comp causes them to overshoot or "fight" the guidance.
+        let launchPitch: number;
+        if (isVLS) {
+            launchPitch = 85;
+        } else if (isMissile) {
+            const vToTarget = VectorMath.subtract(targetTransform.position, shooterTransform.position);
+            const groundDist = Math.sqrt(vToTarget.x * vToTarget.x + vToTarget.y * vToTarget.y);
+            launchPitch = Math.atan2(vToTarget.z, groundDist) * (180 / Math.PI);
+        } else {
+            launchPitch = solution.elevationDeg;
+        }
+        
         const launchHdg = solution.azimuthDeg;
 
         const munition = entityMgr.spawn({
@@ -167,6 +183,10 @@ export class MunitionFactory {
         targetId: EntityId,
         weaponProfile: WeaponProfile
     ) {
+        const projectileProfileId = weaponProfile.entityProfileId || `${weaponProfile.id}-projectile`;
+        const projectileProfile = world.profileRegistry.get(projectileProfileId);
+        const maneuverabilityG = projectileProfile?.aero?.maxG || projectileProfile?.kinematics?.turnRateDegS ? 15 : 30; // Fallback logic
+
         const prop = munition.getComponent(PropulsionComponent);
         if (prop) {
             prop.throttle = 1.0;
@@ -185,7 +205,8 @@ export class MunitionFactory {
         munition.addComponent(new GuidanceComponent({
             guidanceType: compGuidanceType,
             targetId,
-            illuminatorId: compGuidanceType === CompGuidanceType.SARH ? shooterId : undefined
+            illuminatorId: compGuidanceType === CompGuidanceType.SARH ? shooterId : undefined,
+            maneuverabilityG
         }));
 
         munition.addComponent(new MissionComponent({
@@ -200,7 +221,7 @@ export class MunitionFactory {
             if (!munition.getComponent(SensorComponent)) {
                 munition.addComponent(new SensorComponent({
                     sensorType: SensorType.Radar,
-                    maxRangeM: 20000,
+                    maxRangeM: 50000,
                     isActive: true,
                     beamWidthDeg: 45,
                     band: EMBand.X,

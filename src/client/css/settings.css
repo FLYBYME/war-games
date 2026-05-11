@@ -1,0 +1,583 @@
+/* ── Settings Editor ───────────────────────────────────────── */
+
+/*
+ * Fix the scroll chain.
+ * DOM hierarchy: .editor-body > .editor-content-panel > .extension-view-container > .settings-editor
+ * .editor-body has overflow:hidden and position:relative in main.css,
+ * so the content-panel and its children must be sized absolutely or via flex
+ * to allow internal scrolling.
+ */
+
+/* Let the content panel fill the body and scroll */
+.editor-content-panel:has(.settings-editor) {
+    overflow: auto !important;
+}
+
+/* Let the extension wrapper grow naturally instead of clipping */
+.extension-view-container:has(.settings-editor) {
+    overflow: visible !important;
+    height: auto !important;
+}
+
+.settings-editor {
+    display: flex;
+    flex-direction: column;
+    background: var(--bg-root, #1e1e1e);
+    color: var(--text-main, #ccc);
+    font-family: var(--font-ui, sans-serif);
+}
+
+/* ── Header ────────────────────────────────────────────────── */
+
+.settings-header {
+    padding: 32px 40px 20px;
+    flex-shrink: 0;
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+    border-bottom: 1px solid var(--border-color, #454545);
+}
+
+.settings-title {
+    font-size: 22px;
+    font-weight: 600;
+    margin: 0;
+    color: #fff;
+    display: flex;
+    align-items: center;
+    gap: 10px;
+}
+
+.settings-title::before {
+    content: '\f013';
+    /* fa-cog */
+    font-family: 'Font Awesome 5 Free';
+    font-weight: 900;
+    font-size: 18px;
+    color: var(--accent, #007acc);
+}
+
+.settings-subtitle {
+    font-size: 13px;
+    color: var(--text-muted, #858585);
+    margin: 0 0 6px;
+}
+
+/* ── Search ────────────────────────────────────────────────── */
+
+.settings-search-wrap {
+    position: relative;
+    max-width: 460px;
+}
+
+.settings-search-icon {
+    position: absolute;
+    left: 10px;
+    top: 50%;
+    transform: translateY(-50%);
+    font-size: 13px;
+    color: var(--text-muted, #858585);
+    pointer-events: none;
+}
+
+.settings-search {
+    width: 100%;
+    padding: 7px 10px 7px 32px;
+    border: 1px solid var(--border-color, #454545);
+    border-radius: 4px;
+    background: var(--bg-input, #3c3c3c);
+    color: var(--text-main, #ccc);
+    font-size: 13px;
+    font-family: inherit;
+    outline: none;
+    transition: border-color 0.15s;
+}
+
+.settings-search:focus {
+    border-color: var(--accent, #007acc);
+}
+
+/* ── Reset All ─────────────────────────────────────────────── */
+
+.settings-reset-all {
+    align-self: flex-start;
+    margin-top: 4px;
+    padding: 5px 14px;
+    background: transparent;
+    border: 1px solid var(--border-color, #454545);
+    color: var(--text-muted, #858585);
+    border-radius: 4px;
+    font-size: 12px;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    transition: color 0.15s, border-color 0.15s;
+}
+
+.settings-reset-all:hover {
+    color: #fff;
+    border-color: #fff;
+}
+
+/* ── Sections ──────────────────────────────────────────────── */
+
+.settings-sections {
+    padding: 20px 40px 40px;
+    flex: 1;
+}
+
+.settings-section {
+    margin-bottom: 28px;
+}
+
+.settings-section-title {
+    font-size: 13px;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.6px;
+    color: var(--accent, #007acc);
+    margin: 0 0 12px;
+    padding-bottom: 6px;
+    border-bottom: 1px solid rgba(255, 255, 255, 0.06);
+    cursor: pointer;
+    user-select: none;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+}
+
+.settings-section-chevron {
+    font-size: 10px;
+    transition: transform 0.2s;
+}
+
+.settings-section-chevron.collapsed {
+    transform: rotate(-90deg);
+}
+
+.settings-section.collapsed .settings-section-body {
+    display: none;
+}
+
+/* ── Setting Row ───────────────────────────────────────────── */
+
+.settings-row {
+    display: flex;
+    align-items: flex-start;
+    justify-content: space-between;
+    gap: 24px;
+    padding: 14px 16px;
+    border-radius: 6px;
+    transition: background-color 0.12s;
+}
+
+.settings-row:hover {
+    background: rgba(255, 255, 255, 0.03);
+}
+
+.settings-row+.settings-row {
+    border-top: 1px solid rgba(255, 255, 255, 0.04);
+}
+
+/* ── Info Column ───────────────────────────────────────────── */
+
+.settings-row-info {
+    flex: 1;
+    min-width: 0;
+}
+
+.settings-row-label {
+    font-size: 14px;
+    font-weight: 500;
+    color: #e0e0e0;
+    margin-bottom: 2px;
+}
+
+.settings-row-key {
+    font-size: 11px;
+    font-family: var(--font-code, monospace);
+    color: var(--text-muted, #858585);
+    background: rgba(255, 255, 255, 0.05);
+    padding: 1px 6px;
+    border-radius: 3px;
+    display: inline-block;
+    margin-bottom: 4px;
+}
+
+.settings-row-description {
+    font-size: 12px;
+    color: var(--text-muted, #858585);
+    line-height: 1.5;
+}
+
+/* ── Control Column ────────────────────────────────────────── */
+
+.settings-row-control {
+    flex-shrink: 0;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+}
+
+/* ── Toggle Switch ─────────────────────────────────────────── */
+
+.settings-toggle {
+    position: relative;
+    width: 40px;
+    height: 22px;
+    cursor: pointer;
+}
+
+.settings-toggle input {
+    opacity: 0;
+    width: 0;
+    height: 0;
+    position: absolute;
+}
+
+.settings-toggle-slider {
+    position: absolute;
+    inset: 0;
+    background: #555;
+    border-radius: 22px;
+    transition: background 0.2s;
+}
+
+.settings-toggle-slider::after {
+    content: '';
+    position: absolute;
+    width: 16px;
+    height: 16px;
+    left: 3px;
+    top: 3px;
+    background: #fff;
+    border-radius: 50%;
+    transition: transform 0.2s;
+}
+
+.settings-toggle input:checked+.settings-toggle-slider {
+    background: var(--accent, #007acc);
+}
+
+.settings-toggle input:checked+.settings-toggle-slider::after {
+    transform: translateX(18px);
+}
+
+/* ── Inputs ────────────────────────────────────────────────── */
+
+.settings-input,
+.settings-select {
+    padding: 5px 10px;
+    border: 1px solid var(--border-color, #454545);
+    border-radius: 4px;
+    background: var(--bg-input, #3c3c3c);
+    color: var(--text-main, #ccc);
+    font-size: 13px;
+    font-family: inherit;
+    outline: none;
+    transition: border-color 0.15s;
+}
+
+.settings-input:focus,
+.settings-select:focus {
+    border-color: var(--accent, #007acc);
+}
+
+.settings-input-number {
+    width: 80px;
+    text-align: center;
+}
+
+.settings-select {
+    min-width: 140px;
+    cursor: pointer;
+}
+
+/* ── Per-row Reset ─────────────────────────────────────────── */
+
+.settings-row-reset {
+    background: transparent;
+    border: none;
+    color: var(--text-muted, #858585);
+    font-size: 12px;
+    cursor: pointer;
+    padding: 4px 6px;
+    border-radius: 3px;
+    transition: color 0.15s, background 0.15s;
+    display: flex;
+    align-items: center;
+}
+
+.settings-row-reset:hover {
+    color: #fff;
+    background: rgba(255, 255, 255, 0.1);
+}
+
+/* ── Extension Marketplace ─────────────────────────────────── */
+
+.extensions-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(320px, 1fr));
+    gap: 24px;
+    margin-top: 24px;
+    padding-bottom: 40px;
+}
+
+.extension-card {
+    background: rgba(30, 30, 33, 0.6);
+    backdrop-filter: blur(16px);
+    -webkit-backdrop-filter: blur(16px);
+    border: 1px solid rgba(255, 255, 255, 0.06);
+    border-radius: 12px;
+    padding: 24px;
+    display: flex;
+    flex-direction: column;
+    gap: 16px;
+    transition: transform 0.25s cubic-bezier(0.2, 0.8, 0.2, 1), box-shadow 0.25s cubic-bezier(0.2, 0.8, 0.2, 1), border-color 0.25s;
+    box-shadow: 0 8px 32px rgba(0, 0, 0, 0.2);
+    position: relative;
+    overflow: hidden;
+}
+
+.extension-card::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    height: 1px;
+    background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.15), transparent);
+    opacity: 0.5;
+}
+
+.extension-card:hover {
+    transform: translateY(-6px);
+    box-shadow: 0 16px 40px rgba(0, 0, 0, 0.4);
+    border-color: rgba(255, 255, 255, 0.12);
+}
+
+.extension-card-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-start;
+}
+
+.extension-card-title {
+    margin: 0 0 6px 0;
+    font-size: 18px;
+    font-weight: 600;
+    color: #fff;
+    letter-spacing: 0.2px;
+    text-shadow: 0 2px 4px rgba(0, 0, 0, 0.5);
+}
+
+.extension-card-author {
+    font-size: 13px;
+    color: var(--text-muted, #858585);
+    display: flex;
+    align-items: center;
+    gap: 6px;
+}
+
+.extension-card-author i {
+    font-size: 11px;
+    color: #aaa;
+}
+
+.extension-card-version-label {
+    font-size: 11px;
+    color: #4ade80;
+    margin-top: 8px;
+    font-weight: 600;
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    background: rgba(74, 222, 128, 0.15);
+    padding: 4px 10px;
+    border-radius: 20px;
+    border: 1px solid rgba(74, 222, 128, 0.2);
+    box-shadow: 0 2px 8px rgba(74, 222, 128, 0.1);
+}
+
+.extension-card-desc {
+    font-size: 14px;
+    color: #b0b0b0;
+    line-height: 1.6;
+    flex: 1;
+    margin: 0;
+}
+
+.extension-card-actions {
+    display: flex;
+    gap: 10px;
+    align-items: center;
+    flex-wrap: wrap;
+    margin-top: auto;
+    padding-top: 16px;
+    border-top: 1px solid rgba(255, 255, 255, 0.05);
+}
+
+.extension-card-btn {
+    padding: 8px 16px;
+    border-radius: 8px;
+    font-size: 13px;
+    font-weight: 500;
+    cursor: pointer;
+    transition: all 0.2s cubic-bezier(0.2, 0.8, 0.2, 1);
+    border: none;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
+}
+
+.extension-card-btn i {
+    font-size: 14px;
+}
+
+.extension-card-btn-primary {
+    background: linear-gradient(135deg, #007acc, #005f9e);
+    color: #fff;
+    box-shadow: 0 4px 12px rgba(0, 122, 204, 0.3), inset 0 1px 1px rgba(255, 255, 255, 0.2);
+    flex: 1;
+}
+
+.extension-card-btn-primary:hover:not(:disabled) {
+    background: linear-gradient(135deg, #008cff, #006eb8);
+    box-shadow: 0 6px 16px rgba(0, 122, 204, 0.4), inset 0 1px 1px rgba(255, 255, 255, 0.3);
+    transform: translateY(-1px);
+}
+
+.extension-card-btn-primary:active:not(:disabled) {
+    transform: translateY(1px);
+    box-shadow: 0 2px 8px rgba(0, 122, 204, 0.3);
+}
+
+.extension-card-btn-primary:disabled {
+    background: rgba(0, 122, 204, 0.3);
+    color: rgba(255, 255, 255, 0.5);
+    cursor: not-allowed;
+    box-shadow: none;
+}
+
+.extension-card-btn-secondary {
+    background: rgba(255, 255, 255, 0.05);
+    color: #e0e0e0;
+    border: 1px solid rgba(255, 255, 255, 0.1);
+    backdrop-filter: blur(4px);
+}
+
+.extension-card-btn-secondary:hover:not(:disabled) {
+    background: rgba(255, 255, 255, 0.1);
+    border-color: rgba(255, 255, 255, 0.2);
+    transform: translateY(-1px);
+}
+
+.extension-card-btn-secondary:active:not(:disabled) {
+    transform: translateY(1px);
+}
+
+.extension-card-btn-danger {
+    background: rgba(244, 67, 54, 0.1);
+    color: #ff6b6b;
+    border: 1px solid rgba(244, 67, 54, 0.2);
+}
+
+.extension-card-btn-danger:hover {
+    background: rgba(244, 67, 54, 0.2);
+    border-color: rgba(244, 67, 54, 0.3);
+    color: #ff8787;
+}
+
+.extension-card-select {
+    padding: 8px 32px 8px 14px;
+    border: 1px solid rgba(255, 255, 255, 0.1);
+    border-radius: 8px;
+    background: rgba(0, 0, 0, 0.25);
+    color: #fff;
+    font-size: 13px;
+    outline: none;
+    appearance: none;
+    cursor: pointer;
+    transition: all 0.2s;
+    background-image: url("data:image/svg+xml;charset=US-ASCII,%3Csvg%20xmlns%3D%22http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg%22%20width%3D%22292.4%22%20height%3D%22292.4%22%3E%3Cpath%20fill%3D%22%23858585%22%20d%3D%22M287%2069.4a17.6%2017.6%200%200%200-13-5.4H18.4c-5%200-9.3%201.8-12.9%205.4A17.6%2017.6%200%200%200%200%2082.2c0%205%201.8%209.3%205.4%2012.9l128%20127.9c3.6%203.6%207.8%205.4%2012.8%205.4s9.2-1.8%2012.8-5.4L287%2095c3.5-3.5%205.4-7.8%205.4-12.8%200-5-1.9-9.2-5.5-12.8z%22%2F%3E%3C%2Fsvg%3E");
+    background-repeat: no-repeat;
+    background-position: right 12px top 50%;
+    background-size: 10px auto;
+    backdrop-filter: blur(4px);
+    flex-shrink: 0;
+}
+
+.extension-card-select:hover {
+    border-color: rgba(255, 255, 255, 0.2);
+    background-color: rgba(0, 0, 0, 0.35);
+}
+
+.extension-card-select:focus {
+    border-color: var(--accent, #007acc);
+    box-shadow: 0 0 0 2px rgba(0, 122, 204, 0.2);
+}
+
+.extension-card-select:disabled {
+    opacity: 0.5;
+    cursor: not-allowed;
+}
+
+.extension-card-desc-wrap {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+    flex: 1;
+}
+
+.extension-card-desc-display {
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-start;
+    gap: 12px;
+}
+
+.extension-card-edit-btn {
+    background: transparent;
+    border: none;
+    color: rgba(255, 255, 255, 0.3);
+    cursor: pointer;
+    font-size: 14px;
+    padding: 4px;
+    border-radius: 4px;
+    transition: all 0.2s;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.extension-card-edit-btn:hover {
+    color: #fff;
+    background: rgba(255, 255, 255, 0.1);
+}
+
+.extension-card-desc-edit {
+    display: none;
+    flex-direction: column;
+    gap: 10px;
+}
+
+.extension-card-textarea {
+    min-height: 80px;
+    resize: vertical;
+    border-radius: 8px;
+    background: rgba(0, 0, 0, 0.2);
+    border: 1px solid rgba(255, 255, 255, 0.1);
+    color: #fff;
+    padding: 10px;
+    font-family: inherit;
+    font-size: 13px;
+    line-height: 1.5;
+}
+
+.extension-card-textarea:focus {
+    outline: none;
+    border-color: var(--accent);
+    box-shadow: 0 0 0 2px rgba(0, 122, 204, 0.2);
+}

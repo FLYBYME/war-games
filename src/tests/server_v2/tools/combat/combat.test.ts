@@ -157,4 +157,69 @@ describe('Combat Tools Unit Tests', () => {
             expect((handle as any).world.queueExternalCommand).toHaveBeenCalledWith(expect.any(SetROECommand));
         });
     });
+
+    describe('combat_list_mounts', () => {
+        it('should list all weapon mounts on an entity', async () => {
+            const handle = createMockMatchHandle();
+            const entity = createMockEntity('e1');
+            const combat = new CombatComponent({
+                mounts: [{
+                    name: 'Mount 1',
+                    magazineIndices: [0],
+                    activeMagazineIndex: 0,
+                    reloadTicks: 10,
+                    lastFireTick: 0,
+                    minAzimuth: -180,
+                    maxAzimuth: 180,
+                    minElevation: 0,
+                    maxElevation: 90,
+                    slewRate: 20,
+                    currentAzimuth: 0,
+                    currentElevation: 0
+                }],
+                magazines: [{
+                    name: 'Mag 1',
+                    weaponProfileId: 'w1',
+                    capacity: 10,
+                    currentCount: 10
+                }]
+            });
+            entity.getComponent = vi.fn(() => combat);
+            (handle as any).world.getEntity = vi.fn(() => entity);
+
+            const matchService = createMockMatchService([handle]);
+            const ctx = createMockContext(matchService);
+
+            const result = await combat_list_mounts.call({ matchId: handle.id, entityId: 'e1' }, ctx);
+
+            expect(result.mounts).toHaveLength(1);
+            expect(result.mounts[0].name).toBe('Mount 1');
+        });
+    });
+
+    describe('combat_get_wra', () => {
+        it('should return WRA rules for an entity', async () => {
+            const handle = createMockMatchHandle();
+            const entity = createMockEntity('e1');
+            const doctrine = new DoctrineComponent({
+                wraRules: [{
+                    targetType: 'Aircraft',
+                    weaponType: 'sm-2',
+                    minRangeM: 1000,
+                    maxRangePct: 90,
+                    quantity: 1
+                }]
+            });
+            entity.getComponent = vi.fn(() => doctrine);
+            (handle as any).world.getEntity = vi.fn(() => entity);
+
+            const matchService = createMockMatchService([handle]);
+            const ctx = createMockContext(matchService);
+
+            const result = await combat_get_wra.call({ matchId: handle.id, entityId: 'e1' }, ctx);
+
+            expect(result.rules).toHaveLength(1);
+            expect(result.rules[0].targetType).toBe('Aircraft');
+        });
+    });
 });

@@ -28,9 +28,9 @@ export const matchListContract = defineContract({
 // ─── match_create ────────────────────────────────────────────────────────────
 
 export const MatchCreateInputSchema = z.object({
-    name: z.string().describe("Match name"),
+    name: z.string().min(1).describe("Match name"),
     description: z.string().optional().describe("Match description"),
-    scenarioId: z.string().describe("Scenario template ID to load"),
+    scenarioId: z.string().min(1).describe("Scenario template ID to load"),
     maxTurns: z.number().optional().default(10000).describe("Maximum simulation ticks")
 });
 
@@ -48,7 +48,7 @@ export const matchCreateContract = defineContract({
 // ─── match_get ───────────────────────────────────────────────────────────────
 
 export const MatchGetInputSchema = z.object({
-    matchId: z.string().describe("The match ID")
+    matchId: z.string().min(1).describe("The match ID")
 });
 
 export const matchGetContract = defineContract({
@@ -63,7 +63,7 @@ export const matchGetContract = defineContract({
 // ─── match_update ────────────────────────────────────────────────────────────
 
 export const MatchUpdateInputSchema = z.object({
-    matchId: z.string().describe("The match ID"),
+    matchId: z.string().min(1).describe("The match ID"),
     name: z.string().optional().describe("Updated match name"),
     description: z.string().optional().describe("Updated description"),
     maxTurns: z.number().optional().describe("Updated max turns")
@@ -81,7 +81,7 @@ export const matchUpdateContract = defineContract({
 // ─── match_delete ────────────────────────────────────────────────────────────
 
 export const MatchDeleteInputSchema = z.object({
-    matchId: z.string().describe("The match ID to delete")
+    matchId: z.string().min(1).describe("The match ID to delete")
 });
 
 export const MatchDeleteOutputSchema = z.object({
@@ -100,7 +100,7 @@ export const matchDeleteContract = defineContract({
 // ─── match_get_win_state ─────────────────────────────────────────────────────
 
 export const MatchWinStateInputSchema = z.object({
-    matchId: z.string().describe("The match ID")
+    matchId: z.string().min(1).describe("The match ID")
 });
 
 export const MatchWinStateOutputSchema = z.object({
