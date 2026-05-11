@@ -24,8 +24,8 @@ export class ZodToCliMapper {
     /**
      * Unflattens dot-notation options and handles coordinate parsing.
      */
-    public static parseOptions(options: Record<string, unknown>, schema: z.ZodTypeAny): Record<string, unknown> {
-        const result: Record<string, unknown> = {};
+    public static parseOptions<T extends z.ZodTypeAny>(options: Record<string, unknown>, schema: T): z.infer<T> {
+        const result: any = {};
         const unwrapped = this.unwrapSchema(schema);
 
         for (const [key, value] of Object.entries(options)) {
@@ -69,7 +69,7 @@ export class ZodToCliMapper {
             current[lastPart] = this.parseValue(value, fieldSchema);
         }
 
-        return result;
+        return result as z.infer<T>;
     }
 
     private static parseValue(value: unknown, schema?: z.ZodTypeAny): unknown {

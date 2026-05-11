@@ -174,6 +174,8 @@ import { EngineCommandPayloadSchema } from './commands.schema.js';
  * ScenarioEvent: A scripted command triggered by a scenario condition.
  */
 export const ScenarioEventSchema = z.object({
+    id: z.string().optional().describe("Unique identifier for the event"),
+    description: z.string().optional().describe("Human-readable description of the event"),
     tick: z.number().optional().describe("Backward-compat tick trigger"),
     trigger: ScenarioTriggerSchema.optional().describe("Trigger condition"),
     command: z.lazy(() => EngineCommandPayloadSchema).describe("Command to execute when triggered")
