@@ -67,6 +67,12 @@ export class WarGamesClientV2 {
             seed: async (args: z.infer<typeof Contracts.AgentSeedInputSchema>): Promise<z.infer<typeof Contracts.AgentSeedOutputSchema>> => this.request('POST', `/agents/seed`, args),
             thread_create: async (args: z.infer<typeof Contracts.ThreadCreateInputSchema>): Promise<z.infer<typeof Contracts.ThreadSchema>> => this.request('POST', `/agents/${args.agentId}/threads`, args),
             thread_history: async (args: z.infer<typeof Contracts.ThreadHistoryInputSchema>): Promise<z.infer<typeof Contracts.ThreadHistoryOutputSchema>> => this.request('GET', `/threads/${args.threadId}/history`, args),
+            update: async (args: z.infer<typeof Contracts.AgentUpdateInputSchema>): Promise<z.infer<typeof Contracts.AgentSchema>> => this.request('PATCH', `/agents/${args.agentId}`, args),
+            thread_list: async (args: z.infer<typeof Contracts.ThreadListInputSchema>): Promise<z.infer<typeof Contracts.ThreadListOutputSchema>> => this.request('GET', `/threads`, args),
+            thread_update: async (args: z.infer<typeof Contracts.ThreadUpdateInputSchema>): Promise<z.infer<typeof Contracts.ThreadSchema>> => this.request('PATCH', `/threads/${args.threadId}`, args),
+            thread_delete: async (args: z.infer<typeof Contracts.ThreadDeleteInputSchema>): Promise<z.infer<typeof Contracts.SuccessOutputSchema>> => this.request('DELETE', `/threads/${args.threadId}`, args),
+            message_update: async (args: z.infer<typeof Contracts.MessageUpdateInputSchema>): Promise<z.infer<typeof Contracts.MessageSchema>> => this.request('PATCH', `/messages/${args.messageId}`, args),
+            message_delete: async (args: z.infer<typeof Contracts.MessageDeleteInputSchema>): Promise<z.infer<typeof Contracts.SuccessOutputSchema>> => this.request('DELETE', `/messages/${args.messageId}`, args),
             run_stream: (args: z.infer<typeof Contracts.AgentRunStreamInputSchema>): AsyncIterable<z.infer<typeof Contracts.AgentEventSchema>> => this.stream('POST', `/threads/${args.threadId}/run`, args),
         },
         automation: {

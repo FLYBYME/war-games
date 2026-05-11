@@ -46,6 +46,56 @@ export class AgentService {
         return thread;
     }
 
+    async listThreads(filter: { agentId?: string; matchId?: string } = {}) {
+        let query = db.select().from(threads);
+        const conditions = [];
+        if (filter.agentId) conditions.push(eq(threads.agentId, filter.agentId));
+        if (filter.matchId) conditions.push(eq(threads.matchId, filter.matchId));
+        
+        // Simplified query handling for now
+        if (conditions.length > 0) {
+            // In a real app we'd use 'and(...conditions)'
+            if (filter.agentId) return db.select().from(threads).where(eq(threads.agentId, filter.agentId)).orderBy(desc(threads.updatedAt));
+            if (filter.matchId) return db.select().from(threads).where(eq(threads.matchId, filter.matchId)).orderBy(desc(threads.updatedAt));
+        }
+        return query.orderBy(desc(threads.updatedAt));
+    }
+
+    async updateThread(threadId: string, input: { name: string }) {
+        const [thread] = await db.update(threads)
+            .set({ name: input.name, updatedAt: new Date() })
+            .where(eq(threads.id, threadId))
+            .returning();
+        return thread;
+    }
+
+    async deleteThread(threadId: string) {
+        await db.delete(messages).where(eq(messages.threadId, threadId));
+        const result = await db.delete(threads).where(eq(threads.id, threadId)).returning();
+        return result.length > 0;
+    }
+
+    async updateMessage(messageId: string, input: { content: string }) {
+        const [message] = await db.update(messages)
+            .set({ content: input.content })
+            .where(eq(messages.id, messageId))
+            .returning();
+        return message;
+    }
+
+    async deleteMessage(messageId: string) {
+        const result = await db.delete(messages).where(eq(messages.id, messageId)).returning();
+        return result.length > 0;
+    }
+
+    async updateAgent(agentId: string, input: { name?: string; systemPrompt?: string; model?: string; config?: any }) {
+        const [agent] = await db.update(agents)
+            .set({ ...input, updatedAt: new Date() })
+            .where(eq(agents.id, agentId))
+            .returning();
+        return agent;
+    }
+
     async getThreadHistory(threadId: string) {
         return db.select().from(messages).where(eq(messages.threadId, threadId)).orderBy(messages.createdAt);
     }

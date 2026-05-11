@@ -57,7 +57,8 @@ describe('QA Tools Unit Tests', () => {
                 targetProfileId: 'f16',
                 rangeM: 5000,
                 altitudeM: 2000,
-                rounds: 1
+                rounds: 1,
+                enableAnalysis: true
             };
 
             const result = await qa_test_weapon.call(input, ctx);
@@ -83,7 +84,8 @@ describe('QA Tools Unit Tests', () => {
                 targetProfileId: 'f16',
                 rangeM: 5000,
                 altitudeM: 2000,
-                rounds: 1
+                rounds: 1,
+                enableAnalysis: true
             };
 
             await expect(qa_test_weapon.call(input, ctx)).rejects.toThrow('QA Analyst agent not found');

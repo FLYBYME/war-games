@@ -33,7 +33,10 @@ describe('Environment Tools Unit Tests', () => {
                     windDirDeg: 180,
                     visibilityNM: 10,
                     temperatureC: 20
-                }
+                },
+                getProjection: vi.fn(() => ({
+                    getOrigin: vi.fn(() => ({ lat: 0, lon: 0 }))
+                }))
             };
             (handle as any).world.getSystem = vi.fn(() => envSystem);
 

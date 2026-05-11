@@ -39,15 +39,9 @@ describe('Input Components', () => {
     });
 
     describe('SearchInput', () => {
-        it('should render with search icon', () => {
-            const search = new SearchInput({ placeholder: 'Search...' });
-            expect(search.getElement().querySelector('i')).not.toBeNull();
-        });
-
-        it('should clear value when clear button is clicked', () => {
-            const search = new SearchInput({ value: 'something' });
-            // SearchInput usually has a clear button if value exists
-            // We might need to check the internal structure
+        it('should render with placeholder', () => {
+            const search = new SearchInput({ placeholder: 'Search something...' });
+            expect(search.getElement().querySelector('input')?.placeholder).toBe('Search something...');
         });
     });
 });

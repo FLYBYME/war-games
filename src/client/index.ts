@@ -10,7 +10,7 @@ import { ToolRunnerExtension } from './extensions/ToolRunnerExtension';
 import { EntityExtension } from './extensions/EntityExtension';
 import { EventLogExtension } from './extensions/EventLogExtension';
 import { SimControlExtension } from './extensions/SimControlExtension';
-import { AgentExtension } from './extensions/AgentExtension';
+import { AgentExtension } from './extensions/agent/AgentExtension';
 import { DBBrowserExtension } from './extensions/DBBrowserExtension';
 import { HistoryExtension } from './extensions/HistoryExtension';
 import { DevToolsExtension } from './extensions/DevToolsExtension';

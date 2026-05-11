@@ -93,6 +93,41 @@ export const AgentSeedOutputSchema = z.object({
     updated: z.number().describe("Number of agents updated"),
 });
 
+export const AgentUpdateInputSchema = z.object({
+    agentId: z.string().describe("Target agent ID"),
+    name: z.string().optional().describe("Updated name"),
+    systemPrompt: z.string().optional().describe("Updated system prompt"),
+    model: z.string().optional().describe("Updated model"),
+    config: AgentConfigSchema.optional().describe("Updated configuration"),
+});
+
+export const ThreadListInputSchema = z.object({
+    agentId: z.string().optional().describe("Filter threads by agent ID"),
+    matchId: z.string().optional().describe("Filter threads by match ID"),
+});
+
+export const ThreadUpdateInputSchema = z.object({
+    threadId: z.string().describe("Target thread ID"),
+    name: z.string().describe("Updated thread name"),
+});
+
+export const ThreadDeleteInputSchema = z.object({
+    threadId: z.string().describe("The thread ID to delete"),
+});
+
+export const MessageUpdateInputSchema = z.object({
+    messageId: z.string().describe("Target message ID"),
+    content: z.string().describe("Updated message content"),
+});
+
+export const MessageDeleteInputSchema = z.object({
+    messageId: z.string().describe("The message ID to delete"),
+});
+
+export const SuccessOutputSchema = z.object({
+    success: z.boolean().describe("Whether the operation was successful"),
+});
+
 // --- Contracts ---
 
 export const agentCreateContract = defineContract({
@@ -147,6 +182,62 @@ export const threadHistoryContract = defineContract({
     inputSchema: ThreadHistoryInputSchema,
     outputSchema: ThreadHistoryOutputSchema,
     rest: { method: 'GET', path: '/threads/:threadId/history' }
+});
+
+export const agentUpdateContract = defineContract({
+    domain: 'agent',
+    action: 'update',
+    description: 'Update an existing agent configuration.',
+    inputSchema: AgentUpdateInputSchema,
+    outputSchema: AgentSchema,
+    rest: { method: 'PATCH', path: '/agents/:agentId' }
+});
+
+export const ThreadListOutputSchema = z.array(ThreadSchema);
+
+export const threadListContract = defineContract({
+    domain: 'agent',
+    action: 'thread_list',
+    description: 'List available conversation threads.',
+    inputSchema: ThreadListInputSchema,
+    outputSchema: ThreadListOutputSchema,
+    rest: { method: 'GET', path: '/threads' }
+});
+
+export const threadUpdateContract = defineContract({
+    domain: 'agent',
+    action: 'thread_update',
+    description: 'Update a conversation thread (e.g., rename it).',
+    inputSchema: ThreadUpdateInputSchema,
+    outputSchema: ThreadSchema,
+    rest: { method: 'PATCH', path: '/threads/:threadId' }
+});
+
+export const threadDeleteContract = defineContract({
+    domain: 'agent',
+    action: 'thread_delete',
+    description: 'Delete a conversation thread and all its messages.',
+    inputSchema: ThreadDeleteInputSchema,
+    outputSchema: SuccessOutputSchema,
+    rest: { method: 'DELETE', path: '/threads/:threadId' }
+});
+
+export const messageUpdateContract = defineContract({
+    domain: 'agent',
+    action: 'message_update',
+    description: 'Update the content of a specific message.',
+    inputSchema: MessageUpdateInputSchema,
+    outputSchema: MessageSchema,
+    rest: { method: 'PATCH', path: '/messages/:messageId' }
+});
+
+export const messageDeleteContract = defineContract({
+    domain: 'agent',
+    action: 'message_delete',
+    description: 'Delete a specific message from a thread.',
+    inputSchema: MessageDeleteInputSchema,
+    outputSchema: SuccessOutputSchema,
+    rest: { method: 'DELETE', path: '/messages/:messageId' }
 });
 
 export const agentRunStreamContract = defineContract({

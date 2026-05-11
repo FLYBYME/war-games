@@ -31,6 +31,30 @@ export function registerGeneratedCommands(program: Command, client: WarGamesClie
         try { const res = await client.api.agent.thread_history(ZodToCliMapper.parseOptions(o, Contracts.ThreadHistoryInputSchema as any)); console.dir(res, { depth: null }); } catch (err: any) { console.error(`\n${C.red}${C.bold}✖ Error:${C.reset} ${err.message}`); process.exit(1); }
     });
     ZodToCliMapper.mapSchemaToOptions(agent_thread_history, Contracts.ThreadHistoryInputSchema as any);
+    const agent_update = agent.command('update').description(`Update an existing agent configuration.`).action(async (o) => {
+        try { const res = await client.api.agent.update(ZodToCliMapper.parseOptions(o, Contracts.AgentUpdateInputSchema as any)); console.dir(res, { depth: null }); } catch (err: any) { console.error(`\n${C.red}${C.bold}✖ Error:${C.reset} ${err.message}`); process.exit(1); }
+    });
+    ZodToCliMapper.mapSchemaToOptions(agent_update, Contracts.AgentUpdateInputSchema as any);
+    const agent_thread_list = agent.command('thread_list').description(`List available conversation threads.`).action(async (o) => {
+        try { const res = await client.api.agent.thread_list(ZodToCliMapper.parseOptions(o, Contracts.ThreadListInputSchema as any)); console.dir(res, { depth: null }); } catch (err: any) { console.error(`\n${C.red}${C.bold}✖ Error:${C.reset} ${err.message}`); process.exit(1); }
+    });
+    ZodToCliMapper.mapSchemaToOptions(agent_thread_list, Contracts.ThreadListInputSchema as any);
+    const agent_thread_update = agent.command('thread_update').description(`Update a conversation thread (e.g., rename it).`).action(async (o) => {
+        try { const res = await client.api.agent.thread_update(ZodToCliMapper.parseOptions(o, Contracts.ThreadUpdateInputSchema as any)); console.dir(res, { depth: null }); } catch (err: any) { console.error(`\n${C.red}${C.bold}✖ Error:${C.reset} ${err.message}`); process.exit(1); }
+    });
+    ZodToCliMapper.mapSchemaToOptions(agent_thread_update, Contracts.ThreadUpdateInputSchema as any);
+    const agent_thread_delete = agent.command('thread_delete').description(`Delete a conversation thread and all its messages.`).action(async (o) => {
+        try { const res = await client.api.agent.thread_delete(ZodToCliMapper.parseOptions(o, Contracts.ThreadDeleteInputSchema as any)); console.dir(res, { depth: null }); } catch (err: any) { console.error(`\n${C.red}${C.bold}✖ Error:${C.reset} ${err.message}`); process.exit(1); }
+    });
+    ZodToCliMapper.mapSchemaToOptions(agent_thread_delete, Contracts.ThreadDeleteInputSchema as any);
+    const agent_message_update = agent.command('message_update').description(`Update the content of a specific message.`).action(async (o) => {
+        try { const res = await client.api.agent.message_update(ZodToCliMapper.parseOptions(o, Contracts.MessageUpdateInputSchema as any)); console.dir(res, { depth: null }); } catch (err: any) { console.error(`\n${C.red}${C.bold}✖ Error:${C.reset} ${err.message}`); process.exit(1); }
+    });
+    ZodToCliMapper.mapSchemaToOptions(agent_message_update, Contracts.MessageUpdateInputSchema as any);
+    const agent_message_delete = agent.command('message_delete').description(`Delete a specific message from a thread.`).action(async (o) => {
+        try { const res = await client.api.agent.message_delete(ZodToCliMapper.parseOptions(o, Contracts.MessageDeleteInputSchema as any)); console.dir(res, { depth: null }); } catch (err: any) { console.error(`\n${C.red}${C.bold}✖ Error:${C.reset} ${err.message}`); process.exit(1); }
+    });
+    ZodToCliMapper.mapSchemaToOptions(agent_message_delete, Contracts.MessageDeleteInputSchema as any);
     const agent_run_stream = agent.command('run_stream').description(`Execute a run on a thread and stream the agent response.`).action(async (o) => {
         try {
             const stream = client.api.agent.run_stream(ZodToCliMapper.parseOptions(o, Contracts.AgentRunStreamInputSchema as any));

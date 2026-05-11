@@ -17,6 +17,7 @@ export interface StackProps {
     minWidth?: string;
     minHeight?: string;
     children?: (BaseComponent<any> | Node | string)[];
+    onClick?: (e: MouseEvent) => void;
 }
 
 export class Stack extends BaseComponent<StackProps> {
@@ -58,6 +59,10 @@ export class Stack extends BaseComponent<StackProps> {
             minWidth: minWidth || '0',
             minHeight: minHeight || '0'
         });
+
+        if (this.props.onClick) {
+            this.element.onclick = this.props.onClick;
+        }
 
         if (children.length > 0) {
             this.appendChildren(...children);
