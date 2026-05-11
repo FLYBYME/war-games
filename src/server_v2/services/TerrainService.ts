@@ -300,18 +300,28 @@ export class TerrainService {
 
         // 2. If NOT all tiles are local and we have a remote node, offload the math
         if (!allTilesLocal && this.remoteNodeUrl) {
+            const controller = new AbortController();
+            const timeoutId = setTimeout(() => controller.abort(), 2000); // 2s timeout for math offload
+
             try {
                 const response = await fetch(`${this.remoteNodeUrl}/api/v2/env/math/los`, {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ p1, p2, numSamples })
+                    body: JSON.stringify({ p1, p2, numSamples }),
+                    signal: controller.signal
                 });
+                clearTimeout(timeoutId);
+
                 if (response.ok) {
                     const result = await response.json();
                     return !result.blocked;
                 }
-            } catch (err) {
-                console.warn(`TerrainService: Math Oracle offload failed`, err);
+            } catch (err: any) {
+                clearTimeout(timeoutId);
+                // Only log if it's not a connection/timeout error to keep logs clean
+                if (err.name !== 'AbortError' && err.code !== 'ECONNREFUSED') {
+                    console.warn(`TerrainService: Math Oracle offload failed`, err.message);
+                }
             }
         }
 

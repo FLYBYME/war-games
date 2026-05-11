@@ -1,6 +1,6 @@
 import { CommandHandler } from '../CommandDispatcher.js';
 import { World } from '../World.js';
-import { ChangeSideCommand, SetSimulationSpeedCommand, SetEnvironmentCommand, SpawnEntityCommand } from '../Command.js';
+import { ChangeSideCommand, SetSimulationSpeedCommand, SpawnEntityCommand } from '../Command.js';
 import { EnvironmentComponent } from '../../components/Environment.js';
 import { logger } from '../Logger.js';
 import { EntityManager } from '../EntityManager.js';
@@ -23,17 +23,7 @@ export class SpawnEntityHandler implements CommandHandler<SpawnEntityCommand> {
     }
 }
 
-export class SetEnvironmentHandler implements CommandHandler<SetEnvironmentCommand> {
-    execute(cmd: SetEnvironmentCommand, world: World): void {
-        for (const entity of world.getEntities()) {
-            const env = entity.getComponent(EnvironmentComponent);
-            if (env) {
-                if (cmd.key === 'windSpeedKts') env.windVelocity.x = cmd.value as number;
-                if (cmd.key === 'temperatureC') env.temperatureC = cmd.value as number;
-            }
-        }
-    }
-}
+
 
 export class ChangeSideHandler implements CommandHandler<ChangeSideCommand> {
     execute(cmd: ChangeSideCommand, world: World): void {

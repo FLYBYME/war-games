@@ -39,6 +39,7 @@ import * as LogisticsHandlers from './handlers/LogisticsCommandHandlers.js';
 import * as DoctrineHandlers from './handlers/DoctrineCommandHandlers.js';
 import * as SystemHandlers from './handlers/SystemCommandHandlers.js';
 import * as NavHandlers from './handlers/NavigationCommandHandlers.js';
+import * as EnvironmentHandlers from './handlers/EnvironmentCommandHandlers.js';
 
 import { Side } from './Types.js';
 import { IWorldView, SystemPhase, ISystem } from './ISystem.js';
@@ -157,9 +158,12 @@ export class World implements IWorldView {
 
         // System
         this.dispatcher.register(SetSimulationSpeedCommand, new SystemHandlers.SetSimulationSpeedHandler());
-        this.dispatcher.register(SetEnvironmentCommand, new SystemHandlers.SetEnvironmentHandler());
         this.dispatcher.register(SpawnEntityCommand, new SystemHandlers.SpawnEntityHandler());
         this.dispatcher.register(ChangeSideCommand, new SystemHandlers.ChangeSideHandler());
+
+        // Environment
+        this.dispatcher.register(UpdateEnvironmentCommand, new EnvironmentHandlers.UpdateEnvironmentHandler());
+        this.dispatcher.register(SetEnvironmentCommand, new EnvironmentHandlers.SetEnvironmentHandler());
     }
 
     public async tick(dt: number): Promise<void> {
