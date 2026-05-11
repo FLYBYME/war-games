@@ -26,6 +26,19 @@ export async function createWorkerNode(port: number = 8080) {
             reply.status(204).send();
             return;
         }
+
+        // Add start time for performance tracking
+        (request as any).startTime = process.hrtime();
+    });
+
+    app.addHook('onResponse', async (request, reply) => {
+        const [s, ns] = process.hrtime((request as any).startTime);
+        const duration = (s * 1000 + ns / 1000000).toFixed(2);
+        
+        if (request.url !== '/health') {
+            const status = reply.statusCode >= 400 ? '❌' : '✅';
+            console.log(`${status} ${request.method} ${request.url} - ${reply.statusCode} (${duration}ms)`);
+        }
     });
 
     // ─── Service Initialization ──────────────────────────────────────────────
@@ -54,6 +67,7 @@ export async function createWorkerNode(port: number = 8080) {
 
         try {
             const targetRes = res ? Number(res) : 1201;
+            console.log(`📦 Serving Degree Tile: N${lat}E${lon} @ ${targetRes}res`);
             const tile = await terrainService.getTile(Number(lat), Number(lon), targetRes);
             
             // Encode as WGTv2 (Raw Binary)
@@ -76,6 +90,7 @@ export async function createWorkerNode(port: number = 8080) {
     
     app.get('/api/v2/terrain/tile/quad/:z/:x/:y', async (request, reply) => {
         const { z, x, y } = request.params as any;
+        console.log(`🖼️  Serving Quad Tile: z${z}/x${x}/y${y}`);
         
         try {
             const encoded = await baker.getTile(Number(z), Number(x), Number(y));
@@ -91,6 +106,8 @@ export async function createWorkerNode(port: number = 8080) {
 
     app.post('/api/v2/env/math/los', async (request, reply) => {
         const { p1, p2, numSamples = 10 } = request.body as any;
+        console.log(`📐 LOS Calculation: (${p1.lat},${p1.lon}) -> (${p2.lat},${p2.lon})`);
+        
         if (!p1 || !p2) return reply.status(400).send({ error: 'Missing endpoints' });
 
         try {
