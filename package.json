@@ -21,6 +21,7 @@
     "drizzle-orm": "^0.45.2",
     "fastify": "^5.8.5",
     "lru-cache": "^11.3.6",
+    "ollama": "^0.6.3",
     "parquetjs": "^0.11.2",
     "pixi-viewport": "^6.0.3",
     "pixi.js": "^8.18.1",
