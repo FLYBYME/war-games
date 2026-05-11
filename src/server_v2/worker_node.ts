@@ -46,7 +46,7 @@ export async function createWorkerNode(port: number = 8080) {
 
     // ─── 1. SIM STREAM: 1x1 Degree Raw Tiles ─────────────────────────────────
     
-    app.get('/terrain/tile/degree', async (request, reply) => {
+    app.get('/api/v2/terrain/tile/degree', async (request, reply) => {
         const { lat, lon, res } = request.query as any;
         if (lat === undefined || lon === undefined) {
             return reply.status(400).send({ error: 'Missing lat/lon' });
@@ -74,7 +74,7 @@ export async function createWorkerNode(port: number = 8080) {
 
     // ─── 2. UI STREAM: QuadTree z/x/y Tiles ──────────────────────────────────
     
-    app.get('/terrain/tile/quad/:z/:x/:y', async (request, reply) => {
+    app.get('/api/v2/terrain/tile/quad/:z/:x/:y', async (request, reply) => {
         const { z, x, y } = request.params as any;
         
         try {
@@ -89,7 +89,7 @@ export async function createWorkerNode(port: number = 8080) {
 
     // ─── 3. MATH ORACLE ──────────────────────────────────────────────────────
 
-    app.post('/env/math/los', async (request, reply) => {
+    app.post('/api/v2/env/math/los', async (request, reply) => {
         const { p1, p2, numSamples = 10 } = request.body as any;
         if (!p1 || !p2) return reply.status(400).send({ error: 'Missing endpoints' });
 
@@ -113,7 +113,7 @@ export async function createWorkerNode(port: number = 8080) {
         }
     });
 
-    app.post('/env/math/profile', async (request, reply) => {
+    app.post('/api/v2/env/math/profile', async (request, reply) => {
         const { p1, p2, points = 50 } = request.body as any;
         if (!p1 || !p2) return reply.status(400).send({ error: 'Missing endpoints' });
 
@@ -131,16 +131,16 @@ export async function createWorkerNode(port: number = 8080) {
 
     // ─── 4. HARVESTER ────────────────────────────────────────────────────────
     
-    app.get('/harvester/status', async () => {
+    app.get('/api/v2/harvester/status', async () => {
         return harvesterService.getStatus();
     });
 
-    app.post('/harvester/start', async () => {
+    app.post('/api/v2/harvester/start', async () => {
         void harvesterService.start();
         return { status: 'STARTED' };
     });
 
-    app.post('/harvester/stop', async () => {
+    app.post('/api/v2/harvester/stop', async () => {
         harvesterService.stop();
         return { status: 'STOPPED' };
     });

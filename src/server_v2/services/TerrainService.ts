@@ -85,7 +85,7 @@ export class TerrainService {
 
             // 4. Remote Node (L3) - Only if on Laptop (client-mode)
             if (this.remoteNodeUrl) {
-                const remoteUrl = `${this.remoteNodeUrl}/terrain/tile/degree?lat=${floorLat}&lon=${floorLon}&res=${targetResolution}`;
+                const remoteUrl = `${this.remoteNodeUrl}/api/v2/terrain/tile/degree?lat=${floorLat}&lon=${floorLon}&res=${targetResolution}`;
                 try {
                     const response = await fetch(remoteUrl);
                     if (response.ok) {
@@ -212,7 +212,7 @@ export class TerrainService {
     ): Promise<boolean> {
         if (this.remoteNodeUrl) {
             try {
-                const response = await fetch(`${this.remoteNodeUrl}/env/math/los`, {
+                const response = await fetch(`${this.remoteNodeUrl}/api/v2/env/math/los`, {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
                     body: JSON.stringify({ p1, p2, numSamples })
