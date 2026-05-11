@@ -46,7 +46,7 @@ export const simStepContract = defineContract({
     rest: { method: 'POST', path: '/matches/:matchId/simulation/step' }
 });
 
-// ─── sim_update ──────────────────────────────────────────────────────────────
+// ─── sim_update (DEPRECATED) ────────────────────────────────────────────────
 
 export const SimUpdateInputSchema = z.object({
     matchId: z.string().describe("The match ID"),
@@ -63,10 +63,48 @@ export const SimUpdateOutputSchema = z.object({
 export const simUpdateContract = defineContract({
     domain: 'sim',
     action: 'update',
-    description: 'Adjust simulation speed or toggle pause state.',
+    description: 'DEPRECATED: Use sim_pause, sim_resume, or sim_set_speed instead.',
     inputSchema: SimUpdateInputSchema,
     outputSchema: SimUpdateOutputSchema,
     rest: { method: 'PATCH', path: '/matches/:matchId/simulation' }
+});
+
+// ─── sim_pause ──────────────────────────────────────────────────────────────
+
+export const simPauseContract = defineContract({
+    domain: 'sim',
+    action: 'pause',
+    description: 'Pause the simulation match.',
+    inputSchema: SimGetInputSchema,
+    outputSchema: SimUpdateOutputSchema,
+    rest: { method: 'POST', path: '/matches/:matchId/simulation/pause' }
+});
+
+// ─── sim_resume ─────────────────────────────────────────────────────────────
+
+export const simResumeContract = defineContract({
+    domain: 'sim',
+    action: 'resume',
+    description: 'Resume a paused simulation match.',
+    inputSchema: SimGetInputSchema,
+    outputSchema: SimUpdateOutputSchema,
+    rest: { method: 'POST', path: '/matches/:matchId/simulation/resume' }
+});
+
+// ─── sim_set_speed ──────────────────────────────────────────────────────────
+
+export const SimSetSpeedInputSchema = z.object({
+    matchId: z.string().describe("The match ID"),
+    timeCompression: z.number().describe("New time compression factor (e.g. 1.0, 5.0, 10.0)")
+});
+
+export const simSetSpeedContract = defineContract({
+    domain: 'sim',
+    action: 'set_speed',
+    description: 'Set the simulation time compression factor.',
+    inputSchema: SimSetSpeedInputSchema,
+    outputSchema: SimUpdateOutputSchema,
+    rest: { method: 'POST', path: '/matches/:matchId/simulation/speed' }
 });
 
 // ─── sim_get_metrics ─────────────────────────────────────────────────────────

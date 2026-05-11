@@ -25,10 +25,24 @@ export const MapExtension: Extension = {
     activate(context: ExtensionContext) {
         const ide = context.ide;
 
+        // 0. Register Settings
+        ide.configurationRegistry.registerConfiguration({
+            id: 'map',
+            title: 'Tactical Map',
+            properties: {
+                'map.terrainServer': {
+                    type: 'string',
+                    default: 'http://192.168.1.9:8080',
+                    description: 'The URL of the remote terrain worker (geodetic slave node).',
+                }
+            }
+        });
+
         // 1. Initialize Extension-Level State
         const mapState = new MapState();
         const layerRegistry = new LayerRegistry();
-        const pipeline = new MapDataPipeline(window.location.origin);
+        const terrainUrl = ide.settings.get<string>('map.terrainServer') || window.location.origin;
+        const pipeline = new MapDataPipeline(terrainUrl);
 
         // 2. Register Default Layers
         layerRegistry.register(new TerrainLayer(pipeline), {
@@ -133,7 +147,7 @@ export const MapExtension: Extension = {
             name: 'Map Layers',
             resolveView: (container, disposables) => {
                 const column = new uiLib.Column({ padding: 'md', gap: 'sm', fill: true });
-                
+
                 const header = new uiLib.Heading({ text: 'MAP LAYERS', level: 4, transform: 'uppercase' });
 
                 const renderLayers = (metas: { id: string; label: string }[]) => {

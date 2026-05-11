@@ -161,11 +161,16 @@ export class ViewRegistry {
             return;
         }
 
-        // For sidebars, mount inside the .sidebar-content area (not the panel root which also has the activity bar)
+        // For sidebars and bottom panel, mount inside the designated content area
         if (location === 'left-panel' || location === 'right-panel') {
             const sidebarContent = targetPanel.querySelector('.sidebar-content') as HTMLElement;
             if (sidebarContent) {
                 targetPanel = sidebarContent;
+            }
+        } else if (location === 'bottom-panel') {
+            const bottomContent = targetPanel.querySelector('.bottom-panel-content') as HTMLElement;
+            if (bottomContent) {
+                targetPanel = bottomContent;
             }
         }
 

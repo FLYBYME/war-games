@@ -34,6 +34,7 @@ export function isContextMenuSubmenu(item: ContextMenuItem): item is ContextMenu
 export class ContextMenu extends BaseComponent<{ items: ContextMenuItem[], x: number, y: number }> {
     private activeSubmenu: ContextMenu | null = null;
     private parentMenu: ContextMenu | null = null;
+    private hoverTimeout: number | null = null;
     private handleDocumentClick: (e: MouseEvent) => void;
 
     constructor(items: ContextMenuItem[], x: number, y: number, parentMenu?: ContextMenu) {
@@ -98,15 +99,23 @@ export class ContextMenu extends BaseComponent<{ items: ContextMenuItem[], x: nu
                 el.style.backgroundColor = Theme.colors.accent;
                 el.style.color = '#fff';
 
-                if (this.activeSubmenu) {
-                    this.activeSubmenu.dispose();
-                    this.activeSubmenu = null;
+                if (this.hoverTimeout) {
+                    window.clearTimeout(this.hoverTimeout);
+                    this.hoverTimeout = null;
                 }
 
-                if (isContextMenuSubmenu(item)) {
-                    const rect = el.getBoundingClientRect();
-                    this.activeSubmenu = new ContextMenu(item.items, rect.right, rect.top, this);
-                }
+                this.hoverTimeout = window.setTimeout(() => {
+                    if (this.activeSubmenu) {
+                        this.activeSubmenu.dispose();
+                        this.activeSubmenu = null;
+                    }
+
+                    if (isContextMenuSubmenu(item)) {
+                        const rect = el.getBoundingClientRect();
+                        this.activeSubmenu = new ContextMenu(item.items, rect.right, rect.top, this);
+                    }
+                    this.hoverTimeout = null;
+                }, 250);
             };
             el.onmouseleave = () => {
                 el.style.backgroundColor = 'transparent';
@@ -191,6 +200,10 @@ export class ContextMenu extends BaseComponent<{ items: ContextMenuItem[], x: nu
     }
 
     public dispose(): void {
+        if (this.hoverTimeout) {
+            window.clearTimeout(this.hoverTimeout);
+            this.hoverTimeout = null;
+        }
         if (!this.parentMenu) {
             document.removeEventListener('click', this.handleDocumentClick, { capture: true });
         }

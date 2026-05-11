@@ -17,6 +17,77 @@ export const DevToolsExtension: Extension = {
     activate(context: ExtensionContext) {
         const ide = context.ide;
 
+        // ── Settings Registration ──────────────────────────────────────────
+        
+        ide.configurationRegistry.registerConfiguration({
+            id: 'editor',
+            title: 'Editor',
+            properties: {
+                'editor.fontSize': {
+                    type: 'number',
+                    default: 14,
+                    description: 'Controls the font size in pixels.',
+                },
+                'editor.wordWrap': {
+                    type: 'boolean',
+                    default: false,
+                    description: 'Controls how lines should wrap.',
+                },
+                'editor.theme': {
+                    type: 'enum',
+                    default: 'ide-dark',
+                    enum: ['ide-dark', 'vs-dark', 'vs-light', 'hc-black'],
+                    description: 'The color theme for the editor.',
+                },
+                'editor.minimap': {
+                    type: 'boolean',
+                    default: true,
+                    description: 'Controls whether the minimap is shown.',
+                },
+                'editor.lineNumbers': {
+                    type: 'boolean',
+                    default: true,
+                    description: 'Controls the display of line numbers.',
+                },
+            },
+        });
+
+        ide.configurationRegistry.registerConfiguration({
+            id: 'files',
+            title: 'Files',
+            properties: {
+                'files.autoSave': {
+                    type: 'enum',
+                    default: 'off',
+                    enum: ['off', 'afterDelay', 'onFocusChange'],
+                    description: 'Controls auto save of editors.',
+                },
+                'files.autoSaveDelay': {
+                    type: 'number',
+                    default: 1000,
+                    description: 'Controls the delay in ms after which an auto save is triggered.',
+                },
+            },
+        });
+
+        ide.configurationRegistry.registerConfiguration({
+            id: 'terminal',
+            title: 'Terminal',
+            properties: {
+                'terminal.fontSize': {
+                    type: 'number',
+                    default: 13,
+                    description: 'Controls the font size of the terminal in pixels.',
+                },
+                'terminal.cursorStyle': {
+                    type: 'enum',
+                    default: 'block',
+                    enum: ['block', 'underline', 'line'],
+                    description: 'Controls the style of the terminal cursor.',
+                },
+            },
+        });
+
         // ── Console View (Bottom Panel) ──────────────────────────────────────
 
         const consoleProvider: ViewProvider = {

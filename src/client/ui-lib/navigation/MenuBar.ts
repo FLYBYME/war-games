@@ -53,6 +53,7 @@ export class MenuBar extends BaseComponent<{}> {
 
     private activeItem: MenuItem | null = null;
     private isSticky: boolean = false;
+    private hoverTimeout: number | null = null;
 
     private setupItemListener(item: MenuItem): void {
         const el = item.getElement();
@@ -69,26 +70,50 @@ export class MenuBar extends BaseComponent<{}> {
         });
 
         el.addEventListener('menu-open', (e: any) => {
-            this.activeItem = e.detail.item;
+            if (e.detail.item !== item) return;
+            if (this.hoverTimeout) {
+                window.clearTimeout(this.hoverTimeout);
+                this.hoverTimeout = null;
+            }
+            this.activeItem = item;
             this.isSticky = true;
         });
 
-        el.addEventListener('menu-close', () => {
+        el.addEventListener('menu-close', (e: any) => {
+            if (e.detail.item !== item) return;
+            if (this.hoverTimeout) {
+                window.clearTimeout(this.hoverTimeout);
+                this.hoverTimeout = null;
+            }
             this.activeItem = null;
             this.isSticky = false;
         });
 
         el.addEventListener('menu-hover', (e: any) => {
+            if (e.detail.item !== item) return;
             const hoveredItem = e.detail.item;
+            
             if (this.isSticky && this.activeItem && this.activeItem !== hoveredItem) {
-                this.activeItem.close();
-                hoveredItem.open();
-                this.activeItem = hoveredItem;
+                if (this.hoverTimeout) {
+                    window.clearTimeout(this.hoverTimeout);
+                }
+
+                this.hoverTimeout = window.setTimeout(() => {
+                    if (this.activeItem) {
+                        this.activeItem.close();
+                    }
+                    hoveredItem.open();
+                    this.activeItem = hoveredItem;
+                    this.hoverTimeout = null;
+                }, 250);
             }
         });
     }
 
     public dispose(): void {
+        if (this.hoverTimeout) {
+            window.clearTimeout(this.hoverTimeout);
+        }
         this.items.forEach(item => item.dispose());
         this.items = [];
         super.dispose();

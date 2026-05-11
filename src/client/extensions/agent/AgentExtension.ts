@@ -47,7 +47,7 @@ export const AgentExtension: Extension = {
         ide.activityBar.registerItem({
             id: 'agent.editor',
             location: 'bottom-panel',
-            icon: 'fas fa-terminal',
+            icon: 'fas fa-edit',
             title: 'Prompt Editor',
             order: 31
         });

@@ -15,6 +15,8 @@ import { MatchService } from './services/MatchService';
 import { SelectionService } from './services/SelectionService';
 import { SimStreamService } from './services/SimStreamService';
 
+import { SimulationService } from './services/SimulationService';
+
 
 export const IDEEvents = {
     APP_READY: 'ide:app_ready',
@@ -39,11 +41,36 @@ export class IDE {
     public matches: MatchService;
     public selection: SelectionService;
     public stream: SimStreamService;
+    public sim: SimulationService;
 
     constructor() {
         this.configurationRegistry = new ConfigurationRegistry();
         this.commands = new CommandRegistry(this);
-        this.registerCoreSettings();
+
+        // Core settings registered
+        this.configurationRegistry.registerConfiguration({
+            id: 'core',
+            title: 'Core',
+            properties: {
+                'core.apiBase': {
+                    type: 'string',
+                    default: '/api/v2',
+                    description: 'The base URL of the API server. Can be relative (/api/v2) or absolute (http://ip:3000/api/v2).',
+                },
+            },
+        });
+
+        this.configurationRegistry.registerConfiguration({
+            id: 'ai',
+            title: 'AI & Agents',
+            properties: {
+                'ai.ollamaUrl': {
+                    type: 'string',
+                    default: 'http://192.168.1.10:11434',
+                    description: 'The URL of the Ollama server for AI agent operations.',
+                },
+            },
+        });
 
         // Settings should also be available before layout if possible
         this.settings = new ConfigurationService(this, this.configurationRegistry);
@@ -61,6 +88,7 @@ export class IDE {
         this.matches = new MatchService(this.client);
         this.selection = new SelectionService();
         this.stream = new SimStreamService(this.client);
+        this.sim = new SimulationService(this.client, this.stream, this.matches);
     }
 
     public async initialize(): Promise<void> {
@@ -97,99 +125,5 @@ export class IDE {
 
     public getClient(): WarGamesClientV2 {
         return this.client;
-    }
-
-    private registerCoreSettings(): void {
-        this.configurationRegistry.registerConfiguration({
-            id: 'editor',
-            title: 'Editor',
-            properties: {
-                'editor.fontSize': {
-                    type: 'number',
-                    default: 14,
-                    description: 'Controls the font size in pixels.',
-                },
-                'editor.wordWrap': {
-                    type: 'boolean',
-                    default: false,
-                    description: 'Controls how lines should wrap.',
-                },
-                'editor.theme': {
-                    type: 'enum',
-                    default: 'ide-dark',
-                    enum: ['ide-dark', 'vs-dark', 'vs-light', 'hc-black'],
-                    description: 'The color theme for the editor.',
-                },
-                'editor.minimap': {
-                    type: 'boolean',
-                    default: true,
-                    description: 'Controls whether the minimap is shown.',
-                },
-                'editor.lineNumbers': {
-                    type: 'boolean',
-                    default: true,
-                    description: 'Controls the display of line numbers.',
-                },
-            },
-        });
-
-        this.configurationRegistry.registerConfiguration({
-            id: 'files',
-            title: 'Files',
-            properties: {
-                'files.autoSave': {
-                    type: 'enum',
-                    default: 'off',
-                    enum: ['off', 'afterDelay', 'onFocusChange'],
-                    description: 'Controls auto save of editors.',
-                },
-                'files.autoSaveDelay': {
-                    type: 'number',
-                    default: 1000,
-                    description: 'Controls the delay in ms after which an auto save is triggered.',
-                },
-            },
-        });
-
-        this.configurationRegistry.registerConfiguration({
-            id: 'terminal',
-            title: 'Terminal',
-            properties: {
-                'terminal.fontSize': {
-                    type: 'number',
-                    default: 13,
-                    description: 'Controls the font size of the terminal in pixels.',
-                },
-                'terminal.cursorStyle': {
-                    type: 'enum',
-                    default: 'block',
-                    enum: ['block', 'underline', 'line'],
-                    description: 'Controls the style of the terminal cursor.',
-                },
-            },
-        });
-
-        // Core settings registered
-        this.configurationRegistry.registerConfiguration({
-            id: 'core',
-            title: 'Core',
-            properties: {
-                'core.apiBase': {
-                    type: 'string',
-                    default: '/api/v2',
-                    description: 'The base URL of the API server.',
-                },
-                'core.tokenKey': {
-                    type: 'string',
-                    default: 'token',
-                    description: 'The key used to store the token in localStorage.',
-                },
-                'core.connectWs': {
-                    type: 'boolean',
-                    default: false,
-                    description: 'Controls whether the IDE should connect to the WebSocket server.',
-                },
-            },
-        });
     }
 }

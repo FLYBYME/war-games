@@ -2,6 +2,8 @@
 
 This document defines the strict TypeScript coding standards for this repository. When generating, refactoring, or reviewing code, these rules are absolute. The goal is a high-integrity, type-safe system where the compiler and linter guarantee runtime stability.
 
+Always use `/home/ubuntu/code/war-games/docs/plans` to create a plan before generating code.
+
 ## 1. The Absolute Ban on `any`
 TypeScript exists to provide compile-time safety. Using `any` disables the compiler and introduces runtime fragility.
 
