@@ -14,7 +14,7 @@ export class HarvesterService {
     private isRunning = false;
     private throttleBps = 125000; // 1 Mbps = 125 KB/s
     private tokenBucket = 0;
-    private maxTokens = 500000; // 4 seconds of burst
+    private maxTokens = 5000000; // 40 seconds of burst (enough for ~1.5 compressed tiles)
     private lastTick = Date.now();
 
     constructor(
@@ -121,8 +121,12 @@ export class HarvesterService {
                 // Wait for bandwidth availability (approximate)
                 // A typical SRTM .hgt.gz is ~3MB
                 const estimatedSize = 3000000;
+                if (this.tokenBucket < estimatedSize) {
+                    console.log(`Harvester: Waiting for bandwidth... (${Math.round(this.tokenBucket/1000)}kb / ${Math.round(estimatedSize/1000)}kb)`);
+                }
+
                 while (this.tokenBucket < estimatedSize) {
-                    await new Promise(resolve => setTimeout(resolve, 500));
+                    await new Promise(resolve => setTimeout(resolve, 1000));
                 }
                 this.tokenBucket -= estimatedSize;
             }

@@ -3,6 +3,7 @@ import { TerrainService } from './services/TerrainService.js';
 import { WorkerService } from './services/WorkerService.js';
 import { HarvesterService } from './services/HarvesterService.js';
 import { QuadTreeBaker } from './services/QuadTreeBaker.js';
+import { TheaterBundlerService } from './services/TheaterBundlerService.js';
 import { WgtFormat } from '../engine/environment/utils/WgtFormat.js';
 
 /**
@@ -47,6 +48,7 @@ export async function createWorkerNode(port: number = 8080) {
     const terrainService = new TerrainService(workerService);
     const harvesterService = new HarvesterService(terrainService);
     const baker = new QuadTreeBaker(terrainService);
+    const bundler = new TheaterBundlerService(baker);
 
     // ─── Health & Capabilities ───────────────────────────────────────────────
     
@@ -96,6 +98,24 @@ export async function createWorkerNode(port: number = 8080) {
             const encoded = await baker.getTile(Number(z), Number(x), Number(y));
             reply.type('application/octet-stream');
             return Buffer.from(encoded);
+        } catch (err: any) {
+            app.log.error(err);
+            return reply.status(500).send({ error: err.message });
+        }
+    });
+
+    app.post('/api/v2/terrain/theater/bundle', async (request, reply) => {
+        const { tiles } = request.body as any;
+        if (!tiles || !Array.isArray(tiles)) {
+            return reply.status(400).send({ error: 'Missing tiles array' });
+        }
+
+        console.log(`📦 Bundling ${tiles.length} tiles for client...`);
+
+        try {
+            const bundle = await bundler.createBundle(tiles);
+            reply.type('application/octet-stream');
+            return Buffer.from(bundle);
         } catch (err: any) {
             app.log.error(err);
             return reply.status(500).send({ error: err.message });

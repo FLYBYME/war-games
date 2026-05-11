@@ -44,18 +44,33 @@ export class TerrainLayer implements MapLayer {
         const yMax = Math.ceil(Math.max(tileNW.y, tileSE.y));
 
         const newVisibleTiles = new Set<string>();
+        const neededTiles: { z: number; x: number; y: number }[] = [];
 
-        // 4. Request tiles for the viewport
-        for (let x = xMin; x <= xMax; x++) {
-            for (let y = yMin; y <= yMax; y++) {
+        // 4. Request tiles for the viewport + Buffer (Overscan)
+        const BUFFER = 1; // 1 tile extra in all directions
+        for (let x = xMin - BUFFER; x <= xMax + BUFFER; x++) {
+            for (let y = yMin - BUFFER; y <= yMax + BUFFER; y++) {
                 const key = `${z}_${x}_${y}`;
-                newVisibleTiles.add(key);
-
-                if (!this.activeTiles.has(key)) {
-                    void this.loadTile(z, x, y, origin);
+                const isVisible = x >= xMin && x <= xMax && y >= yMin && y <= yMax;
+                
+                if (isVisible) {
+                    newVisibleTiles.add(key);
                 }
+
+                neededTiles.push({ z, x, y });
             }
         }
+
+        // Trigger smart batch fetch
+        void this.pipeline.fetchViewport(neededTiles).then(() => {
+            // After batch is ready, trigger individual renders for visible tiles
+            for (const key of newVisibleTiles) {
+                if (!this.tileContainers.has(key)) {
+                    const [tz, tx, ty] = key.split('_').map(Number);
+                    void this.loadTile(tz, tx, ty, origin);
+                }
+            }
+        });
 
         // 5. Cleanup tiles no longer visible
         for (const key of this.activeTiles) {
