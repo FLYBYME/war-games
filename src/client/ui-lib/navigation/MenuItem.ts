@@ -15,6 +15,7 @@ export interface MenuItemProps {
     command?: string;
     active?: boolean;
     separator?: boolean;
+    args?: unknown;
 }
 
 export class MenuItem extends BaseComponent<MenuItemProps> {
@@ -86,7 +87,7 @@ export class MenuItem extends BaseComponent<MenuItemProps> {
                     if (command) {
                         if (this.props.onClick) this.props.onClick();
                         const event = new CustomEvent('menu-item-click', {
-                            detail: { command, id: this.props.id },
+                            detail: { command, id: this.props.id, args: this.props.args },
                             bubbles: true
                         });
                         this.element.dispatchEvent(event);

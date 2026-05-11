@@ -1,11 +1,11 @@
-import { ITileProvider } from '../../engine/environment/TerrainOracle.js';
+import { ITileProvider, IMathOracle } from '../../engine/environment/TerrainOracle.js';
 import { TerrainService } from './TerrainService.js';
 
 /**
  * TerrainServiceAdapter: Bridges the V2 TerrainService (Worker-based)
  * to the engine's TerrainOracle.
  */
-export class TerrainServiceAdapter implements ITileProvider {
+export class TerrainServiceAdapter implements ITileProvider, IMathOracle {
     constructor(private terrainService: TerrainService) {}
 
     public async getTile(lat: number, lon: number): Promise<Float32Array | Int16Array | undefined> {
@@ -22,5 +22,13 @@ export class TerrainServiceAdapter implements ITileProvider {
         // Current TerrainService doesn't expose synchronous cache access easily,
         // so we return undefined to force the async getTile path.
         return undefined;
+    }
+
+    public async isLineOfSightClear(
+        p1: { lat: number, lon: number, alt: number },
+        p2: { lat: number, lon: number, alt: number },
+        numSamples: number = 10
+    ): Promise<boolean> {
+        return this.terrainService.isLineOfSightClear(p1, p2, numSamples);
     }
 }

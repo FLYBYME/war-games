@@ -202,6 +202,46 @@ export class TerrainService {
         return tasks.length;
     }
 
+    /**
+     * isLineOfSightClear: Offloads LOS math to the Remote Node Oracle.
+     */
+    public async isLineOfSightClear(
+        p1: { lat: number, lon: number, alt: number },
+        p2: { lat: number, lon: number, alt: number },
+        numSamples: number = 10
+    ): Promise<boolean> {
+        if (this.remoteNodeUrl) {
+            try {
+                const response = await fetch(`${this.remoteNodeUrl}/env/math/los`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ p1, p2, numSamples })
+                });
+                if (response.ok) {
+                    const result = await response.json();
+                    return !result.blocked;
+                }
+            } catch (err) {
+                console.warn(`TerrainService: Math Oracle offload failed`, err);
+            }
+        }
+
+        // Fallback: Local calculation using L1/L2 cache
+        for (let i = 1; i < numSamples; i++) {
+            const t = i / numSamples;
+            const sampleAlt = p1.alt + (p2.alt - p1.alt) * t;
+            const sampleLat = p1.lat + (p2.lat - p1.lat) * t;
+            const sampleLon = p1.lon + (p2.lon - p1.lon) * t;
+            
+            const terrainHeight = await this.getElevation(sampleLat, sampleLon);
+            
+            if (sampleAlt < terrainHeight - 0.1) {
+                return false;
+            }
+        }
+        return true;
+    }
+
     public getCacheStats() {
         const pool = this.workerService.getPool('terrain');
         const poolStats = pool.getStats();

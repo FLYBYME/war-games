@@ -1,27 +1,27 @@
 /**
- * EntityExtension — Entity Inspector with subsystem tabs.
- *
- * Populates when an entity is selected on the Tactical Map.
- * Displays subsystem data using PropertyGrid, driven by SDK contract schemas.
+ * EntityExtension — In-depth subsystem inspector for simulation actors.
  */
 
 import { Extension, ExtensionContext } from '../core/extensions/Extension';
 import { ViewProvider } from '../core/extensions/ViewProvider';
+import { MatchServiceEvents } from '../core/services/MatchService';
+import { SelectionEvents } from '../core/services/SelectionService';
 import * as uiLib from '../ui-lib';
+import { MapUnit } from './map/MapState';
 
-/** Subsystem tab definitions — each maps to a contract domain. */
-const SUBSYSTEM_TABS = [
-    { id: 'overview', label: 'Overview', icon: 'fas fa-info-circle' },
-    { id: 'kinematics', label: 'Kinematics', icon: 'fas fa-tachometer-alt' },
-    { id: 'sensors', label: 'Sensors', icon: 'fas fa-satellite-dish' },
-    { id: 'combat', label: 'Combat', icon: 'fas fa-crosshairs' },
-    { id: 'nav', label: 'Navigation', icon: 'fas fa-route' },
-    { id: 'logistics', label: 'Logistics', icon: 'fas fa-gas-pump' },
-    { id: 'propulsion', label: 'Propulsion', icon: 'fas fa-fan' },
-    { id: 'guidance', label: 'Guidance', icon: 'fas fa-bullseye' },
-    { id: 'signature', label: 'Signature', icon: 'fas fa-wave-square' },
-    { id: 'ew', label: 'EW', icon: 'fas fa-broadcast-tower' },
-] as const;
+interface TabDefinition {
+    id: string;
+    label: string;
+    icon: string;
+}
+
+const SUBSYSTEM_TABS: TabDefinition[] = [
+    { id: 'overview', label: 'OVERVIEW', icon: 'fas fa-info-circle' },
+    { id: 'sensors', label: 'SENSORS', icon: 'fas fa-broadcast-tower' },
+    { id: 'combat', label: 'WEAPONS', icon: 'fas fa-crosshairs' },
+    { id: 'logistics', label: 'LOGISTICS', icon: 'fas fa-gas-pump' },
+    { id: 'mission', label: 'MISSION', icon: 'fas fa-tasks' },
+];
 
 export const EntityExtension: Extension = {
     id: 'wargames.entity',
@@ -31,12 +31,8 @@ export const EntityExtension: Extension = {
     activate(context: ExtensionContext) {
         const ide = context.ide;
         const client = ide.getClient();
-        const selection = ide.selection;
-        const matches = ide.matches;
 
-        // ── Entity Inspector View (Right Sidebar) ────────────────────────────
-
-        const inspectorProvider: ViewProvider = {
+        const entityViewProvider: ViewProvider = {
             id: 'entity.inspector',
             name: 'Entity Inspector',
             resolveView: (container, disposables) => {
@@ -47,21 +43,21 @@ export const EntityExtension: Extension = {
                     align: 'center',
                     justify: 'space-between'
                 });
-                
-                header.getElement().style.paddingBottom = '4px';
-                header.getElement().style.borderBottom = '1px solid var(--border)';
 
-                const entityTitle = new uiLib.Heading({ text: 'No Selection', level: 4, transform: 'uppercase' });
-                const sideBadge = new uiLib.ForceColorBadge({ side: 'observer' });
+                const headerEl = header.getElement();
+                headerEl.style.paddingBottom = '4px';
+                headerEl.style.borderBottom = '1px solid var(--border)';
+
+                const entityTitle = new uiLib.Heading({ text: 'No Selection', level: 4 });
+                const sideBadge = new uiLib.Badge({ count: 'NEUTRAL', variant: 'accent' });
                 sideBadge.getElement().style.display = 'none';
 
                 header.appendChildren(entityTitle, sideBadge);
                 root.appendChildren(header);
 
-                const emptyState = new uiLib.EmptyStateView({
-                    icon: 'fas fa-mouse-pointer',
-                    title: 'No Selection',
-                    description: 'Select an entity on the Tactical Map to inspect its subsystems.'
+                const emptyState = new uiLib.Alert({
+                    message: 'Select an entity on the Tactical Map to inspect its subsystems.',
+                    variant: 'info'
                 });
                 root.appendChildren(emptyState);
 
@@ -71,10 +67,11 @@ export const EntityExtension: Extension = {
                     gap: 'xs'
                 });
                 
-                tabBar.getElement().style.flexWrap = 'wrap';
-                tabBar.getElement().style.paddingBottom = '4px';
-                tabBar.getElement().style.borderBottom = '1px solid var(--border)';
-                tabBar.getElement().style.display = 'none';
+                const tabBarEl = tabBar.getElement();
+                tabBarEl.style.flexWrap = 'wrap';
+                tabBarEl.style.paddingBottom = '4px';
+                tabBarEl.style.borderBottom = '1px solid var(--border)';
+                tabBarEl.style.display = 'none';
 
                 // Content area with ScrollArea
                 const contentArea = new uiLib.Column({ fill: true });
@@ -83,9 +80,10 @@ export const EntityExtension: Extension = {
 
                 // Build tab buttons
                 for (const tab of SUBSYSTEM_TABS) {
-                    const tabBtn = new uiLib.Tab({
+                    const tabBtn = new uiLib.Button({
                         label: tab.label,
-                        active: tab.id === activeTabId,
+                        variant: tab.id === activeTabId ? 'primary' : 'ghost',
+                        size: 'sm',
                         onClick: () => {
                             activeTabId = tab.id;
                             updateTabStyles();
@@ -96,156 +94,114 @@ export const EntityExtension: Extension = {
                 }
 
                 const updateTabStyles = () => {
-                    const tabs = tabBar.getChildren() as uiLib.Tab[];
+                    const tabs = tabBar.getChildren() as uiLib.Button[];
                     tabs.forEach((t, i) => {
-                        t.updateProps({ active: SUBSYSTEM_TABS[i].id === activeTabId });
+                        t.updateProps({ variant: SUBSYSTEM_TABS[i].id === activeTabId ? 'primary' : 'ghost' });
                     });
                 };
 
-                // Load subsystem data for the selected entity
-                const loadSubsystemData = async (subsystemId: string) => {
-                    const matchId = matches.currentMatchId.get();
-                    const entityId = selection.primaryId.get();
-                    if (!matchId || !entityId) return;
+                const loadSubsystemData = async (tabId: string) => {
+                    const entityId = ide.selection.primaryId.get();
+                    const matchId = ide.matches.currentMatchId.get();
+                    if (!entityId || !matchId) return;
 
-                    contentArea.getElement().innerHTML = '';
-                    const spinner = new uiLib.Spinner({ size: 'sm' });
-                    contentArea.appendChildren(spinner);
+                    contentArea.getElement().innerHTML = `<div style="padding: 20px; color: var(--text-muted)">Loading ${tabId}...</div>`;
 
                     try {
-                        let data: unknown = null;
-
-                        switch (subsystemId) {
-                            case 'overview': {
-                                data = await client.api.entity.get({ matchId, entityId });
-                                break;
-                            }
-                            case 'kinematics': {
-                                data = await client.api.kinematics.get({ matchId, entityId });
-                                break;
-                            }
-                            case 'sensors': {
-                                data = await client.api.sensor.list({ matchId, entityId });
-                                break;
-                            }
-                            case 'combat': {
-                                data = await client.api.combat.get({ matchId, entityId });
-                                break;
-                            }
-                            case 'nav': {
-                                data = await client.api.nav.list_waypoints({ matchId, entityId });
-                                break;
-                            }
-                            case 'logistics': {
-                                data = await client.api.logistics.get({ matchId, entityId });
-                                break;
-                            }
-                            default: {
-                                data = { message: `${subsystemId} subsystem data not yet wired` };
-                                break;
-                            }
-                        }
-
-                        contentArea.getElement().innerHTML = '';
-                        
-                        if (data) {
-                            const jsonTree = new uiLib.JsonTree({
-                                data,
-                                expandDepth: 2,
-                                label: subsystemId.toUpperCase()
+                        if (tabId === 'overview') {
+                            const data = await client.api.entity.get({ matchId, entityId });
+                            contentArea.getElement().innerHTML = '';
+                            
+                            // 1. Gauges for kinematic data
+                            const gauges = new uiLib.GaugeCluster({
+                                gauges: [
+                                    { label: 'Speed', value: data.speedKts, max: 1200, unit: 'KTS', color: 'var(--accent)' },
+                                    { label: 'Heading', value: data.heading, max: 360, unit: '°', color: 'var(--blue-force)' },
+                                    { label: 'Altitude', value: data.position.z, max: 20000, unit: 'M', color: 'var(--success)' },
+                                ],
+                                size: 'md'
                             });
-                            contentArea.appendChildren(jsonTree);
-                        } else {
-                            contentArea.appendChildren(new uiLib.EmptyStateView({
-                                title: 'No Data',
-                                description: `No ${subsystemId} data available for this entity.`,
-                                icon: 'fas fa-info-circle'
-                            }));
-                        }
+                            contentArea.appendChildren(gauges);
 
+                            // 2. Identification Section
+                            const idSection = new uiLib.Column({ padding: 'none', gap: 'xs' });
+                            idSection.getElement().style.marginTop = '16px';
+                            
+                            const idTitle = new uiLib.Heading({ text: 'IDENTIFICATION', level: 6 });
+                            idTitle.getElement().style.color = 'var(--text-muted)';
+                            idSection.appendChildren(idTitle);
+
+                            const idProps = [
+                                { label: 'Callsign', value: data.id },
+                                { label: 'Category', value: data.category?.toUpperCase() || 'UNKNOWN' },
+                                { label: 'Force', value: data.side.toUpperCase() },
+                            ];
+
+                            idProps.forEach(p => {
+                                const row = new uiLib.Row({ justify: 'space-between', padding: 'xs' });
+                                row.appendChildren(
+                                    new uiLib.Text({ text: p.label, variant: 'muted', size: 'xs' }),
+                                    new uiLib.Text({ text: p.value || '', weight: 'bold', size: 'xs', monospace: true })
+                                );
+                                idSection.appendChildren(row);
+                            });
+                            contentArea.appendChildren(idSection);
+
+                            // 3. Position Section with Vector3Field
+                            const posSection = new uiLib.Column({ padding: 'none', gap: 'sm' });
+                            posSection.getElement().style.marginTop = '16px';
+                            
+                            const posTitle = new uiLib.Heading({ text: 'SPATIAL TELEMETRY', level: 6 });
+                            posTitle.getElement().style.color = 'var(--text-muted)';
+                            posSection.appendChildren(posTitle);
+
+                            const posField = new uiLib.Vector3Field({
+                                value: { x: data.position.x, y: data.position.y, z: data.position.z },
+                                labels: { x: 'LAT', y: 'LON', z: 'ALT' },
+                                disabled: true
+                            });
+                            posSection.appendChildren(posField);
+                            contentArea.appendChildren(posSection);
+
+                        } else {
+                            contentArea.getElement().innerHTML = `<div style="padding: 20px; color: var(--text-muted); font-size: 11px; text-align: center;">${tabId.toUpperCase()} SUBSYSTEM DATA NOT INITIALIZED</div>`;
+                        }
                     } catch (err) {
-                        contentArea.getElement().innerHTML = '';
-                        contentArea.appendChildren(new uiLib.Alert({
-                            message: `Failed to load ${subsystemId} data: ${err instanceof Error ? err.message : String(err)}`,
-                            variant: 'error'
-                        }));
+                        contentArea.getElement().innerHTML = `<div style="color: var(--status-crit); padding: 20px; text-align: center;">TELEMETRY FAULT: ${err instanceof Error ? err.message : 'Unknown'}</div>`;
                     }
                 };
 
-                root.appendChildren(tabBar, scrollArea);
-                root.mount(container);
-
-                // React to selection changes
-                const unsub = selection.primaryId.subscribe(async (entityId: string | null) => {
-                    if (entityId) {
-                        entityTitle.updateProps({ text: `Entity: ${entityId.substring(0, 8)}...` });
+                // Selection Sync
+                const unsubSelect = ide.selection.primaryId.subscribe((id) => {
+                    if (id) {
+                        entityTitle.updateProps({ text: id.toUpperCase() });
                         emptyState.getElement().style.display = 'none';
-                        tabBar.getElement().style.display = 'flex';
+                        tabBarEl.style.display = 'flex';
                         scrollArea.getElement().style.display = 'block';
-                        
-                        // Update side badge
-                        const matchId = matches.currentMatchId.get();
-                        if (matchId) {
-                            try {
-                                const entity = await client.api.entity.get({ matchId, entityId });
-                                sideBadge.updateProps({ side: entity.side as any });
-                                sideBadge.getElement().style.display = 'flex';
-                            } catch (e) {
-                                sideBadge.getElement().style.display = 'none';
-                            }
-                        }
-
-                        activeTabId = 'overview';
-                        updateTabStyles();
-                        void loadSubsystemData('overview');
+                        void loadSubsystemData(activeTabId);
                     } else {
                         entityTitle.updateProps({ text: 'No Selection' });
-                        sideBadge.getElement().style.display = 'none';
-                        emptyState.getElement().style.display = 'flex';
-                        tabBar.getElement().style.display = 'none';
+                        emptyState.getElement().style.display = 'block';
+                        tabBarEl.style.display = 'none';
                         scrollArea.getElement().style.display = 'none';
-                        contentArea.getElement().innerHTML = '';
                     }
                 });
-                disposables.push({ dispose: unsub });
+                disposables.push({ dispose: unsubSelect });
+
+                root.appendChildren(tabBar, scrollArea);
+                root.mount(container);
             }
         };
 
-        ide.views.registerProvider('right-panel', inspectorProvider);
+        ide.views.registerProvider('right-panel', entityViewProvider);
 
         ide.activityBar.registerItem({
             id: 'entity.inspector',
             location: 'right-panel',
-            icon: 'fas fa-search',
-            title: 'Entity Inspector',
-            order: 1
+            icon: 'fas fa-info-circle',
+            title: 'Inspector',
+            order: 10
         });
-
-        // ── Entity Commands ──────────────────────────────────────────────────
-
-        ide.commands.register({
-            id: 'entity.delete',
-            label: 'Delete Selected Entity',
-            keybinding: 'Delete',
-            handler: async () => {
-                const matchId = matches.currentMatchId.get();
-                const entityId = selection.primaryId.get();
-                if (!matchId || !entityId) {
-                    ide.notifications?.notify('No entity selected', 'warning');
-                    return;
-                }
-                try {
-                    await client.api.entity.delete({ matchId, entityId });
-                    selection.clear();
-                    ide.notifications?.notify(`Entity ${entityId.substring(0, 8)} deleted`, 'info');
-                } catch (err) {
-                    console.error('entity.delete failed', err);
-                }
-            }
-        });
-
-        // Open inspector on first load
-        void ide.views.renderView('right-panel', 'entity.inspector');
 
         console.log('✅ EntityExtension activated');
     }

@@ -88,6 +88,47 @@ export const MatchExtension: Extension = {
         });
         context.subscriptions.push({ dispose: unsubSide });
 
+        // ── Theme Switcher ───────────────────────────────────────────────────
+
+        statusBar.addItem('theme-switcher', {
+            tooltip: 'Tactical Theme Variant',
+            text: 'Command',
+            icon: 'fas fa-palette',
+            onClick: () => {
+                void ide.commands.execute('theme.cycle');
+            }
+        }, 'right');
+
+        ide.commands.register({
+            id: 'theme.cycle',
+            label: 'Cycle Tactical Theme',
+            handler: () => {
+                const current = ide.theme.getTacticalVariant();
+                const variants: ('command' | 'alert' | 'observer')[] = ['command', 'alert', 'observer'];
+                const next = variants[(variants.indexOf(current) + 1) % variants.length];
+                ide.theme.setTacticalVariant(next);
+                
+                const item = statusBar.getItem('theme-switcher');
+                if (item) {
+                    item.updateProps({ text: next.charAt(0).toUpperCase() + next.slice(1) });
+                }
+            }
+        });
+
+        ide.commands.register({
+            id: 'theme.setVariant',
+            label: 'Set Tactical Theme Variant',
+            handler: (variant: any) => {
+                if (typeof variant === 'string' && ['command', 'alert', 'observer'].includes(variant)) {
+                    ide.theme.setTacticalVariant(variant as any);
+                    const item = statusBar.getItem('theme-switcher');
+                    if (item) {
+                        item.updateProps({ text: variant.charAt(0).toUpperCase() + variant.slice(1) });
+                    }
+                }
+            }
+        });
+
         // ── Match Explorer View (Left Sidebar) ──────────────────────────────
 
         const matchExplorerProvider: ViewProvider = {
@@ -294,6 +335,18 @@ export const MatchExtension: Extension = {
         });
 
         // ── Menu Items ───────────────────────────────────────────────────────
+
+        ide.layout.header.menuBar.addMenuItem({
+            id: 'view',
+            label: 'View',
+            items: [
+                { id: 'view:theme-command', label: 'Theme: Command', command: 'theme.setVariant', args: 'command' },
+                { id: 'view:theme-alert', label: 'Theme: Alert', command: 'theme.setVariant', args: 'alert' },
+                { id: 'view:theme-observer', label: 'Theme: Observer', command: 'theme.setVariant', args: 'observer' },
+                { id: 'view:divider', label: '---' },
+                { id: 'view:console', label: 'Developer Console', command: 'devtools.open' },
+            ]
+        });
 
         ide.layout.header.menuBar.addMenuItem({
             id: 'simulation',

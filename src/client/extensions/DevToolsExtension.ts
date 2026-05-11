@@ -23,57 +23,79 @@ export const DevToolsExtension: Extension = {
             id: 'devtools.console',
             name: 'Console',
             resolveView: (container, disposables) => {
-                const root = document.createElement('div');
-                Object.assign(root.style, {
-                    display: 'flex',
-                    flexDirection: 'column',
-                    height: '100%',
-                    fontFamily: 'var(--font-mono, "JetBrains Mono", monospace)',
-                    fontSize: '12px',
-                });
+                const root = new uiLib.Column({ fill: true });
+                root.getElement().style.overflow = 'hidden';
 
-                // Output area
-                const output = document.createElement('div');
-                Object.assign(output.style, {
-                    flex: '1',
-                    overflow: 'auto',
-                    padding: '8px',
-                    color: 'var(--text-main, #ccc)',
-                    lineHeight: '1.6',
+                // Output area with ScrollArea
+                const outputList = new uiLib.Column({ padding: 'sm', gap: 'xs' });
+                const scrollArea = new uiLib.ScrollArea({ 
+                    fill: true, 
+                    children: [outputList] 
                 });
+                root.appendChildren(scrollArea);
 
                 // Input area
-                const inputRow = document.createElement('div');
-                Object.assign(inputRow.style, {
-                    display: 'flex',
-                    alignItems: 'center',
-                    gap: '4px',
-                    padding: '4px 8px',
-                    borderTop: '1px solid var(--border, #3e3e42)',
+                const inputRow = new uiLib.Row({
+                    padding: 'xs',
+                    gap: 'xs',
+                    align: 'center'
                 });
+                inputRow.getElement().style.borderTop = '1px solid var(--border)';
 
-                const prompt = document.createElement('span');
-                prompt.textContent = '>';
-                prompt.style.color = 'var(--accent, #007acc)';
-                prompt.style.fontWeight = '700';
-                inputRow.appendChild(prompt);
+                const prompt = new uiLib.Text({ text: '>', variant: 'accent', weight: 'bold', monospace: true });
+                
+                const input = new uiLib.TextInput({
+                    placeholder: 'Enter JS expression...',
+                    value: '',
+                    onEnter: (expr) => {
+                        expr = expr.trim();
+                        if (!expr) return;
 
-                const input = document.createElement('input');
-                Object.assign(input.style, {
-                    flex: '1',
-                    background: 'transparent',
-                    border: 'none',
-                    color: 'var(--text-main, #ccc)',
-                    fontSize: '12px',
-                    fontFamily: 'inherit',
-                    outline: 'none',
+                        history.push(expr);
+                        historyIndex = history.length;
+                        
+                        // Clear input value manually since TextInput doesn't auto-clear
+                        const inputEl = input.getElement().querySelector('input');
+                        if (inputEl) inputEl.value = '';
+
+                        appendLog(`> ${expr}`, undefined, 'accent');
+
+                        try {
+                            const evalContext = {
+                                ide,
+                                client: ide.getClient(),
+                                matches: (ide as any).matches,
+                                selection: ide.selection,
+                                stream: (ide as any).stream,
+                            };
+
+                            const fn = new Function(
+                                ...Object.keys(evalContext),
+                                `return (${expr})`
+                            );
+                            const result = fn(...Object.values(evalContext));
+
+                            if (result instanceof Promise) {
+                                void result.then(r => {
+                                    appendLog(typeof r === 'object' ? JSON.stringify(r, null, 2) : String(r), 'var(--status-ok, #4caf50)');
+                                }).catch(err => {
+                                    appendLog(String(err), undefined, 'error');
+                                });
+                            } else {
+                                appendLog(typeof result === 'object' ? JSON.stringify(result, null, 2) : String(result), 'var(--status-ok, #4caf50)');
+                            }
+                        } catch (err) {
+                            appendLog(String(err), undefined, 'error');
+                        }
+                    }
                 });
-                input.placeholder = 'Enter JS expression...';
-                inputRow.appendChild(input);
+                input.getElement().style.flex = '1';
+                input.getElement().style.border = 'none';
+                input.getElement().style.background = 'transparent';
 
-                root.appendChild(output);
-                root.appendChild(inputRow);
-                container.appendChild(root);
+                inputRow.appendChildren(prompt, input);
+                root.appendChildren(inputRow);
+                root.mount(container);
 
                 // Command history
                 const history: string[] = [];
@@ -84,24 +106,32 @@ export const DevToolsExtension: Extension = {
                 const originalError = console.error;
                 const originalWarn = console.warn;
 
-                const appendLog = (message: string, color: string = 'var(--text-main, #ccc)') => {
-                    const line = document.createElement('div');
-                    line.style.color = color;
-                    line.style.whiteSpace = 'pre-wrap';
-                    line.style.wordBreak = 'break-all';
-                    line.textContent = message;
-                    output.appendChild(line);
-                    output.scrollTop = output.scrollHeight;
+                const appendLog = (message: string, color?: string, variant: 'main' | 'muted' | 'error' | 'accent' = 'main') => {
+                    const line = new uiLib.Text({ 
+                        text: message, 
+                        variant, 
+                        monospace: true,
+                        selectable: true 
+                    });
+                    if (color) line.getElement().style.color = color;
+                    line.getElement().style.whiteSpace = 'pre-wrap';
+                    line.getElement().style.wordBreak = 'break-all';
+                    outputList.appendChildren(line);
+                    
+                    // Auto-scroll to bottom
+                    setTimeout(() => {
+                        scrollArea.getElement().scrollTop = scrollArea.getElement().scrollHeight;
+                    }, 0);
                 };
 
-                // Override console methods to capture output
+                // Override console methods
                 console.log = (...args: unknown[]) => {
                     originalLog.apply(console, args);
                     appendLog(args.map(a => typeof a === 'object' ? JSON.stringify(a, null, 2) : String(a)).join(' '));
                 };
                 console.error = (...args: unknown[]) => {
                     originalError.apply(console, args);
-                    appendLog(args.map(a => typeof a === 'object' ? JSON.stringify(a, null, 2) : String(a)).join(' '), 'var(--error, #f44336)');
+                    appendLog(args.map(a => typeof a === 'object' ? JSON.stringify(a, null, 2) : String(a)).join(' '), undefined, 'error');
                 };
                 console.warn = (...args: unknown[]) => {
                     originalWarn.apply(console, args);
@@ -116,69 +146,31 @@ export const DevToolsExtension: Extension = {
                     }
                 });
 
-                // Input handler
-                input.addEventListener('keydown', (e) => {
-                    if (e.key === 'Enter') {
-                        const expr = input.value.trim();
-                        if (!expr) return;
-
-                        history.push(expr);
-                        historyIndex = history.length;
-                        input.value = '';
-
-                        appendLog(`> ${expr}`, 'var(--accent, #007acc)');
-
-                        try {
-                            // Provide access to IDE services in eval context
-                            const evalContext = {
-                                ide,
-                                client: ide.getClient(),
-                                matches: ide.matches,
-                                selection: ide.selection,
-                                stream: ide.stream,
-                            };
-
-                            // Execute in a context where services are available
-                            const fn = new Function(
-                                ...Object.keys(evalContext),
-                                `return (${expr})`
-                            );
-                            const result = fn(...Object.values(evalContext));
-
-                            if (result instanceof Promise) {
-                                void result.then(r => {
-                                    appendLog(typeof r === 'object' ? JSON.stringify(r, null, 2) : String(r), 'var(--success, #4caf50)');
-                                }).catch(err => {
-                                    appendLog(String(err), 'var(--error, #f44336)');
-                                });
-                            } else {
-                                appendLog(typeof result === 'object' ? JSON.stringify(result, null, 2) : String(result), 'var(--success, #4caf50)');
+                // History handler (still need keydown for ArrowUp/Down)
+                const inputEl = input.getElement().querySelector('input');
+                if (inputEl) {
+                    inputEl.addEventListener('keydown', (e) => {
+                        if (e.key === 'ArrowUp') {
+                            e.preventDefault();
+                            if (historyIndex > 0) {
+                                historyIndex--;
+                                inputEl.value = history[historyIndex];
                             }
-                        } catch (err) {
-                            appendLog(String(err), 'var(--error, #f44336)');
+                        } else if (e.key === 'ArrowDown') {
+                            e.preventDefault();
+                            if (historyIndex < history.length - 1) {
+                                historyIndex++;
+                                inputEl.value = history[historyIndex];
+                            } else {
+                                historyIndex = history.length;
+                                inputEl.value = '';
+                            }
                         }
-                    } else if (e.key === 'ArrowUp') {
-                        e.preventDefault();
-                        if (historyIndex > 0) {
-                            historyIndex--;
-                            input.value = history[historyIndex];
-                        }
-                    } else if (e.key === 'ArrowDown') {
-                        e.preventDefault();
-                        if (historyIndex < history.length - 1) {
-                            historyIndex++;
-                            input.value = history[historyIndex];
-                        } else {
-                            historyIndex = history.length;
-                            input.value = '';
-                        }
-                    }
-                });
+                    });
+                }
 
-                // Welcome message
-                appendLog('War Games Developer Console', 'var(--accent, #007acc)');
-                appendLog('Access IDE services: ide, client, matches, selection, stream', 'var(--text-muted, #888)');
-                appendLog('Type any JS expression and press Enter.', 'var(--text-muted, #888)');
+                appendLog('War Games Developer Console', undefined, 'accent');
+                appendLog('Access IDE services: ide, client, matches, selection, stream', undefined, 'muted');
             }
         };
 

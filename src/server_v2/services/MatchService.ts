@@ -66,7 +66,7 @@ export class MatchHandle implements IMatchHandle {
         
         if (terrainService) {
             const provider = new TerrainServiceAdapter(terrainService);
-            oracle = new TerrainOracle(provider);
+            oracle = new TerrainOracle(provider, provider);
         } else {
             oracle = new TerrainOracle(); // Null provider returns 0 elevation
         }

@@ -58,10 +58,10 @@ export class MenuBar extends BaseComponent<{}> {
         const el = item.getElement();
 
         el.addEventListener('menu-item-click', (e: any) => {
-            const { command } = e.detail;
+            const { command, args } = e.detail;
             if (command) {
                 const event = new CustomEvent('menu-command', {
-                    detail: { command },
+                    detail: { command, args },
                     bubbles: true
                 });
                 this.element.dispatchEvent(event);

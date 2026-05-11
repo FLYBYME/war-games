@@ -8,7 +8,7 @@
 
 import { Extension, ExtensionContext } from '../core/extensions/Extension';
 import { ViewProvider } from '../core/extensions/ViewProvider';
-import { globalContractRegistry, ToolContract, toolKey } from '@sdk/contracts/index';
+import { globalContractRegistry, ToolContract } from '@sdk/contracts/index';
 import { z } from 'zod';
 import * as uiLib from '../ui-lib';
 
@@ -123,8 +123,8 @@ function generateFieldsFromSchema(
                 key,
                 element: wrapWithLabel(key, description, select.getElement()),
                 getValue: () => {
-                    const sel = select.getElement().querySelector('select') as HTMLSelectElement | null;
-                    return sel?.value ?? options[0];
+                    const sel = (select as any).getValue(); // UI-lib select component getter
+                    return sel ?? options[0];
                 },
                 isContextField: false
             });
@@ -193,7 +193,8 @@ export const ToolRunnerExtension: Extension = {
             id: 'tool-runner.view',
             name: 'Tool Runner',
             resolveView: (container, disposables) => {
-                const root = new uiLib.Column({ padding: 'md', gap: 'md', fill: true, overflow: 'hidden' });
+                const root = new uiLib.Column({ padding: 'md', gap: 'md', fill: true });
+                root.getElement().style.overflow = 'hidden';
 
                 // Header
                 const header = new uiLib.Heading({ text: 'TOOL RUNNER', level: 4, transform: 'uppercase' });
@@ -216,8 +217,12 @@ export const ToolRunnerExtension: Extension = {
 
                 // Main Area with ScrollArea
                 const formArea = new uiLib.Column({ gap: 'md' });
-                const resultArea = new uiLib.Column({ gap: 'sm', borderTop: true, paddingTop: 'md' });
-                resultArea.getElement().style.display = 'none';
+                const resultArea = new uiLib.Column({ gap: 'sm' });
+                
+                const resultAreaEl = resultArea.getElement();
+                resultAreaEl.style.display = 'none';
+                resultAreaEl.style.borderTop = '1px solid var(--border)';
+                resultAreaEl.style.paddingTop = '12px';
 
                 const scrollArea = new uiLib.ScrollArea({ 
                     fill: true, 
@@ -227,12 +232,12 @@ export const ToolRunnerExtension: Extension = {
 
                 // State
                 let currentFields: FormField[] = [];
-                let currentContract: ToolContract | null = null;
+                let currentContract: ToolContract<any, any> | null = null;
 
                 const switchTool = (selectedKey: string) => {
                     formArea.getElement().innerHTML = '';
-                    resultArea.getElement().innerHTML = '';
-                    resultArea.getElement().style.display = 'none';
+                    resultAreaEl.innerHTML = '';
+                    resultAreaEl.style.display = 'none';
                     currentFields = [];
                     currentContract = null;
 
@@ -289,8 +294,8 @@ export const ToolRunnerExtension: Extension = {
                         }
                     }
 
-                    resultArea.getElement().innerHTML = '';
-                    resultArea.getElement().style.display = 'flex';
+                    resultAreaEl.innerHTML = '';
+                    resultAreaEl.style.display = 'flex';
                     const spinner = new uiLib.Spinner({ size: 'md' });
                     resultArea.appendChildren(spinner);
 
@@ -319,7 +324,7 @@ export const ToolRunnerExtension: Extension = {
                         }
 
                         // Render result
-                        resultArea.getElement().innerHTML = '';
+                        resultAreaEl.innerHTML = '';
                         resultArea.appendChildren(new uiLib.Text({ text: 'EXECUTION RESULT', size: 'xs', weight: 'bold', variant: 'muted' }));
                         
                         const jsonTree = new uiLib.JsonTree({
@@ -330,7 +335,7 @@ export const ToolRunnerExtension: Extension = {
                         resultArea.appendChildren(jsonTree);
 
                     } catch (error) {
-                        resultArea.getElement().innerHTML = '';
+                        resultAreaEl.innerHTML = '';
                         const errMsg = error instanceof Error ? error.message : String(error);
                         resultArea.appendChildren(new uiLib.Alert({
                             message: `Execution Failed: ${errMsg}`,

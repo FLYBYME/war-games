@@ -45,23 +45,11 @@ export const EventLogExtension: Extension = {
                 const root = new uiLib.Column({ padding: 'sm', gap: 'sm', fill: true });
 
                 // Header bar
-                const headerRow = document.createElement('div');
-                headerRow.style.display = 'flex';
-                headerRow.style.alignItems = 'center';
-                headerRow.style.gap = '8px';
+                const headerRow = new uiLib.Row({ align: 'center', gap: 'sm' });
 
-                const title = new uiLib.Heading({ text: 'EVENT LOG', level: 4, transform: 'uppercase' });
-                headerRow.appendChild(title.getElement());
-
+                const title = new uiLib.Heading({ text: 'EVENT LOG', level: 4 });
                 countBadge = new uiLib.Badge({ count: '0', variant: 'accent', size: 'sm' });
-                headerRow.appendChild(countBadge.getElement());
-
-                // Spacer
-                const spacer = document.createElement('div');
-                spacer.style.flex = '1';
-                headerRow.appendChild(spacer);
-
-                // Clear button
+                
                 const clearBtn = new uiLib.Button({
                     label: 'Clear',
                     icon: 'fas fa-trash',
@@ -72,9 +60,9 @@ export const EventLogExtension: Extension = {
                         renderLog();
                     }
                 });
-                headerRow.appendChild(clearBtn.getElement());
 
-                root.getElement().appendChild(headerRow);
+                headerRow.appendChildren(title, countBadge, new uiLib.Spacer(), clearBtn);
+                root.appendChildren(headerRow);
 
                 // Filter
                 const filter = new uiLib.SearchInput({
@@ -87,16 +75,11 @@ export const EventLogExtension: Extension = {
                 root.appendChildren(filter);
 
                 // Scrollable log list
-                const scrollArea = document.createElement('div');
-                scrollArea.style.flex = '1';
-                scrollArea.style.overflow = 'auto';
-                scrollArea.style.display = 'flex';
-                scrollArea.style.flexDirection = 'column';
-                scrollArea.style.gap = '2px';
-                scrollArea.style.minHeight = '0';
+                const listRoot = new uiLib.Column({ gap: 'none' });
+                const scrollArea = new uiLib.ScrollArea({ fill: true, children: [listRoot] });
 
-                listContainer = scrollArea;
-                root.getElement().appendChild(scrollArea);
+                listContainer = listRoot.getElement();
+                root.appendChildren(scrollArea);
                 root.mount(container);
 
                 // Subscribe to stream when a match is active
@@ -159,73 +142,61 @@ export const EventLogExtension: Extension = {
                 const eventType = 'type' in event ? String(event.type) : 'Unknown';
                 const config = EVENT_COLORS[eventType] ?? { variant: 'accent' as const, icon: 'fas fa-circle' };
 
-                const row = document.createElement('div');
-                Object.assign(row.style, {
-                    display: 'flex',
-                    alignItems: 'center',
-                    gap: '6px',
-                    padding: '3px 6px',
-                    fontSize: '11px',
-                    fontFamily: 'var(--font-mono, monospace)',
-                    color: 'var(--text-main, #ccc)',
-                    borderBottom: '1px solid rgba(255,255,255,0.04)',
-                    cursor: 'pointer',
+                const row = new uiLib.Row({
+                    padding: 'xs',
+                    gap: 'sm',
+                    align: 'center'
                 });
-                row.addEventListener('mouseenter', () => {
-                    row.style.backgroundColor = 'rgba(255,255,255,0.03)';
-                });
-                row.addEventListener('mouseleave', () => {
-                    row.style.backgroundColor = 'transparent';
-                });
+                row.getElement().classList.add('event-log-row');
 
                 // Tick
-                const tickSpan = document.createElement('span');
-                tickSpan.style.color = 'var(--text-muted, #888)';
-                tickSpan.style.minWidth = '40px';
-                tickSpan.textContent = `T${event.tick}`;
-                row.appendChild(tickSpan);
+                const tickText = new uiLib.Text({ 
+                    text: `T${event.tick}`, 
+                    variant: 'muted', 
+                    size: 'xs', 
+                    monospace: true 
+                });
+                tickText.getElement().style.minWidth = '40px';
 
                 // Icon
-                const iconEl = document.createElement('i');
-                iconEl.className = config.icon;
-                iconEl.style.width = '14px';
-                iconEl.style.textAlign = 'center';
-                row.appendChild(iconEl);
+                const variantColor = config.variant === 'error' ? 'var(--error)' :
+                                   config.variant === 'warning' ? 'var(--warning)' :
+                                   config.variant === 'success' ? 'var(--success)' : 'var(--accent)';
+                const icon = new uiLib.Icon({ icon: config.icon, size: 'sm', color: variantColor });
 
-                // Event type badge
-                const typeBadge = document.createElement('span');
-                typeBadge.textContent = eventType;
-                typeBadge.style.fontWeight = '600';
-                typeBadge.style.minWidth = '120px';
-                row.appendChild(typeBadge);
+                // Event type
+                const typeText = new uiLib.Text({ text: eventType, weight: 'bold', size: 'xs' });
+                typeText.getElement().style.minWidth = '120px';
+
+                row.appendChildren(tickText, icon, typeText);
 
                 // Entity ID
                 if (event.entityId) {
-                    const entitySpan = document.createElement('span');
-                    entitySpan.textContent = event.entityId.substring(0, 8);
-                    entitySpan.style.color = 'var(--accent, #007acc)';
-                    entitySpan.style.cursor = 'pointer';
-                    entitySpan.addEventListener('click', (e) => {
-                        e.stopPropagation();
-                        if (event.entityId) {
-                            ide.selection.select(event.entityId);
+                    const entityLink = new uiLib.Text({ 
+                        text: event.entityId.substring(0, 8), 
+                        variant: 'accent', 
+                        size: 'xs',
+                        onClick: () => {
+                            if (event.entityId) ide.selection.select(event.entityId);
                         }
                     });
-                    row.appendChild(entitySpan);
+                    row.appendChildren(entityLink);
                 }
 
                 // Detail summary
                 if ('data' in event && event.data) {
-                    const detailSpan = document.createElement('span');
-                    detailSpan.style.color = 'var(--text-muted, #888)';
-                    detailSpan.style.overflow = 'hidden';
-                    detailSpan.style.textOverflow = 'ellipsis';
-                    detailSpan.style.whiteSpace = 'nowrap';
-                    detailSpan.textContent = JSON.stringify(event.data).substring(0, 80);
-                    row.appendChild(detailSpan);
+                    const detailText = new uiLib.Text({ 
+                        text: JSON.stringify(event.data).substring(0, 80), 
+                        variant: 'muted', 
+                        size: 'xs',
+                        truncate: true
+                    });
+                    row.appendChildren(detailText);
                 }
 
-                listContainer.appendChild(row);
+                if (listContainer) {
+                    listContainer.appendChild(row.getElement());
+                }
             }
 
             // Auto-scroll to top (newest)

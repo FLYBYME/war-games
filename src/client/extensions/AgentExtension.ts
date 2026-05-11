@@ -97,9 +97,10 @@ export const AgentExtension: Extension = {
                             gap: 'xs'
                         });
                         
-                        bubble.getElement().style.alignSelf = isUser ? 'flex-end' : 'flex-start';
-                        bubble.getElement().style.maxWidth = '85%';
-                        bubble.getElement().classList.add('chat-bubble');
+                        const bubbleEl = bubble.getElement();
+                        bubbleEl.style.maxWidth = '85%';
+                        bubbleEl.style.alignSelf = isUser ? 'flex-end' : 'flex-start';
+                        bubbleEl.classList.add('chat-bubble');
                         
                         if (isUser) {
                             bubble.applyStyles({
@@ -124,7 +125,7 @@ export const AgentExtension: Extension = {
                             });
                         }
 
-                        bubble.getElement().textContent = msg.content;
+                        bubbleEl.textContent = msg.content;
                         messageList.appendChildren(bubble);
 
                         // Render tool calls if present
@@ -155,7 +156,8 @@ export const AgentExtension: Extension = {
                                     }));
                                 }
                                 
-                                toolCard.applyStyles({ alignSelf: 'flex-start', width: '90%' });
+                                toolCard.getElement().style.alignSelf = 'flex-start';
+                                toolCard.getElement().style.width = '90%';
                                 messageList.appendChildren(toolCard);
                             }
                         }

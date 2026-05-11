@@ -271,9 +271,9 @@ export class LayoutManager {
 
     private setupViewMenu(): void {
         this.header.menuBar.getElement().addEventListener('menu-command', (e: any) => {
-            const { command } = e.detail;
+            const { command, args } = e.detail;
             if (command) {
-                this.ide.commands.execute(command);
+                this.ide.commands.execute(command, args);
             }
         });
 

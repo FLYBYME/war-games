@@ -8,12 +8,20 @@ export interface ITileProvider {
     getCachedTile(lat: number, lon: number): Float32Array | Int16Array | undefined;
 }
 
+export interface IMathOracle {
+    isLineOfSightClear(
+        p1: { lat: number, lon: number, alt: number },
+        p2: { lat: number, lon: number, alt: number },
+        numSamples?: number
+    ): Promise<boolean>;
+}
+
 /**
  * TerrainOracle: The Source of Truth for elevation.
  * Implements Bilinear Interpolation for smooth, continuous terrain queries.
  */
 export class TerrainOracle {
-    constructor(private provider?: ITileProvider) {}
+    constructor(private provider?: ITileProvider, private mathOracle?: IMathOracle) {}
 
     /**
      * getElevation: Returns height in meters at a given lat/lon.
@@ -83,6 +91,16 @@ export class TerrainOracle {
     ): Promise<boolean> {
         // Fast path: If both points are above all known terrestrial terrain, LOS is clear
         if (posA.z > 9000 && posB.z > 9000) return true;
+
+        if (this.mathOracle) {
+            const geoA = projection.project(posA);
+            const geoB = projection.project(posB);
+            return this.mathOracle.isLineOfSightClear(
+                { lat: geoA.lat, lon: geoA.lon, alt: posA.z },
+                { lat: geoB.lat, lon: geoB.lon, alt: posB.z },
+                numSamples
+            );
+        }
 
         for (let i = 1; i < numSamples; i++) {
             const t = i / numSamples;

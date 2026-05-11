@@ -1,13 +1,9 @@
 /**
- * SimControlExtension — Simulation playback controls toolbar.
- *
- * Provides Play/Pause/Step/Reset buttons and a time compression slider.
- * Renders as a floating toolbar above the center panel.
+ * SimControlExtension — Real-time simulation control panel.
  */
 
 import { Extension, ExtensionContext } from '../core/extensions/Extension';
 import { ViewProvider } from '../core/extensions/ViewProvider';
-import { MatchServiceEvents } from '../core/services/MatchService';
 import * as uiLib from '../ui-lib';
 
 export const SimControlExtension: Extension = {
@@ -20,13 +16,11 @@ export const SimControlExtension: Extension = {
         const client = ide.getClient();
         const matches = ide.matches;
 
-        // ── Sim Control Toolbar View ─────────────────────────────────────────
-
-        const controlProvider: ViewProvider = {
+        const controlViewProvider: ViewProvider = {
             id: 'sim.controls',
-            name: 'Sim Controls',
+            name: 'Simulation Controls',
             resolveView: (container, disposables) => {
-                const root = new uiLib.Row({
+                const root = new uiLib.Row({ 
                     padding: 'xs',
                     gap: 'xs',
                     align: 'center',
@@ -36,11 +30,12 @@ export const SimControlExtension: Extension = {
                 const toolbar = new uiLib.Row({
                     padding: 'xs',
                     gap: 'xs',
-                    align: 'center',
-                    backgroundColor: 'var(--bg-panel, #1e1e1e)',
-                    border: true,
-                    borderRadius: 'md'
+                    align: 'center'
                 });
+                
+                toolbar.getElement().style.backgroundColor = 'var(--bg-panel, #1e1e1e)';
+                toolbar.getElement().style.border = '1px solid var(--border)';
+                toolbar.getElement().style.borderRadius = 'var(--radius-md, 4px)';
 
                 // State
                 let isPaused = true;
@@ -102,11 +97,11 @@ export const SimControlExtension: Extension = {
                 // Time compression label
                 const tcLabel = new uiLib.Text({ 
                     text: '1x', 
-                    font: 'mono', 
                     size: 'xs', 
-                    variant: 'muted',
-                    id: 'tc-label'
+                    variant: 'muted'
                 });
+                tcLabel.getElement().id = 'tc-label';
+                tcLabel.getElement().style.fontFamily = 'var(--font-mono, monospace)';
                 tcLabel.getElement().style.minWidth = '40px';
 
                 // Time compression slider
@@ -130,7 +125,7 @@ export const SimControlExtension: Extension = {
                 // Status indicator
                 const statusIcon = new uiLib.Icon({
                     icon: 'fas fa-circle',
-                    size: 'xs',
+                    size: 'sm',
                     color: 'var(--status-warn, #ff9800)'
                 });
 
@@ -155,34 +150,10 @@ export const SimControlExtension: Extension = {
 
                 root.appendChildren(toolbar);
                 root.mount(container);
-
-                // Sync state on match activation
-                const subActivated = ide.commands.on(MatchServiceEvents.MATCH_ACTIVATED, async (data: unknown) => {
-                    const payload = data as { matchId: string };
-                    try {
-                        const simState = await client.api.sim.get({ matchId: payload.matchId });
-                        isPaused = simState.isPaused;
-                        timeCompression = simState.timeCompression;
-                        tcLabel.updateProps({ text: `${timeCompression}x` });
-                        tcSlider.updateProps({ value: timeCompression });
-                        updatePlayPauseIcon();
-                    } catch (_err) {
-                        // ignore, will sync later
-                    }
-                });
-                disposables.push({ dispose: () => ide.commands.off(subActivated) });
             }
         };
 
-        ide.views.registerProvider('bottom-panel', controlProvider);
-
-        ide.activityBar.registerItem({
-            id: 'sim.controls',
-            location: 'bottom-panel',
-            icon: 'fas fa-play-circle',
-            title: 'Sim Controls',
-            order: 5
-        });
+        ide.views.registerProvider('bottom-panel', controlViewProvider);
 
         console.log('✅ SimControlExtension activated');
     }

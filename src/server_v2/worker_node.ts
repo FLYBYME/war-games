@@ -76,6 +76,30 @@ export async function createWorkerNode(port: number = 8080) {
 
     // ─── 3. MATH ORACLE ──────────────────────────────────────────────────────
 
+    app.post('/env/math/los', async (request, reply) => {
+        const { p1, p2, numSamples = 10 } = request.body as any;
+        if (!p1 || !p2) return reply.status(400).send({ error: 'Missing endpoints' });
+
+        try {
+            // Simplified LOS math using terrainService
+            for (let i = 1; i < numSamples; i++) {
+                const t = i / numSamples;
+                const sampleAlt = p1.alt + (p2.alt - p1.alt) * t;
+                const sampleLat = p1.lat + (p2.lat - p1.lat) * t;
+                const sampleLon = p1.lon + (p2.lon - p1.lon) * t;
+                
+                const terrainHeight = await terrainService.getElevation(sampleLat, sampleLon);
+                
+                if (sampleAlt < terrainHeight - 0.1) {
+                    return { blocked: true, height: terrainHeight };
+                }
+            }
+            return { blocked: false, height: 0 };
+        } catch (err: any) {
+            return reply.status(500).send({ error: err.message });
+        }
+    });
+
     app.post('/env/math/profile', async (request, reply) => {
         const { p1, p2, points = 50 } = request.body as any;
         if (!p1 || !p2) return reply.status(400).send({ error: 'Missing endpoints' });

@@ -11,6 +11,7 @@ export interface TextProps {
     monospace?: boolean;
     truncate?: boolean;     // Essential for sidebars and tree items
     selectable?: boolean;   // Usually false in IDE UI, true in logs/terminals
+    align?: 'left' | 'center' | 'right';
     onClick?: () => void;
 }
 
@@ -53,6 +54,7 @@ export class Text extends BaseComponent<TextProps> {
             userSelect: selectable ? 'auto' : 'none',
             lineHeight: '1.5',
             cursor: onClick ? 'pointer' : 'default',
+            textAlign: this.props.align || 'left'
         });
 
         // Handle truncation for tight layout areas (like left/right panels)

@@ -9,6 +9,7 @@ export interface HeadingProps {
     variant?: 'main' | 'muted';
     transform?: 'none' | 'uppercase' | 'capitalize';
     padding?: 'none' | 'sm' | 'md' | 'lg' | 'xl';
+    align?: 'left' | 'center' | 'right';
 }
 
 export class Heading extends BaseComponent<HeadingProps> {
@@ -50,7 +51,8 @@ export class Heading extends BaseComponent<HeadingProps> {
                     padding === 'md' ? Theme.spacing.md :
                         padding === 'lg' ? Theme.spacing.lg :
                             padding === 'xl' ? Theme.spacing.xl : '0',
-            userSelect: 'none'
+            userSelect: 'none',
+            textAlign: this.props.align || 'left'
         });
 
         this.element.textContent = text;
