@@ -76,43 +76,44 @@ export class SpatialDatabase {
      */
     public async syncWithFilesystem(rootDir: string) {
         if (!fs.existsSync(rootDir)) return;
-
+        
         console.log(`🔍 SpatialDB: Syncing with filesystem at ${rootDir}...`);
         const startTime = Date.now();
         let count = 0;
 
-        // Run in background
-        (async () => {
-            this.db.exec('PRAGMA synchronous = OFF');
-            this.db.exec('BEGIN TRANSACTION');
-
+        // Run in background without blocking
+        void (async () => {
             try {
-                const resolutions = fs.readdirSync(rootDir);
+                // Set performance pragmas outside transaction
+                this.db.exec('PRAGMA synchronous = OFF');
+                this.db.exec('BEGIN TRANSACTION');
+
+                const resolutions = await fs.promises.readdir(rootDir);
                 for (const resDir of resolutions) {
                     if (!resDir.startsWith('res_')) continue;
                     const res = parseInt(resDir.split('_')[1]);
                     const resPath = path.join(rootDir, resDir);
-
-                    const lats = fs.readdirSync(resPath);
+                    
+                    const lats = await fs.promises.readdir(resPath);
                     for (const latDir of lats) {
                         const lat = parseInt(latDir);
                         if (isNaN(lat)) continue;
                         const latPath = path.join(resPath, latDir);
-
-                        const files = fs.readdirSync(latPath);
+                        
+                        const files = await fs.promises.readdir(latPath);
                         for (const file of files) {
                             if (!file.endsWith('.wgt')) continue;
                             const lon = parseInt(file.replace('.wgt', ''));
                             if (isNaN(lon)) continue;
 
                             const filePath = path.join(latPath, file);
-                            const data = fs.readFileSync(filePath);
-
+                            const data = await fs.promises.readFile(filePath);
+                            
                             this.putDegreeTile(lat, lon, res, data);
                             count++;
 
-                            // Yield every 100 tiles to keep the event loop alive
-                            if (count % 100 === 0) {
+                            // Yield and Commit periodically to keep the event loop and DB healthy
+                            if (count % 200 === 0) {
                                 this.db.exec('COMMIT');
                                 await new Promise(resolve => setTimeout(resolve, 0));
                                 this.db.exec('BEGIN TRANSACTION');
