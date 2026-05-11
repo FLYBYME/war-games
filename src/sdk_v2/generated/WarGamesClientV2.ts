@@ -121,6 +121,7 @@ export class WarGamesClientV2 {
             set_time: async (args: z.infer<typeof Contracts.EnvSetTimeInputSchema>): Promise<z.infer<typeof Contracts.EnvSetTimeOutputSchema>> => this.request('PUT', `/matches/${args.matchId}/environment/time`, args),
             prefetch_terrain: async (args: z.infer<typeof Contracts.EnvPrefetchTerrainInputSchema>): Promise<z.infer<typeof Contracts.EnvPrefetchTerrainOutputSchema>> => this.request('POST', `/matches/${args.matchId}/environment/terrain/prefetch`, args),
             get_cache_stats: async (args: z.infer<typeof Contracts.EnvGetCacheStatsInputSchema>): Promise<z.infer<typeof Contracts.EnvGetCacheStatsOutputSchema>> => this.request('GET', `/env/terrain/cache`, args),
+            get_terrain_tile: async (args: z.infer<typeof Contracts.EnvGetTerrainTileInputSchema>): Promise<z.infer<typeof Contracts.EnvGetTerrainTileOutputSchema>> => this.request('GET', `/env/terrain/tile`, args),
         },
         ew: {
             get_jammer: async (args: z.infer<typeof Contracts.EWGetJammerInputSchema>): Promise<z.infer<typeof Contracts.JammerStateSchema>> => this.request('GET', `/matches/${args.matchId}/entities/${args.entityId}/ew/jammer`, args),

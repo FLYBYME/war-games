@@ -26,7 +26,11 @@ export const EnvironmentStateSchema = z.object({
     weather: WeatherStateSchema.describe("Global weather"),
     oceanography: OceanographySchema.describe("Ocean conditions"),
     simulationTimeHours: z.number().describe("Simulation time of day in hours (0-24)"),
-    sunElevationDeg: z.number().describe("Sun elevation angle in degrees")
+    sunElevationDeg: z.number().describe("Sun elevation angle in degrees"),
+    datum: z.object({
+        lat: z.number().describe("Reference latitude"),
+        lon: z.number().describe("Reference longitude")
+    }).describe("Geodetic reference point for Cartesian coordinates")
 }).describe("Full environment state");
 
 // ─── env_get ─────────────────────────────────────────────────────────────────
@@ -209,7 +213,7 @@ export const EnvGetTerrainTileOutputSchema = z.object({
     lat: z.number(),
     lon: z.number(),
     resolution: z.number(),
-    data: z.instanceof(Uint8Array).describe("Binary WGT encoded tile data")
+    data: z.string().describe("Base64 encoded binary WGT tile data")
 });
 
 export const envGetTerrainTileContract = defineContract({

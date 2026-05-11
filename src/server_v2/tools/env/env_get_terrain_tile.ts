@@ -12,6 +12,8 @@ export const env_get_terrain_tile = defineTool(envGetTerrainTileContract, async 
         tile.data
     );
 
+    // Fastify/SDK will handle Uint8Array if configured, 
+    // ensuring the UI gets a proper binary buffer.
     return {
         lat: tile.lat,
         lon: tile.lon,

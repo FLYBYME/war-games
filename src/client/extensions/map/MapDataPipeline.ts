@@ -1,4 +1,6 @@
 import { Signal } from '../../core/Signal';
+import { WarGamesClientV2 } from '../../../sdk_v2/generated/WarGamesClientV2';
+import { WgtFormat } from '../../../engine/environment/utils/WgtFormat';
 
 export interface WgtTile {
     resolution: number;
@@ -19,9 +21,9 @@ export class MapDataPipeline {
     private activeRequests = 0;
     private maxConcurrentRequests = 6;
     private requestQueue: (() => void)[] = [];
-    private client: any;
+    private client: WarGamesClientV2;
 
-    constructor(client: any) {
+    constructor(client: WarGamesClientV2) {
         this.client = client;
     }
 
@@ -29,10 +31,10 @@ export class MapDataPipeline {
      * Fetches and decodes a WGT tile for the given lat/lon.
      * Results are cached to prevent redundant network requests.
      */
-    public async getTile(lat: number, lon: number): Promise<WgtTile | null> {
+    public async getTile(lat: number, lon: number, resolution: number = 256): Promise<WgtTile | null> {
         const floorLat = Math.floor(lat);
         const floorLon = Math.floor(lon);
-        const key = `${floorLat},${floorLon}`;
+        const key = `${floorLat},${floorLon}_${resolution}`;
 
         if (this.tileCache.has(key)) {
             return this.tileCache.get(key)!;
@@ -49,17 +51,40 @@ export class MapDataPipeline {
             }
 
             this.activeRequests++;
+            this.isLoading.set(true);
             try {
-                // In a real run, this would be:
-                // const buffer = await this.client.terrain.fetchUITile(floorLat, floorLon);
-                // For now, returning null or a stub until client is fully wired
-                return null;
+                // Fetch binary tile from the API
+                const result = await this.client.api.env.get_terrain_tile({
+                    lat: floorLat,
+                    lon: floorLon,
+                    targetResolution: resolution
+                });
+
+                if (!result || !result.data) {
+                    return null;
+                }
+
+                // The SDK returns Uint8Array for binary data
+                const decoded = WgtFormat.decode(result.data);
+                const tile: WgtTile = {
+                    resolution: decoded.resolution,
+                    lat: decoded.lat,
+                    lon: decoded.lon,
+                    data: decoded.data
+                };
+
+                this.tileCache.set(key, tile);
+                return tile;
             } catch (err) {
                 console.error(`MapDataPipeline: Failed to fetch tile ${key}`, err);
-                throw err;
+                return null;
             } finally {
                 this.activeRequests--;
                 this.pendingTiles.delete(key);
+
+                if (this.activeRequests === 0) {
+                    this.isLoading.set(false);
+                }
 
                 // Process queue
                 if (this.requestQueue.length > 0) {

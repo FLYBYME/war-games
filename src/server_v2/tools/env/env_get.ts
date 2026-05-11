@@ -22,6 +22,7 @@ export const env_get = defineTool(envGetContract, async (input, ctx) => {
             seaState: envSystem.globalWeather.seaState
         },
         simulationTimeHours: (handle.world.currentTick % (24 * 3600)) / 3600, // Very simple clock mapping
-        sunElevationDeg: 45 // Placeholder
+        sunElevationDeg: 45, // Placeholder
+        datum: envSystem.getProjection().getOrigin()
     };
 });

@@ -210,6 +210,10 @@ export function registerGeneratedCommands(program: Command, client: WarGamesClie
         try { const res = await client.api.env.get_cache_stats(ZodToCliMapper.parseOptions(o, Contracts.EnvGetCacheStatsInputSchema as any)); console.dir(res, { depth: null }); } catch (err: any) { console.error(`\n${C.red}${C.bold}✖ Error:${C.reset} ${err.message}`); process.exit(1); }
     });
     ZodToCliMapper.mapSchemaToOptions(env_get_cache_stats, Contracts.EnvGetCacheStatsInputSchema as any);
+    const env_get_terrain_tile = env.command('get_terrain_tile').description(`Fetch a binary WGT terrain tile for a specific coordinate and LOD.`).action(async (o) => {
+        try { const res = await client.api.env.get_terrain_tile(ZodToCliMapper.parseOptions(o, Contracts.EnvGetTerrainTileInputSchema as any)); console.dir(res, { depth: null }); } catch (err: any) { console.error(`\n${C.red}${C.bold}✖ Error:${C.reset} ${err.message}`); process.exit(1); }
+    });
+    ZodToCliMapper.mapSchemaToOptions(env_get_terrain_tile, Contracts.EnvGetTerrainTileInputSchema as any);
     let ew = program.commands.find(c => c.name() === 'ew');
     if (!ew) ew = program.command('ew').description('EW domain tools');
     const ew_get_jammer = ew.command('get_jammer').description(`Fetch current jammer power, frequency, and beam settings.`).action(async (o) => {

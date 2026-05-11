@@ -81,7 +81,6 @@ export class TerrainService {
                         const buffer = Buffer.from(arrayBuffer);
                         
                         // Save to L2 Disk Cache
-                        const diskPath = path.join(this.diskCacheDir, `res_${targetResolution}`, `${floorLat}`, `${floorLon}.wgt`);
                         const dir = path.dirname(diskPath);
                         if (!fs.existsSync(dir)) fs.mkdirSync(dir, { recursive: true });
                         fs.writeFileSync(diskPath, buffer);

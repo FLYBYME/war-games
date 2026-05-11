@@ -5,10 +5,12 @@ import { MapState, entitySummaryToMapUnit } from './MapState';
 import { MapRenderer } from './MapRenderer';
 import { LayerRegistry } from './LayerRegistry';
 import { GridLayer } from './layers/GridLayer';
+import { TerrainLayer } from './layers/TerrainLayer';
 import { UnitsLayer } from './layers/UnitsLayer';
 import { WEZLayer } from './layers/WEZLayer';
 import { TracksLayer } from './layers/TracksLayer';
 import { ThreatLayer } from './layers/ThreatLayer';
+import { MapDataPipeline } from './MapDataPipeline';
 import * as uiLib from '../../ui-lib';
 
 /**
@@ -22,12 +24,20 @@ export const MapExtension: Extension = {
 
     activate(context: ExtensionContext) {
         const ide = context.ide;
-        
+
         // 1. Initialize Extension-Level State
         const mapState = new MapState();
         const layerRegistry = new LayerRegistry();
+        const pipeline = new MapDataPipeline(ide.getClient());
 
         // 2. Register Default Layers
+        layerRegistry.register(new TerrainLayer(pipeline), {
+            id: 'terrain',
+            label: 'Elevation Data',
+            group: 'Basemap',
+            defaultOn: true
+        });
+
         layerRegistry.register(new GridLayer(), {
             id: 'grid',
             label: 'Coordinate Grid',
@@ -127,13 +137,13 @@ export const MapExtension: Extension = {
                 const header = new uiLib.Heading({ text: 'MAP LAYERS', level: 4, transform: 'uppercase' });
 
                 const renderLayers = (metas: { id: string; label: string }[]) => {
-                    const children: (uiLib.Heading | uiLib.Checkbox)[] = [header];
+                    const children: (uiLib.BaseComponent<any>)[] = [header];
 
                     metas.forEach(meta => {
                         const checkbox = new uiLib.Checkbox({
                             label: meta.label,
                             checked: mapState.getLayerVisibility(meta.id).get(),
-                            onChange: (checked) => mapState.setLayerVisibility(meta.id, checked)
+                            onChange: (checked: boolean) => mapState.setLayerVisibility(meta.id, checked)
                         });
                         children.push(checkbox);
                     });
@@ -209,24 +219,32 @@ async function startDataSync(matchId: string, mapState: MapState, context: Exten
 
     console.log(`MapExtension: Starting data sync for match ${matchId}`);
 
-    // 1. Fetch initial entity state
+    // 1. Fetch Environment (Datum)
+    try {
+        const env = await client.api.env.get({ matchId });
+        mapState.viewState.update(prev => ({
+            ...prev,
+            origin: env.datum
+        }));
+    } catch (err) {
+        console.error('MapExtension: Failed to fetch environment datum', err);
+        // Fallback to default origin if needed
+        mapState.viewState.update(prev => ({
+            ...prev,
+            origin: prev.origin ?? { lat: 21.0, lon: 107.0 }
+        }));
+    }
+
+    // 2. Fetch initial entity state
     try {
         const entityList = await client.api.entity.list({ matchId });
         const mapUnits = entityList.entities.map(entitySummaryToMapUnit);
         mapState.viewState.update(prev => ({
             ...prev,
-            units: mapUnits,
-            origin: entityList.entities.length > 0
-                ? { lat: entityList.entities[0].position.y, lon: entityList.entities[0].position.x }
-                : prev.origin ?? { lat: 21.0, lon: 107.0 },
+            units: mapUnits
         }));
     } catch (err) {
         console.error('MapExtension: Failed to fetch initial entities', err);
-        // Set a default origin so the grid renders
-        mapState.viewState.update(prev => ({
-            ...prev,
-            origin: prev.origin ?? { lat: 21.0, lon: 107.0 },
-        }));
     }
 
     // 2. Subscribe to the multiplexed event stream for real-time updates

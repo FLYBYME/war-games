@@ -30,8 +30,29 @@ export class WgtFormat {
         return new Uint8Array(buffer);
     }
 
-    public static decode(input: Uint8Array | ArrayBufferLike): { resolution: number, lat: number, lon: number, data: Float32Array } {
-        const bytes = input instanceof Uint8Array ? input : new Uint8Array(input);
+    public static decode(input: any): { resolution: number, lat: number, lon: number, data: Float32Array } {
+        let bytes: Uint8Array;
+
+        if (input instanceof Uint8Array) {
+            bytes = input;
+        } else if (input && typeof input === 'object' && input.type === 'Buffer' && Array.isArray(input.data)) {
+            // Handle Node.js Buffer JSON serialization: { type: 'Buffer', data: [...] }
+            bytes = new Uint8Array(input.data);
+        } else if (input && typeof input === 'object' && Array.isArray(input)) {
+            bytes = new Uint8Array(input);
+        } else if (input instanceof ArrayBuffer) {
+            bytes = new Uint8Array(input);
+        } else if (input && typeof input === 'object' && input.buffer instanceof ArrayBuffer) {
+            bytes = new Uint8Array(input.buffer, input.byteOffset, input.byteLength);
+        } else {
+            // Fallback for array-like objects or other types
+            bytes = new Uint8Array(input);
+        }
+
+        if (bytes.length < 32) {
+            throw new Error(`Invalid WGT data: expected at least 32 bytes, got ${bytes.length}`);
+        }
+
         const view = new DataView(bytes.buffer, bytes.byteOffset, bytes.byteLength);
         const magic = view.getUint32(0, true);
 
