@@ -72,55 +72,67 @@ export class SpatialDatabase {
     /**
      * syncWithFilesystem: Crawls an existing terrain_data directory and indexes all .wgt files.
      * This ensures we build upon existing data instead of re-downloading.
+     * Runs asynchronously to avoid blocking the main thread.
      */
-    public syncWithFilesystem(rootDir: string) {
+    public async syncWithFilesystem(rootDir: string) {
         if (!fs.existsSync(rootDir)) return;
-        
+
         console.log(`🔍 SpatialDB: Syncing with filesystem at ${rootDir}...`);
         const startTime = Date.now();
         let count = 0;
 
-        this.db.exec('PRAGMA synchronous = OFF');
-        this.db.exec('BEGIN TRANSACTION');
+        // Run in background
+        (async () => {
+            this.db.exec('PRAGMA synchronous = OFF');
+            this.db.exec('BEGIN TRANSACTION');
 
-        try {
-            const resolutions = fs.readdirSync(rootDir);
-            for (const resDir of resolutions) {
-                if (!resDir.startsWith('res_')) continue;
-                const res = parseInt(resDir.split('_')[1]);
-                const resPath = path.join(rootDir, resDir);
-                
-                const lats = fs.readdirSync(resPath);
-                for (const latDir of lats) {
-                    const lat = parseInt(latDir);
-                    if (isNaN(lat)) continue;
-                    const latPath = path.join(resPath, latDir);
-                    
-                    const files = fs.readdirSync(latPath);
-                    for (const file of files) {
-                        if (!file.endsWith('.wgt')) continue;
-                        const lon = parseInt(file.replace('.wgt', ''));
-                        if (isNaN(lon)) continue;
+            try {
+                const resolutions = fs.readdirSync(rootDir);
+                for (const resDir of resolutions) {
+                    if (!resDir.startsWith('res_')) continue;
+                    const res = parseInt(resDir.split('_')[1]);
+                    const resPath = path.join(rootDir, resDir);
 
-                        const filePath = path.join(latPath, file);
-                        const data = fs.readFileSync(filePath);
-                        
-                        this.putDegreeTile(lat, lon, res, data);
-                        count++;
+                    const lats = fs.readdirSync(resPath);
+                    for (const latDir of lats) {
+                        const lat = parseInt(latDir);
+                        if (isNaN(lat)) continue;
+                        const latPath = path.join(resPath, latDir);
+
+                        const files = fs.readdirSync(latPath);
+                        for (const file of files) {
+                            if (!file.endsWith('.wgt')) continue;
+                            const lon = parseInt(file.replace('.wgt', ''));
+                            if (isNaN(lon)) continue;
+
+                            const filePath = path.join(latPath, file);
+                            const data = fs.readFileSync(filePath);
+
+                            this.putDegreeTile(lat, lon, res, data);
+                            count++;
+
+                            // Yield every 100 tiles to keep the event loop alive
+                            if (count % 100 === 0) {
+                                this.db.exec('COMMIT');
+                                await new Promise(resolve => setTimeout(resolve, 0));
+                                this.db.exec('BEGIN TRANSACTION');
+                            }
+                        }
                     }
                 }
-            }
 
-            this.db.exec('COMMIT');
-        } catch (err) {
-            this.db.exec('ROLLBACK');
-            throw err;
-        } finally {
-            this.db.exec('PRAGMA synchronous = NORMAL');
-        }
-        
-        const duration = (Date.now() - startTime) / 1000;
-        console.log(`✅ SpatialDB: Ingested ${count} tiles in ${duration.toFixed(2)}s`);
+                this.db.exec('COMMIT');
+            } catch (err) {
+                console.error(`❌ SpatialDB Sync Error: ${err}`);
+                try { this.db.exec('ROLLBACK'); } catch { /* ignore */ }
+            } finally {
+                this.db.exec('PRAGMA synchronous = NORMAL');
+                const duration = (Date.now() - startTime) / 1000;
+                if (count > 0) {
+                    console.log(`✅ SpatialDB: Background sync complete. Ingested ${count} tiles in ${duration.toFixed(2)}s`);
+                }
+            }
+        })();
     }
 
     public close() {
