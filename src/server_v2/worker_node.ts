@@ -58,7 +58,7 @@ export async function createWorkerNode(port: number = 8080) {
     const workerService = new WorkerService();
     const terrainService = new TerrainService(workerService, spatialDb, zeroCopyElev);
     const harvesterService = new HarvesterService(terrainService);
-    const baker = new QuadTreeBaker(terrainService);
+    const baker = new QuadTreeBaker(terrainService, spatialDb);
     const bundler = new TheaterBundlerService(baker);
 
     // ─── Tool System Integration ──────────────────────────────────────────────
