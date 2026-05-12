@@ -11,35 +11,53 @@ export class QuadTreeBaker {
     constructor(private terrainService: TerrainService) { }
 
     /**
-     * getTile: Generates a binary WGTv2 tile for a specific z/x/y coordinate.
-     */
-    public async getTile(z: number, x: number, y: number): Promise<Uint8Array> {
-        // 1. Calculate geodetic bounds of the QuadTree tile
-        const bounds = this.getTileBounds(z, x, y);
+     /**
+      * getTile: Generates a binary WGTv2 tile for a specific z/x/y coordinate.
+      */
+     public async getTile(z: number, x: number, y: number): Promise<Uint8Array> {
+         // 1. Calculate geodetic bounds of the QuadTree tile
+         const bounds = this.getTileBounds(z, x, y);
 
-        console.log(`[QuadTreeBaker] Generating tile z${z}/x${x}/y${y}`);
+         // 2. Create the destination buffer (256x256)
+         const destData = new Int16Array(this.TILE_SIZE * this.TILE_SIZE);
 
-        // 2. Create the destination buffer (256x256)
-        const destData = new Int16Array(this.TILE_SIZE * this.TILE_SIZE);
+         const start = performance.now();
 
-        const start = performance.now();
-        // 3. Sample the grid
-        for (let row = 0; row < this.TILE_SIZE; row++) {
-            const lat = bounds.maxLat - (row / (this.TILE_SIZE - 1)) * (bounds.maxLat - bounds.minLat);
-            for (let col = 0; col < this.TILE_SIZE; col++) {
-                const lon = bounds.minLon + (col / (this.TILE_SIZE - 1)) * (bounds.maxLon - bounds.minLon);
+         // Block Cache: We usually only span 1 or 4 1x1 degree tiles per QuadTile
+         let currentTileLat = -999;
+         let currentTileLon = -999;
+         let currentTile: any = null;
 
-                // Try sync fast-path first to avoid 65k promise allocations
-                let elevation = this.terrainService.getElevationSync(lat, lon);
-                if (elevation === null) {
-                    elevation = await this.terrainService.getElevation(lat, lon);
-                }
+         // 3. Sample the grid
+         for (let row = 0; row < this.TILE_SIZE; row++) {
+             const lat = bounds.maxLat - (row / (this.TILE_SIZE - 1)) * (bounds.maxLat - bounds.minLat);
+             const floorLat = Math.floor(lat);
 
-                destData[row * this.TILE_SIZE + col] = Math.round(elevation);
-            }
-        }
-        const end = performance.now();
-        console.log(`[QuadTreeBaker] Generated tile z${z}/x${x}/y${y} in ${end - start}ms`);
+             for (let col = 0; col < this.TILE_SIZE; col++) {
+                 const lon = bounds.minLon + (col / (this.TILE_SIZE - 1)) * (bounds.maxLon - bounds.minLon);
+                 const floorLon = Math.floor(lon);
+
+                 // Check if we need to load a new 1x1 block
+                 if (floorLat !== currentTileLat || floorLon !== currentTileLon || !currentTile) {
+                     currentTile = await this.terrainService.getTile(floorLat, floorLon, 1201);
+                     currentTileLat = floorLat;
+                     currentTileLon = floorLon;
+                 }
+
+                 // Sample directly from the block data (Disconnect from the cache manager)
+                 const res = currentTile.resolution;
+                 const dLat = lat - floorLat;
+                 const dLon = lon - floorLon;
+
+                 const sx = Math.round(dLon * (res - 1));
+                 const sy = Math.round((1 - dLat) * (res - 1));
+
+                 const idx = sy * res + sx;
+                 destData[row * this.TILE_SIZE + col] = Math.round(currentTile.data[idx] || 0);
+             }
+         }
+         const end = performance.now();
+         console.log(`[QuadTreeBaker] Generated tile z${z}/x${x}/y${y} in ${end - start}ms`);
 
         // 4. Encode to binary WGTv2
         return WgtFormat.encode(
