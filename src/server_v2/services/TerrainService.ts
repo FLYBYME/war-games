@@ -1,11 +1,18 @@
 import fs from 'fs';
 import path from 'path';
-import { fileURLToPath } from 'url';
 import { LRUCache } from 'lru-cache';
 import { WgtFormat } from '../../engine/environment/utils/WgtFormat.js';
 import { WorkerService } from './WorkerService.js';
 import { SpatialDatabase } from './SpatialDatabase.js';
 import { ZeroCopyElevationService } from './ZeroCopyElevationService.js';
+
+export interface IHarvesterService {
+    getStatus(): any;
+    getCoverage(): any;
+    start(): Promise<void>;
+    stop(): void;
+    requestPriorityTile(lat: number, lon: number): void;
+}
 
 /**
  * TerrainTile: Internal representation of a geodetic data chunk.
@@ -36,15 +43,20 @@ export class TerrainService {
     // Cache Level 3: Remote Node URL (used by the Laptop Sim Engine)
     private readonly remoteNodeUrl = process.env.TERRAIN_REMOTE_NODE_URL;
 
+    private harvesterService?: IHarvesterService;
+
     constructor(
         private readonly workerService: WorkerService,
         private readonly spatialDb?: SpatialDatabase,
         private readonly zeroCopyElev?: ZeroCopyElevationService,
-        private readonly harvesterService?: any // Use any to avoid circular dependency issues if they exist
     ) {
         if (!fs.existsSync(this.diskCacheDir)) {
             fs.mkdirSync(this.diskCacheDir, { recursive: true });
         }
+    }
+
+    public setHarvesterService(service: IHarvesterService) {
+        this.harvesterService = service;
     }
 
     /**
@@ -365,23 +377,73 @@ export class TerrainService {
         return true;
     }
 
-    public getCacheStats() {
-        let activeJobs = 0;
-        let queuedJobs = 0;
+    public async getWorkerStats(): Promise<any> {
+        if (this.remoteNodeUrl) {
+            try {
+                const response = await fetch(`${this.remoteNodeUrl}/api/v2/worker/stats`);
+                if (response.ok) return await response.json();
+            } catch (err) {
+                console.warn(`TerrainService: Failed to fetch remote worker stats`, err);
+            }
+        }
 
-        try {
-            const pool = this.workerService.getPool('terrain');
-            const poolStats = pool.getStats();
-            activeJobs = poolStats.activeJobs;
-            queuedJobs = poolStats.queuedJobs;
-        } catch (e) {
-            // Pool not found, which is expected on nodes where local workers are disabled
+        if (!this.harvesterService || !this.spatialDb) {
+            throw new Error("Worker stats are only available on nodes with local storage or a remote node configured.");
         }
 
         return {
+            harvester: this.harvesterService.getStatus(),
+            cache: this.spatialDb.getStats(),
+            memory: process.memoryUsage(),
+            uptime: process.uptime()
+        };
+    }
+
+    public async getHarvesterStatus(): Promise<any> {
+        if (this.remoteNodeUrl) {
+            const response = await fetch(`${this.remoteNodeUrl}/api/v2/harvester/status`);
+            if (response.ok) return await response.json();
+        }
+
+        if (!this.harvesterService) throw new Error("Harvester tools are only available on the remote map worker node.");
+        return this.harvesterService.getStatus();
+    }
+
+    public async getHarvesterCoverage(): Promise<any> {
+        if (this.remoteNodeUrl) {
+            const response = await fetch(`${this.remoteNodeUrl}/api/v2/harvester/coverage`);
+            if (response.ok) return await response.json();
+        }
+
+        if (!this.harvesterService) throw new Error("Harvester tools are only available on the remote map worker node.");
+        return this.harvesterService.getCoverage();
+    }
+
+    public async startHarvester(): Promise<void> {
+        if (this.remoteNodeUrl) {
+            await fetch(`${this.remoteNodeUrl}/api/v2/harvester/start`, { method: 'POST' });
+            return;
+        }
+
+        if (!this.harvesterService) throw new Error("Harvester tools are only available on the remote map worker node.");
+        void this.harvesterService.start();
+    }
+
+    public async stopHarvester(): Promise<void> {
+        if (this.remoteNodeUrl) {
+            await fetch(`${this.remoteNodeUrl}/api/v2/harvester/stop`, { method: 'POST' });
+            return;
+        }
+
+        if (!this.harvesterService) throw new Error("Harvester tools are only available on the remote map worker node.");
+        this.harvesterService.stop();
+    }
+
+    public getCacheStats() {
+        return {
             cachedTiles: this.ramCache.size,
-            activeJobs,
-            queuedJobs
+            activeJobs: 0, // Workers removed
+            queuedJobs: 0
         };
     }
 

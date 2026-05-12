@@ -1,7 +1,9 @@
 import Database from 'better-sqlite3';
 import fs from 'fs';
 import path from 'path';
-import { TerrainService } from './TerrainService.js';
+import { fileURLToPath } from 'url';
+import { WorkerService } from './WorkerService.js';
+import { SpatialDatabase } from './SpatialDatabase.js';
 
 export type HarvestStatus = 'PENDING' | 'DOWNLOADING' | 'COMPLETED' | 'OCEAN' | 'ERROR';
 
@@ -12,14 +14,15 @@ export type HarvestStatus = 'PENDING' | 'DOWNLOADING' | 'COMPLETED' | 'OCEAN' | 
 export class HarvesterService {
     private db: Database.Database;
     private isRunning = false;
-    private throttleBps = 12500000; // 10 Mbps = 1250 KB/s
+    private throttleBps = 1250000; // 10 Mbps = 1.25 MB/s
     private tokenBucket = 0;
-    private maxTokens = 500000000; // 40 seconds of burst (enough for ~1.5 compressed tiles)
+    private maxTokens = 50000000; // 40 seconds of burst
     private lastTick = Date.now();
     private priorityQueue: { lat: number, lon: number }[] = [];
 
     constructor(
-        private terrainService: TerrainService,
+        private workerService: WorkerService,
+        private spatialDb: SpatialDatabase,
         private storageDir: string = './data/terrain_storage'
     ) {
         if (!fs.existsSync(this.storageDir)) {
@@ -29,8 +32,15 @@ export class HarvesterService {
         this.db = new Database(path.join(this.storageDir, 'harvest_state.db'));
         this.initDb();
 
+        const currentDir = path.dirname(fileURLToPath(import.meta.url));
+        const WORKER_PATH = path.resolve(currentDir, '../workers/terrain.worker.ts');
+        this.workerService.createPool('harvester', WORKER_PATH, 2);
+
         // Start the throttle tick (100ms)
         setInterval(() => this.tickThrottle(), 100);
+
+        // On startup, reset any 'DOWNLOADING' tiles back to 'PENDING'
+        this.db.prepare("UPDATE tiles SET status = 'PENDING' WHERE status = 'DOWNLOADING'").run();
     }
 
     private initDb() {
@@ -47,7 +57,7 @@ export class HarvesterService {
         `);
 
         // Seed global tiles if empty (64,800 tiles)
-        const count = this.db.prepare('SELECT COUNT(*) as count FROM tiles').get() as any;
+        const count = this.db.prepare('SELECT COUNT(*) as count FROM tiles').get() as { count: number };
         if (count.count === 0) {
             console.log('Harvester: Seeding global tile registry (64,800 entries)...');
             const insert = this.db.prepare('INSERT INTO tiles (lat, lon) VALUES (?, ?)');
@@ -67,7 +77,7 @@ export class HarvesterService {
         const delta = (now - this.lastTick) / 1000;
         this.lastTick = now;
 
-        // Add tokens based on delta time and 1Mbps limit
+        // Add tokens based on delta time and throttle limit
         this.tokenBucket = Math.min(this.maxTokens, this.tokenBucket + (this.throttleBps * delta));
     }
 
@@ -77,7 +87,7 @@ export class HarvesterService {
     public async start() {
         if (this.isRunning) return;
         this.isRunning = true;
-        console.log(`Harvester: Global crawl started (Throttle: 1 Mbps)`);
+        console.log(`Harvester: Global crawl started (Throttle: ${Math.round(this.throttleBps * 8 / 1000000)} Mbps)`);
 
         void this.runCrawlLoop();
     }
@@ -103,10 +113,11 @@ export class HarvesterService {
                 break;
             }
 
-            await this.harvestTile(tile.lat, tile.lon, true); // JIT is always priority in terms of bandwidth
+            // Perform harvest (this throttles internally if not priority)
+            await this.harvestTile(tile.lat, tile.lon, !!this.priorityQueue.length);
 
             // Brief pause between tiles to allow the event loop to breathe
-            await new Promise(resolve => setTimeout(resolve, 100));
+            await new Promise(resolve => setTimeout(resolve, 50));
         }
     }
 
@@ -114,6 +125,10 @@ export class HarvesterService {
      * requestPriorityTile: Moves a coordinate to the front of the download queue.
      */
     public requestPriorityTile(lat: number, lon: number) {
+        // Only if it's currently PENDING or ERROR
+        const row = this.db.prepare('SELECT status FROM tiles WHERE lat = ? AND lon = ?').get(lat, lon) as { status: string } | undefined;
+        if (!row || (row.status !== 'PENDING' && row.status !== 'ERROR')) return;
+
         // Avoid duplicates in the queue
         if (this.priorityQueue.some(t => t.lat === lat && t.lon === lon)) return;
 
@@ -127,55 +142,45 @@ export class HarvesterService {
     }
 
     /**
-     * harvestTile: Localizes a single 1x1 degree tile.
-     * Consumes tokens from the bucket to enforce throttle.
+     * harvestTile: Localizes a single 1x1 degree tile using the worker pool.
      */
     public async harvestTile(lat: number, lon: number, isPriority = false) {
         this.db.prepare('UPDATE tiles SET status = ?, last_updated = CURRENT_TIMESTAMP WHERE lat = ? AND lon = ?')
             .run('DOWNLOADING', lat, lon);
 
         try {
-            // Trigger TerrainService to fetch (this hits AWS and caches to disk)
-            // Note: TerrainService currently doesn't respect our 1Mbps throttle internally.
-            // For Phase 2, we wrap the fetch in a token-wait.
-
             if (!isPriority) {
                 // Wait for bandwidth availability (approximate)
-                // A typical SRTM .hgt.gz is ~3MB
-                const estimatedSize = 3000000;
-                if (this.tokenBucket < estimatedSize) {
-                    console.log(`Harvester: Waiting for bandwidth... (${Math.round(this.tokenBucket / 1000)}kb / ${Math.round(estimatedSize / 1000)}kb)`);
-                }
-
+                const estimatedSize = 3000000; // ~3MB compressed
                 while (this.tokenBucket < estimatedSize) {
                     await new Promise(resolve => setTimeout(resolve, 1000));
+                    if (!this.isRunning) return;
                 }
                 this.tokenBucket -= estimatedSize;
             }
 
-            const msg = await this.terrainService.getTile(lat, lon, 1201);
+            const pool = this.workerService.getPool('harvester');
+            const msg = await pool.execute<any>({ lat, lon, targetRes: 1201 });
 
-            // Save raw uncompressed data for ZeroCopyElevationService
-            // The TerrainService.getTile returns decoded data, we want the raw bytes.
-            const rawDir = './data/terrain_raw';
-            if (!fs.existsSync(rawDir)) fs.mkdirSync(rawDir, { recursive: true });
-
-            const latPart = lat >= 0 ? `N${lat.toString().padStart(2, '0')}` : `S${Math.abs(lat).toString().padStart(2, '0')}`;
-            const lonPart = lon >= 0 ? `E${lon.toString().padStart(3, '0')}` : `W${Math.abs(lon).toString().padStart(3, '0')}`;
-            const rawPath = path.join(rawDir, `${latPart}${lonPart}.hgt`);
-
-            // Re-encode to raw 16-bit big-endian if it's not already
-            const rawBuffer = Buffer.alloc(1201 * 1201 * 2);
-            for (let i = 0; i < msg.data.length; i++) {
-                rawBuffer.writeInt16BE(msg.data[i], i * 2);
+            if (!msg.success) {
+                if (msg.error?.includes('404') || msg.error?.includes('403')) {
+                    this.db.prepare('UPDATE tiles SET status = ? WHERE lat = ? AND lon = ?').run('OCEAN', lat, lon);
+                } else {
+                    throw new Error(msg.error);
+                }
+                return;
             }
-            fs.writeFileSync(rawPath, rawBuffer);
+
+            // Save to SpatialDB
+            this.spatialDb.putDegreeTile(lat, lon, 1201, Buffer.from(msg.encoded));
 
             this.db.prepare('UPDATE tiles SET status = ? WHERE lat = ? AND lon = ?').run('COMPLETED', lat, lon);
+            console.log(`✅ Harvester: Saved N${lat}E${lon}`);
+
         } catch (err: any) {
-            const status = err.message.includes('404') ? 'OCEAN' : 'ERROR';
+            console.error(`❌ Harvester Error for ${lat},${lon}:`, err.message);
             this.db.prepare('UPDATE tiles SET status = ?, error = ? WHERE lat = ? AND lon = ?')
-                .run(status, err.message, lat, lon);
+                .run('ERROR', err.message, lat, lon);
         }
     }
 
@@ -195,17 +200,13 @@ export class HarvesterService {
         const [s, ns] = process.hrtime(start);
         const duration = (s * 1000 + ns / 1000000).toFixed(2);
 
-        const res = {
+        return {
             status: this.isRunning ? 'RUNNING' : 'IDLE',
             percentComplete: ((completed + ocean) / total) * 100,
             stats,
-            throttle: '1 Mbps',
+            throttle: `${(this.throttleBps * 8 / 1000000).toFixed(1)} Mbps`,
             duration
         };
-
-        console.log(res);
-
-        return res;
     }
 
     public getCoverage() {

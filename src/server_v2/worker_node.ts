@@ -15,13 +15,13 @@ import { generateRoutes, createHandler } from './core/route_generator.js';
  * Exposes binary terrain streams and offloads simulation math.
  */
 export async function createWorkerNode(port: number = 8080) {
-    const app = fastify({ 
+    const app = fastify({
         logger: true,
-        disableRequestLogging: true 
+        disableRequestLogging: true
     });
 
     // ─── CORS Support ────────────────────────────────────────────────────────
-    
+
     app.addHook('onRequest', async (request, reply) => {
         // Add start time for performance tracking immediately
         (request as any).startTime = process.hrtime();
@@ -29,7 +29,7 @@ export async function createWorkerNode(port: number = 8080) {
         reply.header('Access-Control-Allow-Origin', '*');
         reply.header('Access-Control-Allow-Methods', 'GET, POST, OPTIONS');
         reply.header('Access-Control-Allow-Headers', 'Content-Type, Authorization');
-        
+
         if (request.method === 'OPTIONS') {
             reply.status(204).send();
             return;
@@ -39,7 +39,7 @@ export async function createWorkerNode(port: number = 8080) {
     app.addHook('onResponse', async (request, reply) => {
         const [s, ns] = process.hrtime((request as any).startTime);
         const duration = (s * 1000 + ns / 1000000).toFixed(2);
-        
+
         if (request.url !== '/health') {
             const status = reply.statusCode >= 400 ? '💥 [ERR]' : '📡 [OK] ';
             const size = reply.getHeader('content-length') || '0';
@@ -49,20 +49,24 @@ export async function createWorkerNode(port: number = 8080) {
     });
 
     // ─── Service Initialization ──────────────────────────────────────────────
-    
+
     // ─── Service Initialization ──────────────────────────────────────────────
-    
+
     const spatialDb = new SpatialDatabase(process.env.SPATIAL_DB_DIR || './data/spatial_storage');
     spatialDb.syncWithFilesystem('terrain_data');
     const zeroCopyElev = new ZeroCopyElevationService();
     const workerService = new WorkerService();
     const terrainService = new TerrainService(workerService, spatialDb, zeroCopyElev);
-    const harvesterService = new HarvesterService(terrainService);
+    const harvesterService = new HarvesterService(spatialDb);
+
+    // Wire up the harvester to the terrain service to enable JIT requests
+    terrainService.setHarvesterService(harvesterService);
+
     const baker = new QuadTreeBaker(terrainService, spatialDb);
     const bundler = new TheaterBundlerService(baker);
 
     // ─── Tool System Integration ──────────────────────────────────────────────
-    
+
     // Import all tools to ensure they are registered
     await import('./tools/index.js');
 
@@ -70,25 +74,14 @@ export async function createWorkerNode(port: number = 8080) {
         app: {
             terrainService,
             workerService,
-            harvesterService,
-            spatialDb,
-            // Mocked services for Worker Node
-            matchService: {
-                getMatch: () => { throw new Error("MatchService not available on Regional Worker Node"); },
-                listMatches: () => [],
-                createMatch: async () => { throw new Error("MatchService not available on Regional Worker Node"); },
-                deleteMatch: () => false
-            },
-            agentService: {
-                createAgent: () => { throw new Error("AgentService not available on Regional Worker Node"); }
-            },
+            // Stats and harvester tools now go through terrainService
             log: app.log
         } as unknown as IServerApp
     };
 
     // Generate routes for geodetic and env tools (Regional Role)
     const toolRoutes = generateRoutes(globalServerToolRegistry.entries('REGIONAL_WORKER'), '/api/v2');
-    
+
     for (const route of toolRoutes) {
         const tool = globalServerToolRegistry.get(route.toolKey);
         if (!tool) continue;
@@ -115,7 +108,7 @@ export async function createWorkerNode(port: number = 8080) {
     }
 
     // ─── Health & Capabilities ───────────────────────────────────────────────
-    
+
     app.get('/health', async () => ({
         status: 'ok',
         capabilities: ['terrain.degree', 'terrain.quad', 'math.los', 'harvester'],
@@ -124,7 +117,7 @@ export async function createWorkerNode(port: number = 8080) {
     }));
 
     // ─── 1. SIM STREAM: 1x1 Degree Raw Tiles ─────────────────────────────────
-    
+
     app.get('/api/v2/terrain/tile/degree', async (request, reply) => {
         const { lat, lon, res } = request.query as any;
         if (lat === undefined || lon === undefined) {
@@ -135,7 +128,7 @@ export async function createWorkerNode(port: number = 8080) {
             const targetRes = res ? Number(res) : 1201;
             console.log(`📦 Serving Degree Tile: N${lat}E${lon} @ ${targetRes}res`);
             const tile = await terrainService.getTile(Number(lat), Number(lon), targetRes);
-            
+
             // Encode as WGTv2 (Raw Binary)
             const encoded = WgtFormat.encode(
                 tile.resolution,
@@ -153,7 +146,7 @@ export async function createWorkerNode(port: number = 8080) {
     });
 
     // ─── 2. UI STREAM: QuadTree z/x/y Tiles ──────────────────────────────────
-    
+
     app.get('/api/v2/terrain/tile/quad/:z/:x/:y', async (request, reply) => {
         const { z, x, y } = request.params as any;
         const iz = Number(z);
@@ -170,11 +163,11 @@ export async function createWorkerNode(port: number = 8080) {
 
             // 2. Fallback to Baker
             const encoded = await baker.getTile(iz, ix, iy);
-            
+
             // Note: Since we don't have isFallback from Baker yet, we cache it
             // In the future, TerrainService could return a flag we pass through
             spatialDb.putQuadTile(iz, ix, iy, encoded);
-            
+
             reply.type('application/octet-stream');
             return Buffer.from(encoded);
         } catch (err: any) {
@@ -206,9 +199,10 @@ export async function createWorkerNode(port: number = 8080) {
     try {
         await app.listen({ port, host: '0.0.0.0' });
         console.log(`\n🌍 Regional Node (V3) running on http://0.0.0.0:${port}`);
-        
+
         // Auto-start harvester in background
         void harvesterService.start();
+        console.log("Harvester started!");
     } catch (err) {
         app.log.error(err);
         process.exit(1);

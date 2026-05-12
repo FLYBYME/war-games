@@ -40,8 +40,12 @@ export class ServerToolRegistry {
                 if (isRegional) filtered.set(key, tool);
             } else if (role === 'SIM_ENGINE') {
                 // Sim Engine handles everything EXCEPT the raw geodetic worker tools 
-                // (it uses the "Answer" versions of those tools)
-                const isWorkerOnly = domain === 'worker' || action.endsWith('_geodetic');
+                // Note: get_worker_stats and harvester tools ARE included because TerrainService 
+                // implements proxy logic to offload them to the remote node.
+                const isWorkerOnly = 
+                    domain === 'worker' || 
+                    action.endsWith('_geodetic');
+
                 if (!isWorkerOnly) filtered.set(key, tool);
             }
         }
@@ -106,8 +110,6 @@ export interface IServerApp {
     readonly terrainService: TerrainService;
     readonly workerService: WorkerService;
     readonly agentService: AgentService;
-    readonly harvesterService?: HarvesterService;
-    readonly spatialDb?: SpatialDatabase;
     readonly log: any;
 }
 
