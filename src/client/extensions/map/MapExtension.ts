@@ -94,14 +94,14 @@ export const MapExtension: Extension = {
 
                 // Handle panel/window resizing
                 const onResize = () => renderer.resize();
-                ide.commands.on(PanelEvents.PANEL_RESIZE, onResize);
+                const resizeSubId = ide.commands.on(PanelEvents.PANEL_RESIZE, onResize);
                 window.addEventListener('resize', onResize);
 
                 disposables.push({
                     dispose: () => {
                         renderer.destroy();
                         hud.getElement().remove();
-                        ide.commands.off(PanelEvents.PANEL_RESIZE, onResize);
+                        ide.commands.off(resizeSubId);
                         window.removeEventListener('resize', onResize);
                     }
                 });
@@ -199,12 +199,12 @@ export const MapExtension: Extension = {
                     // Formula: z = log2(scale * worldSize / tileSize)
                     const zoom = Math.max(0, Math.min(20, Math.floor(Math.log2(scale * 10000000 / 256))));
 
-                    const children = [
+                    const children: uiLib.BaseComponent<any>[] = [
                         new uiLib.Heading({ text: 'CLIENT PIPELINE', level: 4 }),
                         new uiLib.Text({ text: `L1 Cache: ${stats.cacheSize} tiles` }),
                         new uiLib.Text({ text: `Active Requests: ${stats.activeRequests}` }),
                         new uiLib.Text({ text: `Queue Depth: ${stats.queueDepth}` }),
-                        new uiLib.Divider(),
+                        new uiLib.Divider({}),
                     ];
 
                     if (srv) {
@@ -213,7 +213,7 @@ export const MapExtension: Extension = {
                         children.push(new uiLib.Text({ text: `Harvester: ${srv.harvester.status} (${srv.harvester.percentComplete.toFixed(1)}%)` }));
                         children.push(new uiLib.Text({ text: `Disk Cache: ${srv.cache.quadCount} tiles (${mb(srv.cache.dbSize)})` }));
                         children.push(new uiLib.Text({ text: `Memory: ${mb(srv.memory.rss)}` }));
-                        children.push(new uiLib.Divider());
+                        children.push(new uiLib.Divider({}));
                     }
 
                     children.push(new uiLib.Heading({ text: 'VIEWPORT STATS', level: 4 }));
