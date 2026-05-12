@@ -65,7 +65,7 @@ export class TerrainService {
 
         // 2. Active Jobs (Deduplication)
         if (this.activeJobs.has(key)) {
-            console.log(`[TerrainService] Waiting for active job: ${key}`);
+            // console.log(`[TerrainService] Waiting for active job: ${key}`);
             return this.activeJobs.get(key)!;
         }
 
@@ -232,7 +232,7 @@ export class TerrainService {
         const floorLat = Math.floor(lat);
         const floorLon = Math.floor(lon);
         const key = `${floorLat},${floorLon}_1201`;
-        
+
         const tile = this.ramCache.get(key);
         if (!tile) return null;
 
