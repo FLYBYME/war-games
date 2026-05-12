@@ -65,14 +65,18 @@ export class TerrainService {
 
         // 2. Active Jobs (Deduplication)
         if (this.activeJobs.has(key)) {
+            console.log(`[TerrainService] Waiting for active job: ${key}`);
             return this.activeJobs.get(key)!;
         }
+
+        console.log(`[TerrainService] Cache miss for ${key}, starting fetch...`);
 
         const job = (async () => {
             // 3. SQLite/Spatial Database (L2 - Optimized)
             if (this.spatialDb) {
                 const cachedData = this.spatialDb.getDegreeTile(floorLat, floorLon, targetResolution);
                 if (cachedData) {
+                    console.log(`[TerrainService] L2 Hit (SpatialDB): ${key}`);
                     const decoded = WgtFormat.decode(cachedData);
                     const tile: TerrainTile = {
                         lat: decoded.lat,
@@ -91,6 +95,7 @@ export class TerrainService {
             if (fs.existsSync(diskPath)) {
                 try {
                     const buffer = fs.readFileSync(diskPath);
+                    console.log(`[TerrainService] L2 Hit (Legacy Disk): ${key}`);
                     const decoded = WgtFormat.decode(buffer);
                     const tile: TerrainTile = {
                         lat: decoded.lat,
@@ -116,6 +121,7 @@ export class TerrainService {
             if (this.remoteNodeUrl) {
                 const remoteUrl = `${this.remoteNodeUrl}/api/v2/terrain/tile/degree?lat=${floorLat}&lon=${floorLon}&res=${targetResolution}`;
                 try {
+                    console.log(`[TerrainService] L3 Fetching: ${remoteUrl}`);
                     const response = await fetch(remoteUrl);
                     if (response.ok) {
                         const arrayBuffer = await response.arrayBuffer();
@@ -144,6 +150,7 @@ export class TerrainService {
 
             // 6. Zero-Wait Fallback: If in Master-mode and cache miss, return flat tile and trigger background harvest
             if (this.spatialDb && !this.remoteNodeUrl) {
+                console.log(`[TerrainService] Triggering background bake for ${key}`);
                 // Trigger background bake (don't await)
                 this.triggerBackgroundBake(floorLat, floorLon, targetResolution);
 
@@ -152,6 +159,7 @@ export class TerrainService {
             }
 
             // 7. Fallback: Worker (Standard Master-mode wait)
+            console.log(`[TerrainService] Executing worker bake for ${key}`);
             return this.executeWorkerBake(floorLat, floorLon, targetResolution);
         })().finally(() => {
             this.activeJobs.delete(key);
@@ -174,8 +182,12 @@ export class TerrainService {
         const pool = this.workerService.getPool('terrain');
         const msg = await pool.execute<any>({ lat, lon, targetRes: targetResolution });
 
-        if (!msg.success) throw new Error(msg.error);
+        if (!msg.success) {
+            console.error(`[TerrainService] Worker bake FAILED for ${lat},${lon}: ${msg.error}`);
+            throw new Error(msg.error);
+        }
 
+        console.log(`[TerrainService] Worker bake SUCCESS for ${lat},${lon}`);
         const encoded = targetResolution === 1201 ? msg.engineEncoded : msg.uiEncoded;
         const decoded = WgtFormat.decode(encoded);
         const tile: TerrainTile = {

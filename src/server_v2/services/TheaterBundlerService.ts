@@ -33,6 +33,8 @@ export class TheaterBundlerService {
             }
         });
 
+        console.log(`TheaterBundlerService: Fetching ${tiles.length} tiles`);
+
         const results = await Promise.all(tasks);
 
         // Filter out failed tiles

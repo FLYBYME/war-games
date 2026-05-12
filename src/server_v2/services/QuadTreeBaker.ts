@@ -17,6 +17,7 @@ export class QuadTreeBaker {
         // 1. Calculate geodetic bounds of the QuadTree tile
         const bounds = this.getTileBounds(z, x, y);
 
+        console.log(`[QuadTreeBaker] Generating tile z${z}/x${x}/y${y}`);
 
         // 2. Create the destination buffer (256x256)
         const destData = new Int16Array(this.TILE_SIZE * this.TILE_SIZE);
@@ -33,7 +34,7 @@ export class QuadTreeBaker {
                 if (elevation === null) {
                     elevation = await this.terrainService.getElevation(lat, lon);
                 }
-                
+
                 destData[row * this.TILE_SIZE + col] = Math.round(elevation);
             }
         }
