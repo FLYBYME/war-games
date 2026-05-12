@@ -121,6 +121,15 @@ export async function createWorkerNode(port: number = 8080) {
         version: '3.0.0'
     }));
 
+    app.get('/api/v2/worker/stats', async () => {
+        return {
+            harvester: harvesterService.getStatus(),
+            cache: spatialDb.getStats(),
+            memory: process.memoryUsage(),
+            uptime: process.uptime()
+        };
+    });
+
     // ─── 1. SIM STREAM: 1x1 Degree Raw Tiles ─────────────────────────────────
     
     app.get('/api/v2/terrain/tile/degree', async (request, reply) => {

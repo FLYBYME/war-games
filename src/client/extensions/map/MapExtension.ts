@@ -12,6 +12,8 @@ import { TracksLayer } from './layers/TracksLayer';
 import { ThreatLayer } from './layers/ThreatLayer';
 import { MapDataPipeline } from './MapDataPipeline';
 import * as uiLib from '../../ui-lib';
+import { worldToLatLon } from './CoordUtils';
+import { PanelEvents } from '../../core/LayoutManager';
 
 /**
  * MapExtension: The primary tactical visualization engine for War Games.
@@ -65,45 +67,42 @@ export const MapExtension: Extension = {
                 const renderer = new MapRenderer(mapState, layerRegistry, pipeline);
                 await renderer.init(container);
 
-                // Add Telemetry Overlay
-                const overlay = document.createElement('div');
-                overlay.style.position = 'absolute';
-                overlay.style.bottom = '10px';
-                overlay.style.left = '10px';
-                overlay.style.pointerEvents = 'none';
-                overlay.style.color = '#00ff00';
-                overlay.style.fontFamily = 'monospace';
-                overlay.style.fontSize = '12px';
-                overlay.style.background = 'rgba(0,0,0,0.5)';
-                overlay.style.padding = '5px';
-                overlay.style.borderLeft = '2px solid #00ff00';
-                container.appendChild(overlay);
+                // 3. Telemetry HUD (Bottom Left)
+                const hud = new uiLib.MapHUD({
+                    lat: 0,
+                    lon: 0,
+                    elevation: 0,
+                    scaleKm: 0
+                });
+                container.appendChild(hud.getElement());
 
                 const updateOverlay = () => {
-                    const pos = mapState.pointerLatLon.get();
-                    const elev = mapState.pointerElevation.get();
                     const scale = mapState.mapScale.get();
-                    
-                    // Simple scale bar calculation (meters per 100px)
                     const mPerPx = 1 / scale;
-                    const scaleKm = (mPerPx * 100) / 1000;
                     
-                    overlay.innerHTML = `
-                        LAT: ${pos?.lat.toFixed(4) ?? '---'} 
-                        LON: ${pos?.lon.toFixed(4) ?? '---'} 
-                        ALT: ${elev !== null ? elev.toFixed(1) + 'm' : '---'}<br/>
-                        SCALE: [ ${scaleKm.toFixed(2)} km ]
-                    `;
+                    hud.updateProps({
+                        lat: mapState.pointerLatLon.get()?.lat ?? null,
+                        lon: mapState.pointerLatLon.get()?.lon ?? null,
+                        elevation: mapState.pointerElevation.get(),
+                        scaleKm: (mPerPx * 100) / 1000
+                    });
                 };
 
-                disposables.push(mapState.pointerLatLon.subscribe(updateOverlay));
-                disposables.push(mapState.pointerElevation.subscribe(updateOverlay));
-                disposables.push(mapState.mapScale.subscribe(updateOverlay));
+                disposables.push({ dispose: mapState.pointerLatLon.subscribe(updateOverlay) });
+                disposables.push({ dispose: mapState.pointerElevation.subscribe(updateOverlay) });
+                disposables.push({ dispose: mapState.mapScale.subscribe(updateOverlay) });
+
+                // Handle panel/window resizing
+                const onResize = () => renderer.resize();
+                ide.commands.on(PanelEvents.PANEL_RESIZE, onResize);
+                window.addEventListener('resize', onResize);
 
                 disposables.push({
                     dispose: () => {
                         renderer.destroy();
-                        overlay.remove();
+                        hud.getElement().remove();
+                        ide.commands.off(PanelEvents.PANEL_RESIZE, onResize);
+                        window.removeEventListener('resize', onResize);
                     }
                 });
 
@@ -181,36 +180,79 @@ export const MapExtension: Extension = {
         };
 
         ide.views.registerProvider('left-panel', layerManagerProvider);
-        
+
         // 4.5 Register Map Analytics (Right Panel)
         const mapAnalyticsProvider: ViewProvider = {
             id: 'map.analytics',
             name: 'Map Analytics',
             resolveView: (container, disposables) => {
                 const column = new uiLib.Column({ padding: 'md', gap: 'md', fill: true });
-                
+
                 const renderStats = () => {
                     const stats = pipeline.getStats();
+                    const srv = pipeline.getServerStats();
                     const vs = mapState.viewState.get();
-                    
-                    column.updateProps({
-                        children: [
-                            new uiLib.Heading({ text: 'PIPELINE METRICS', level: 4 }),
-                            new uiLib.Text({ text: `L1 Cache: ${stats.cacheSize} tiles` }),
-                            new uiLib.Text({ text: `Active Requests: ${stats.activeRequests}` }),
-                            new uiLib.Text({ text: `Queue Depth: ${stats.queueDepth}` }),
-                            new uiLib.Divider(),
-                            new uiLib.Heading({ text: 'VIEWPORT STATS', level: 4 }),
-                            new uiLib.Text({ text: `Origin: ${vs?.origin?.lat.toFixed(2)}, ${vs?.origin?.lon.toFixed(2)}` }),
-                            new uiLib.Text({ text: `Entities: ${vs?.units.length ?? 0}` }),
-                            new uiLib.Text({ text: `Scale: ${mapState.mapScale.get().toFixed(6)}` }),
-                        ]
-                    });
+                    const scale = mapState.mapScale.get();
+                    const bounds = mapState.viewportBounds.get();
+
+                    // Calculate zoom level (Clamped to z0-z20)
+                    // Formula: z = log2(scale * worldSize / tileSize)
+                    const zoom = Math.max(0, Math.min(20, Math.floor(Math.log2(scale * 10000000 / 256))));
+
+                    const children = [
+                        new uiLib.Heading({ text: 'CLIENT PIPELINE', level: 4 }),
+                        new uiLib.Text({ text: `L1 Cache: ${stats.cacheSize} tiles` }),
+                        new uiLib.Text({ text: `Active Requests: ${stats.activeRequests}` }),
+                        new uiLib.Text({ text: `Queue Depth: ${stats.queueDepth}` }),
+                        new uiLib.Divider(),
+                    ];
+
+                    if (srv) {
+                        const mb = (v: number) => (v / 1024 / 1024).toFixed(1) + ' MB';
+                        children.push(new uiLib.Heading({ text: 'SERVER (WORKER NODE)', level: 4 }));
+                        children.push(new uiLib.Text({ text: `Harvester: ${srv.harvester.status} (${srv.harvester.percentComplete.toFixed(1)}%)` }));
+                        children.push(new uiLib.Text({ text: `Disk Cache: ${srv.cache.quadCount} tiles (${mb(srv.cache.dbSize)})` }));
+                        children.push(new uiLib.Text({ text: `Memory: ${mb(srv.memory.rss)}` }));
+                        children.push(new uiLib.Divider());
+                    }
+
+                    children.push(new uiLib.Heading({ text: 'VIEWPORT STATS', level: 4 }));
+                    children.push(new uiLib.Text({ text: `Zoom Level: z${zoom}` }));
+                    children.push(new uiLib.Text({ text: `Scale: ${scale.toFixed(6)}` }));
+
+                    if (vs && vs.origin && bounds) {
+                        const nw = worldToLatLon(bounds.x, bounds.y, vs.origin);
+                        const se = worldToLatLon(bounds.x + bounds.width, bounds.y + bounds.height, vs.origin);
+
+                        children.push(new uiLib.Text({ text: `Origin: ${vs.origin.lat.toFixed(4)}, ${vs.origin.lon.toFixed(4)}` }));
+                        children.push(new uiLib.Divider());
+                        children.push(new uiLib.Heading({ text: 'GEOGRAPHIC BOUNDS', level: 4 }));
+                        children.push(new uiLib.Text({ text: `NW: ${nw.lat.toFixed(6)}, ${nw.lon.toFixed(6)}` }));
+                        children.push(new uiLib.Text({ text: `SE: ${se.lat.toFixed(6)}, ${se.lon.toFixed(6)}` }));
+
+                        children.push(new uiLib.Divider());
+                        children.push(new uiLib.Heading({ text: 'TILE DEBUG (PREDICTED)', level: 4 }));
+
+                        // Calculate tile indices
+                        const tileScale = Math.pow(2, zoom);
+                        const worldToTile = (val: number) => Math.floor(((val + 5000000) / 10000000) * tileScale);
+
+                        const x1 = worldToTile(bounds.x);
+                        const y1 = worldToTile(bounds.y);
+                        const x2 = worldToTile(bounds.x + bounds.width);
+                        const y2 = worldToTile(bounds.y + bounds.height);
+
+                        children.push(new uiLib.Text({ text: `Z: ${zoom} | X: ${x1} to ${x2} | Y: ${y1} to ${y2}` }));
+                        const totalTiles = (x2 - x1 + 1) * (y2 - y1 + 1);
+                        children.push(new uiLib.Text({ text: `Projected Fetch: ${totalTiles} tiles` }));
+                    }
+
+                    column.updateProps({ children });
                 };
 
                 const timer = setInterval(renderStats, 1000);
                 disposables.push({ dispose: () => clearInterval(timer) });
-                
+
                 renderStats();
                 column.mount(container);
             }

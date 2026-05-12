@@ -84,6 +84,7 @@ export class MapState {
     public pointerLatLon = new Signal<{ lat: number; lon: number } | null>(null);
     public pointerElevation = new Signal<number | null>(null);
     public mapScale = new Signal<number>(1);
+    public viewportBounds = new Signal<{ x: number; y: number; width: number; height: number } | null>(null);
 
     private layerVisibility = new Map<string, Signal<boolean>>();
 

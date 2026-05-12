@@ -100,8 +100,8 @@ describe('QuadTreeBaker', () => {
         // z10 x512 is exactly at Lon 0.
         await baker.getTile(10, 511, 512);
         const lons = mockTerrainService.getTile.mock.calls.map((c: any) => c[1]);
-        expect(lons.some(l => l < 0)).toBe(true);
-        expect(lons.some(l => l >= 0)).toBe(true);
+        expect(lons.some((l: number) => l < 0)).toBe(true);
+        expect(lons.some((l: number) => l >= 0)).toBe(true);
     });
 
     it('Boundary Wrap: Tile spanning multiple degree boundaries (z5)', async () => {

@@ -33,6 +33,7 @@ export * from './forms/Select';
 export * from './forms/Switch';
 export * from './forms/RadioGroup';
 export * from './forms/Slider';
+export * from './map/MapHUD';
 export * from './forms/SearchInput';
 export * from './forms/Pagination';
 export * from './forms/ColorPicker';

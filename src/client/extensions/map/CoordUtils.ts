@@ -18,6 +18,11 @@ export function worldToLatLon(x: number, y: number, origin: { lat: number, lon: 
     const lat = origin.lat + (-y / METERS_PER_DEGREE);
     // Avoid division by zero at poles, though origin.lat is usually tactical
     const safeCos = Math.max(0.001, cosLat);
-    const lon = origin.lon + (x / (METERS_PER_DEGREE * safeCos));
+    let lon = origin.lon + (x / (METERS_PER_DEGREE * safeCos));
+
+    // Normalize Longitude to [-180, 180]
+    while (lon > 180) lon -= 360;
+    while (lon < -180) lon += 360;
+
     return { lat, lon };
 }

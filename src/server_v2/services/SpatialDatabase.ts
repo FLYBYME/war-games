@@ -136,6 +136,25 @@ export class SpatialDatabase {
         })();
     }
 
+    public getStats() {
+        const quadCount = this.db.prepare('SELECT COUNT(*) as count FROM quad_tiles').get() as { count: number };
+        const degreeCount = this.db.prepare('SELECT COUNT(*) as count FROM degree_tiles').get() as { count: number };
+        
+        // Get database file size
+        const dbPath = path.join('./data/spatial_storage', 'terrain_tiles.db');
+        let dbSize = 0;
+        try {
+            const stats = fs.statSync(dbPath);
+            dbSize = stats.size;
+        } catch (e) { /* ignore */ }
+
+        return {
+            quadCount: quadCount.count,
+            degreeCount: degreeCount.count,
+            dbSize
+        };
+    }
+
     public close() {
         this.db.close();
     }

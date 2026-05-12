@@ -29,6 +29,7 @@ export class MapDataPipeline {
     private persistentCache = new TerrainCache();
     private pendingBatchTiles = new Map<string, { z: number, x: number, y: number }>();
     private batchTimeout: any = null;
+    private serverStats = new Signal<any>(null);
 
     // We hit the binary endpoint directly to bypass SDK/JSON overhead
     private baseUrl: string;
@@ -36,6 +37,23 @@ export class MapDataPipeline {
     constructor(baseUrl: string = '', enableCaching: boolean = true) {
         this.baseUrl = baseUrl;
         this.persistentCache.enabled = enableCaching;
+
+        setInterval(() => this.pollServerStats(), 5000);
+        this.pollServerStats();
+    }
+
+    private async pollServerStats() {
+        try {
+            const resp = await fetch(`${this.baseUrl}/worker/stats`);
+            if (resp.ok) {
+                const data = await resp.json();
+                this.serverStats.set(data);
+            }
+        } catch (e) { /* ignore */ }
+    }
+
+    public getServerStats() {
+        return this.serverStats.get();
     }
 
     /**

@@ -4,15 +4,18 @@ import { BaseComponent } from '../BaseComponent';
 import { Theme } from '../theme';
 import { MenuBar } from './MenuBar';
 import { TitleBar } from './TitleBar';
+import { SimControl } from './SimControl';
 
 export class Header extends BaseComponent<{}> {
     public menuBar: MenuBar;
     public titleBar: TitleBar;
+    public simControl: SimControl;
 
     constructor() {
         super('div', {});
         this.menuBar = new MenuBar();
         this.titleBar = new TitleBar();
+        this.simControl = new SimControl();
         this.render();
     }
 
@@ -47,13 +50,22 @@ export class Header extends BaseComponent<{}> {
         titleContainer.appendChild(this.titleBar.getElement());
         this.element.appendChild(titleContainer);
 
-        // Right spacer to keep flex balance if needed, 
-        // but absolute centering is often cleaner for IDE titles.
+        // Right: SimControl
+        const rightContainer = document.createElement('div');
+        Object.assign(rightContainer.style, {
+            display: 'flex',
+            alignItems: 'center',
+            gap: Theme.spacing.md,
+            height: '100%'
+        });
+        rightContainer.appendChild(this.simControl.getElement());
+        this.element.appendChild(rightContainer);
     }
 
     public dispose(): void {
         this.menuBar.dispose();
         this.titleBar.dispose();
+        this.simControl.dispose();
         super.dispose();
     }
 }
