@@ -29,10 +29,10 @@ export class TerrainService {
     });
 
     private readonly activeJobs = new Map<string, Promise<TerrainTile>>();
-    
+
     // Cache Level 2: Local Disk Cache path
     private readonly diskCacheDir = path.resolve(process.env.TERRAIN_DISK_CACHE || './data/terrain_cache');
-    
+
     // Cache Level 3: Remote Node URL (used by the Laptop Sim Engine)
     private readonly remoteNodeUrl = process.env.TERRAIN_REMOTE_NODE_URL;
 
@@ -44,7 +44,7 @@ export class TerrainService {
         if (!fs.existsSync(this.diskCacheDir)) {
             fs.mkdirSync(this.diskCacheDir, { recursive: true });
         }
-        
+
         const currentDir = path.dirname(fileURLToPath(import.meta.url));
         const WORKER_PATH = path.resolve(currentDir, '../workers/terrain.worker.ts');
         this.workerService.createPool('terrain', WORKER_PATH, 2);
@@ -99,7 +99,7 @@ export class TerrainService {
                         data: decoded.data,
                         format: decoded.format
                     };
-                    
+
                     // Migrate to SQLite if available
                     if (this.spatialDb) {
                         this.spatialDb.putDegreeTile(floorLat, floorLon, targetResolution, buffer);
@@ -120,7 +120,7 @@ export class TerrainService {
                     if (response.ok) {
                         const arrayBuffer = await response.arrayBuffer();
                         const buffer = Buffer.from(arrayBuffer);
-                        
+
                         // Save to L2 (SQLite)
                         if (this.spatialDb) {
                             this.spatialDb.putDegreeTile(floorLat, floorLon, targetResolution, buffer);
@@ -146,7 +146,7 @@ export class TerrainService {
             if (this.spatialDb && !this.remoteNodeUrl) {
                 // Trigger background bake (don't await)
                 this.triggerBackgroundBake(floorLat, floorLon, targetResolution);
-                
+
                 // Return Flat/Sea-Level Fallback instantly
                 return this.getFallbackTile(floorLat, floorLon, targetResolution);
             }
@@ -173,9 +173,9 @@ export class TerrainService {
     private async executeWorkerBake(lat: number, lon: number, targetResolution: number): Promise<TerrainTile> {
         const pool = this.workerService.getPool('terrain');
         const msg = await pool.execute<any>({ lat, lon, targetRes: targetResolution });
-        
+
         if (!msg.success) throw new Error(msg.error);
-        
+
         const encoded = targetResolution === 1201 ? msg.engineEncoded : msg.uiEncoded;
         const decoded = WgtFormat.decode(encoded);
         const tile: TerrainTile = {
@@ -216,10 +216,14 @@ export class TerrainService {
             if (elev !== null) return elev;
         }
 
+        console.log(`[TerrainService] Fetching tile z12/x${Math.floor(lon)}/y${Math.floor(lat)}`);
+        const start = performance.now();
         // 2. RAM/CACHE PATH: Fallback to loaded tiles
         const tile = await this.getTile(lat, lon, 1201);
+        const end = performance.now();
+        console.log(`[TerrainService] Fetched tile z12/x${Math.floor(lon)}/y${Math.floor(lat)} in ${end - start}ms`);
         const res = tile.resolution;
-        
+
         const dLat = lat - Math.floor(lat);
         const dLon = lon - Math.floor(lon);
 
@@ -249,10 +253,10 @@ export class TerrainService {
      * Use this before starting a simulation or when units approach an edge.
      */
     public async prefetchTheater(
-        latMin: number, 
-        latMax: number, 
-        lonMin: number, 
-        lonMax: number, 
+        latMin: number,
+        latMax: number,
+        lonMin: number,
+        lonMax: number,
         res: number = 1201
     ): Promise<number> {
         const floorLatMin = Math.floor(latMin);
@@ -331,9 +335,9 @@ export class TerrainService {
             const sampleAlt = p1.alt + (p2.alt - p1.alt) * t;
             const sampleLat = p1.lat + (p2.lat - p1.lat) * t;
             const sampleLon = p1.lon + (p2.lon - p1.lon) * t;
-            
+
             const terrainHeight = await this.getElevation(sampleLat, sampleLon);
-            
+
             if (sampleAlt < terrainHeight - 0.1) {
                 return false;
             }
