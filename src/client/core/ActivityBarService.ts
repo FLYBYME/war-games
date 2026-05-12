@@ -14,16 +14,38 @@ export class ActivityBarService {
     private ide: IDE;
     private items: Map<string, ActivityBarItem> = new Map();
     private containers: Map<ViewLocation, HTMLElement> = new Map();
+    private readonly storageKey = 'ide-active-views';
 
     constructor(ide: IDE) {
         this.ide = ide;
 
         // Automatically activate first items once the IDE is ready
         this.ide.commands.on(IDEEvents.APP_READY, () => {
-            this.activateFirst('left-panel');
-            this.activateFirst('right-panel');
-            this.activateFirst('bottom-panel');
+            this.restoreActive('left-panel');
+            this.restoreActive('right-panel');
+            this.restoreActive('bottom-panel');
         });
+    }
+
+    /**
+     * Restores the last active view for a specific location, or falls back to the first one.
+     */
+    private restoreActive(location: ViewLocation): void {
+        const savedViews = this.getSavedViews();
+        const savedId = savedViews[location];
+
+        if (savedId && this.items.has(savedId)) {
+            const item = this.items.get(savedId)!;
+            if (item.onClick) {
+                item.onClick();
+            } else {
+                this.ide.views.renderView(item.location, item.id);
+            }
+            return;
+        }
+
+        // Fallback to first item if no saved state or item no longer exists
+        this.activateFirst(location);
     }
 
     /**
@@ -86,6 +108,31 @@ export class ActivityBarService {
                 icon.classList.remove('active');
             }
         });
+
+        // Save state
+        if (activeId) {
+            this.saveActiveView(location, activeId);
+        }
+    }
+
+    private getSavedViews(): Record<string, string> {
+        try {
+            const saved = localStorage.getItem(this.storageKey);
+            return saved ? JSON.parse(saved) : {};
+        } catch (e) {
+            console.warn('ActivityBarService: Could not load saved views from localStorage');
+            return {};
+        }
+    }
+
+    private saveActiveView(location: ViewLocation, viewId: string): void {
+        try {
+            const saved = this.getSavedViews();
+            saved[location] = viewId;
+            localStorage.setItem(this.storageKey, JSON.stringify(saved));
+        } catch (e) {
+            console.warn('ActivityBarService: Could not save active view to localStorage');
+        }
     }
 
     /**

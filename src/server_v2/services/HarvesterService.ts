@@ -116,10 +116,10 @@ export class HarvesterService {
     public requestPriorityTile(lat: number, lon: number) {
         // Avoid duplicates in the queue
         if (this.priorityQueue.some(t => t.lat === lat && t.lon === lon)) return;
-        
+
         console.log(`🚀 Harvester: Priority request for ${lat}, ${lon}`);
         this.priorityQueue.push({ lat, lon });
-        
+
         // Auto-start if stopped
         if (!this.isRunning) {
             void this.start();
@@ -154,23 +154,23 @@ export class HarvesterService {
             }
 
             const msg = await this.terrainService.getTile(lat, lon, 1201);
-            
+
             // Save raw uncompressed data for ZeroCopyElevationService
             // The TerrainService.getTile returns decoded data, we want the raw bytes.
             const rawDir = './data/terrain_raw';
             if (!fs.existsSync(rawDir)) fs.mkdirSync(rawDir, { recursive: true });
-            
+
             const latPart = lat >= 0 ? `N${lat.toString().padStart(2, '0')}` : `S${Math.abs(lat).toString().padStart(2, '0')}`;
             const lonPart = lon >= 0 ? `E${lon.toString().padStart(3, '0')}` : `W${Math.abs(lon).toString().padStart(3, '0')}`;
             const rawPath = path.join(rawDir, `${latPart}${lonPart}.hgt`);
-            
+
             // Re-encode to raw 16-bit big-endian if it's not already
             const rawBuffer = Buffer.alloc(1201 * 1201 * 2);
             for (let i = 0; i < msg.data.length; i++) {
                 rawBuffer.writeInt16BE(msg.data[i], i * 2);
             }
             fs.writeFileSync(rawPath, rawBuffer);
-            
+
             this.db.prepare('UPDATE tiles SET status = ? WHERE lat = ? AND lon = ?').run('COMPLETED', lat, lon);
         } catch (err: any) {
             const status = err.message.includes('404') ? 'OCEAN' : 'ERROR';
@@ -180,6 +180,7 @@ export class HarvesterService {
     }
 
     public getStatus() {
+        const start = process.hrtime();
         const stats = this.db.prepare(`
             SELECT 
                 status, 
@@ -191,13 +192,20 @@ export class HarvesterService {
         const total = 64800;
         const completed = stats.find(s => s.status === 'COMPLETED')?.count || 0;
         const ocean = stats.find(s => s.status === 'OCEAN')?.count || 0;
+        const [s, ns] = process.hrtime(start);
+        const duration = (s * 1000 + ns / 1000000).toFixed(2);
 
-        return {
+        const res = {
             status: this.isRunning ? 'RUNNING' : 'IDLE',
             percentComplete: ((completed + ocean) / total) * 100,
             stats,
-            throttle: '1 Mbps'
+            throttle: '1 Mbps',
+            duration
         };
+
+        console.log(res);
+
+        return res;
     }
 
     public getCoverage() {

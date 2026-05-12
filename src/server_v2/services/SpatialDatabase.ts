@@ -76,7 +76,7 @@ export class SpatialDatabase {
      */
     public async syncWithFilesystem(rootDir: string) {
         if (!fs.existsSync(rootDir)) return;
-        
+
         console.log(`🔍 SpatialDB: Syncing with filesystem at ${rootDir}...`);
         const startTime = Date.now();
         let count = 0;
@@ -93,13 +93,13 @@ export class SpatialDatabase {
                     if (!resDir.startsWith('res_')) continue;
                     const res = parseInt(resDir.split('_')[1]);
                     const resPath = path.join(rootDir, resDir);
-                    
+
                     const lats = await fs.promises.readdir(resPath);
                     for (const latDir of lats) {
                         const lat = parseInt(latDir);
                         if (isNaN(lat)) continue;
                         const latPath = path.join(resPath, latDir);
-                        
+
                         const files = await fs.promises.readdir(latPath);
                         for (const file of files) {
                             if (!file.endsWith('.wgt')) continue;
@@ -108,7 +108,7 @@ export class SpatialDatabase {
 
                             const filePath = path.join(latPath, file);
                             const data = await fs.promises.readFile(filePath);
-                            
+
                             this.putDegreeTile(lat, lon, res, data);
                             count++;
 
@@ -137,9 +137,12 @@ export class SpatialDatabase {
     }
 
     public getStats() {
+        const start = process.hrtime();
         const quadCount = this.db.prepare('SELECT COUNT(*) as count FROM quad_tiles').get() as { count: number };
         const degreeCount = this.db.prepare('SELECT COUNT(*) as count FROM degree_tiles').get() as { count: number };
-        
+        const [s, ns] = process.hrtime(start);
+        const duration = (s * 1000 + ns / 1000000).toFixed(2);
+
         // Get database file size
         const dbPath = path.join('./data/spatial_storage', 'terrain_tiles.db');
         let dbSize = 0;
@@ -148,11 +151,16 @@ export class SpatialDatabase {
             dbSize = stats.size;
         } catch (e) { /* ignore */ }
 
-        return {
+        const res = {
             quadCount: quadCount.count,
             degreeCount: degreeCount.count,
-            dbSize
+            dbSize,
+            duration
         };
+
+        console.log(res);
+
+        return res;
     }
 
     public close() {
