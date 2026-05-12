@@ -296,3 +296,76 @@ export const mapGetWorkerStatsContract = defineContract({
     outputSchema: MapGetWorkerStatsOutputSchema,
     rest: { method: 'GET', path: '/worker/stats' }
 });
+
+// ─── map_get_harvester_status ──────────────────────────────────────────────
+
+export const MapGetHarvesterStatusInputSchema = z.object({});
+export const MapGetHarvesterStatusOutputSchema = z.object({
+    status: z.enum(['RUNNING', 'IDLE']),
+    percentComplete: z.number(),
+    stats: z.array(z.object({
+        status: z.string(),
+        count: z.number()
+    })),
+    throttle: z.string(),
+    duration: z.string()
+});
+
+export const mapGetHarvesterStatusContract = defineContract({
+    domain: 'map',
+    action: 'get_harvester_status',
+    description: 'Get the current status of the background terrain harvester.',
+    inputSchema: MapGetHarvesterStatusInputSchema,
+    outputSchema: MapGetHarvesterStatusOutputSchema,
+    rest: { method: 'GET', path: '/harvester/status' }
+});
+
+// ─── map_get_harvester_coverage ──────────────────────────────────────────────
+
+export const MapGetHarvesterCoverageInputSchema = z.object({});
+export const MapGetHarvesterCoverageOutputSchema = z.array(z.object({
+    lat: z.number(),
+    lon: z.number(),
+    status: z.string()
+}));
+
+export const mapGetHarvesterCoverageContract = defineContract({
+    domain: 'map',
+    action: 'get_harvester_coverage',
+    description: 'Get the geographic coverage map of localized terrain tiles.',
+    inputSchema: MapGetHarvesterCoverageInputSchema,
+    outputSchema: MapGetHarvesterCoverageOutputSchema,
+    rest: { method: 'GET', path: '/harvester/coverage' }
+});
+
+// ─── map_start_harvester ─────────────────────────────────────────────────────
+
+export const MapStartHarvesterInputSchema = z.object({});
+export const MapStartHarvesterOutputSchema = z.object({
+    status: z.string()
+});
+
+export const mapStartHarvesterContract = defineContract({
+    domain: 'map',
+    action: 'start_harvester',
+    description: 'Start the background terrain harvester crawler.',
+    inputSchema: MapStartHarvesterInputSchema,
+    outputSchema: MapStartHarvesterOutputSchema,
+    rest: { method: 'POST', path: '/harvester/start' }
+});
+
+// ─── map_stop_harvester ──────────────────────────────────────────────────────
+
+export const MapStopHarvesterInputSchema = z.object({});
+export const MapStopHarvesterOutputSchema = z.object({
+    status: z.string()
+});
+
+export const mapStopHarvesterContract = defineContract({
+    domain: 'map',
+    action: 'stop_harvester',
+    description: 'Stop the background terrain harvester crawler.',
+    inputSchema: MapStopHarvesterInputSchema,
+    outputSchema: MapStopHarvesterOutputSchema,
+    rest: { method: 'POST', path: '/harvester/stop' }
+});

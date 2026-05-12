@@ -10,3 +10,7 @@ export * from './map_get_los_geodetic.js';
 export * from './map_get_elevation_profile_geodetic.js';
 export * from './map_convert.js';
 export * from './map_get_worker_stats.js';
+export * from './map_get_harvester_status.js';
+export * from './map_get_harvester_coverage.js';
+export * from './map_start_harvester.js';
+export * from './map_stop_harvester.js';

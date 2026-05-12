@@ -366,12 +366,22 @@ export class TerrainService {
     }
 
     public getCacheStats() {
-        const pool = this.workerService.getPool('terrain');
-        const poolStats = pool.getStats();
+        let activeJobs = 0;
+        let queuedJobs = 0;
+
+        try {
+            const pool = this.workerService.getPool('terrain');
+            const poolStats = pool.getStats();
+            activeJobs = poolStats.activeJobs;
+            queuedJobs = poolStats.queuedJobs;
+        } catch (e) {
+            // Pool not found, which is expected on nodes where local workers are disabled
+        }
+
         return {
             cachedTiles: this.ramCache.size,
-            activeJobs: poolStats.activeJobs,
-            queuedJobs: poolStats.queuedJobs
+            activeJobs,
+            queuedJobs
         };
     }
 

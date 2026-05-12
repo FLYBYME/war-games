@@ -1071,6 +1071,50 @@ export function registerGeneratedCommands(program: Command, client: WarGamesClie
         }
     });
     ZodToCliMapper.mapSchemaToOptions(map_get_worker_stats, Contracts.MapGetWorkerStatsInputSchema);
+    const map_get_harvester_status = map.command('get_harvester_status').description(`Get the current status of the background terrain harvester.`).action(async (o) => {
+        try {
+            const res = await client.api.map.get_harvester_status(ZodToCliMapper.parseOptions(o as Record<string, unknown>, Contracts.MapGetHarvesterStatusInputSchema));
+            console.dir(res, { depth: null });
+        } catch (err: unknown) {
+            const message = err instanceof Error ? err.message : String(err);
+            console.error(`\n${C.red}${C.bold}✖ Error:${C.reset} ${message}`);
+            process.exit(1);
+        }
+    });
+    ZodToCliMapper.mapSchemaToOptions(map_get_harvester_status, Contracts.MapGetHarvesterStatusInputSchema);
+    const map_get_harvester_coverage = map.command('get_harvester_coverage').description(`Get the geographic coverage map of localized terrain tiles.`).action(async (o) => {
+        try {
+            const res = await client.api.map.get_harvester_coverage(ZodToCliMapper.parseOptions(o as Record<string, unknown>, Contracts.MapGetHarvesterCoverageInputSchema));
+            console.dir(res, { depth: null });
+        } catch (err: unknown) {
+            const message = err instanceof Error ? err.message : String(err);
+            console.error(`\n${C.red}${C.bold}✖ Error:${C.reset} ${message}`);
+            process.exit(1);
+        }
+    });
+    ZodToCliMapper.mapSchemaToOptions(map_get_harvester_coverage, Contracts.MapGetHarvesterCoverageInputSchema);
+    const map_start_harvester = map.command('start_harvester').description(`Start the background terrain harvester crawler.`).action(async (o) => {
+        try {
+            const res = await client.api.map.start_harvester(ZodToCliMapper.parseOptions(o as Record<string, unknown>, Contracts.MapStartHarvesterInputSchema));
+            console.dir(res, { depth: null });
+        } catch (err: unknown) {
+            const message = err instanceof Error ? err.message : String(err);
+            console.error(`\n${C.red}${C.bold}✖ Error:${C.reset} ${message}`);
+            process.exit(1);
+        }
+    });
+    ZodToCliMapper.mapSchemaToOptions(map_start_harvester, Contracts.MapStartHarvesterInputSchema);
+    const map_stop_harvester = map.command('stop_harvester').description(`Stop the background terrain harvester crawler.`).action(async (o) => {
+        try {
+            const res = await client.api.map.stop_harvester(ZodToCliMapper.parseOptions(o as Record<string, unknown>, Contracts.MapStopHarvesterInputSchema));
+            console.dir(res, { depth: null });
+        } catch (err: unknown) {
+            const message = err instanceof Error ? err.message : String(err);
+            console.error(`\n${C.red}${C.bold}✖ Error:${C.reset} ${message}`);
+            process.exit(1);
+        }
+    });
+    ZodToCliMapper.mapSchemaToOptions(map_stop_harvester, Contracts.MapStopHarvesterInputSchema);
     let match = program.commands.find(c => c.name() === 'match');
     if (!match) match = program.command('match').description('MATCH domain tools');
     const match_list = match.command('list').description(`Retrieve a paginated list of matches with optional filtering.`).action(async (o) => {

@@ -35,7 +35,7 @@ export class ServerToolRegistry {
                 const isRegional = 
                     domain === 'worker' || 
                     (domain === 'env' && (action === 'sample_geodetic' || action === 'get_terrain_tile' || action === 'get_cache_stats' || action === 'prefetch_terrain')) ||
-                    (domain === 'map' && (action === 'get_los_geodetic' || action === 'get_elevation_profile_geodetic' || action === 'calculate_distance' || action === 'convert' || action === 'get_worker_stats'));
+                    (domain === 'map' && (action === 'get_los_geodetic' || action === 'get_elevation_profile_geodetic' || action === 'calculate_distance' || action === 'convert' || action === 'get_worker_stats' || action === 'get_harvester_status' || action === 'get_harvester_coverage' || action === 'start_harvester' || action === 'stop_harvester'));
                 
                 if (isRegional) filtered.set(key, tool);
             } else if (role === 'SIM_ENGINE') {

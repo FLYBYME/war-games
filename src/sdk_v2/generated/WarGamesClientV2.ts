@@ -185,6 +185,10 @@ export class WarGamesClientV2 {
             get_elevation_profile_geodetic: async (args: z.infer<typeof Contracts.MapGetElevationProfileGeodeticInputSchema>): Promise<z.infer<typeof Contracts.MapGetElevationProfileGeodeticOutputSchema>> => this.request('map', 'POST', `/map/elevation-profile/geodetic`, args as Record<string, unknown>),
             convert: async (args: z.infer<typeof Contracts.MapConvertCoordinatesInputSchema>): Promise<z.infer<typeof Contracts.MapConvertCoordinatesOutputSchema>> => this.request('map', 'POST', `/map/convert`, args as Record<string, unknown>),
             get_worker_stats: async (args: z.infer<typeof Contracts.MapGetWorkerStatsInputSchema>): Promise<z.infer<typeof Contracts.MapGetWorkerStatsOutputSchema>> => this.request('map', 'GET', `/worker/stats`, args as Record<string, unknown>),
+            get_harvester_status: async (args: z.infer<typeof Contracts.MapGetHarvesterStatusInputSchema>): Promise<z.infer<typeof Contracts.MapGetHarvesterStatusOutputSchema>> => this.request('map', 'GET', `/harvester/status`, args as Record<string, unknown>),
+            get_harvester_coverage: async (args: z.infer<typeof Contracts.MapGetHarvesterCoverageInputSchema>): Promise<z.infer<typeof Contracts.MapGetHarvesterCoverageOutputSchema>> => this.request('map', 'GET', `/harvester/coverage`, args as Record<string, unknown>),
+            start_harvester: async (args: z.infer<typeof Contracts.MapStartHarvesterInputSchema>): Promise<z.infer<typeof Contracts.MapStartHarvesterOutputSchema>> => this.request('map', 'POST', `/harvester/start`, args as Record<string, unknown>),
+            stop_harvester: async (args: z.infer<typeof Contracts.MapStopHarvesterInputSchema>): Promise<z.infer<typeof Contracts.MapStopHarvesterOutputSchema>> => this.request('map', 'POST', `/harvester/stop`, args as Record<string, unknown>),
         },
         match: {
             list: async (args: z.infer<typeof Contracts.MatchListInputSchema>): Promise<z.infer<typeof Contracts.MatchListOutputSchema>> => this.request('match', 'GET', `/matches`, args as Record<string, unknown>),
