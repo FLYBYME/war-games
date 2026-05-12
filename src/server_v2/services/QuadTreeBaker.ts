@@ -17,13 +17,13 @@ export class QuadTreeBaker {
         // 1. Calculate geodetic bounds of the QuadTree tile
         const bounds = this.getTileBounds(z, x, y);
 
-        console.log(`[QuadTreeBaker] Fetching tile z${z}/x${x}/y${y} `);
 
         // 2. Create the destination buffer (256x256)
         const destData = new Int16Array(this.TILE_SIZE * this.TILE_SIZE);
 
         let index = 0;
         const maxIndex = this.TILE_SIZE * this.TILE_SIZE;
+        console.log(`[QuadTreeBaker] Fetching tile z${z}/x${x}/y${y} ` + this.TILE_SIZE * this.TILE_SIZE);
 
         const start = performance.now();
         // 3. Sample the grid
