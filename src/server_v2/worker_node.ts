@@ -41,8 +41,10 @@ export async function createWorkerNode(port: number = 8080) {
         const duration = (s * 1000 + ns / 1000000).toFixed(2);
         
         if (request.url !== '/health') {
-            const status = reply.statusCode >= 400 ? '❌' : '✅';
-            console.log(`${status} ${request.method} ${request.url} - ${reply.statusCode} (${duration}ms)`);
+            const status = reply.statusCode >= 400 ? '💥 [ERR]' : '📡 [OK] ';
+            const size = reply.getHeader('content-length') || '0';
+            const sizeKb = (Number(size) / 1024).toFixed(2);
+            console.log(`${status} ${request.method} ${request.url} - ${reply.statusCode} (${duration}ms) [${sizeKb} KB]`);
         }
     });
 
