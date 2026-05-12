@@ -16,6 +16,7 @@ export class HarvesterService {
     private tokenBucket = 0;
     private maxTokens = 500000000; // 40 seconds of burst (enough for ~1.5 compressed tiles)
     private lastTick = Date.now();
+    private priorityQueue: { lat: number, lon: number }[] = [];
 
     constructor(
         private terrainService: TerrainService,
@@ -83,13 +84,18 @@ export class HarvesterService {
 
     private async runCrawlLoop() {
         while (this.isRunning) {
-            // 1. Get next pending tile (North to South priority)
-            const tile = this.db.prepare(`
-                SELECT lat, lon FROM tiles 
-                WHERE status = 'PENDING' 
-                ORDER BY lat DESC, lon ASC 
-                LIMIT 1
-            `).get() as { lat: number, lon: number } | undefined;
+            // 1. Check Priority Queue first
+            let tile = this.priorityQueue.shift();
+
+            if (!tile) {
+                // 2. Get next pending tile (North to South priority)
+                tile = this.db.prepare(`
+                    SELECT lat, lon FROM tiles 
+                    WHERE status = 'PENDING' 
+                    ORDER BY lat DESC, lon ASC 
+                    LIMIT 1
+                `).get() as { lat: number, lon: number } | undefined;
+            }
 
             if (!tile) {
                 console.log('Harvester: All tiles processed. Standing by.');
@@ -97,10 +103,26 @@ export class HarvesterService {
                 break;
             }
 
-            await this.harvestTile(tile.lat, tile.lon);
+            await this.harvestTile(tile.lat, tile.lon, true); // JIT is always priority in terms of bandwidth
 
             // Brief pause between tiles to allow the event loop to breathe
             await new Promise(resolve => setTimeout(resolve, 100));
+        }
+    }
+
+    /**
+     * requestPriorityTile: Moves a coordinate to the front of the download queue.
+     */
+    public requestPriorityTile(lat: number, lon: number) {
+        // Avoid duplicates in the queue
+        if (this.priorityQueue.some(t => t.lat === lat && t.lon === lon)) return;
+        
+        console.log(`🚀 Harvester: Priority request for ${lat}, ${lon}`);
+        this.priorityQueue.push({ lat, lon });
+        
+        // Auto-start if stopped
+        if (!this.isRunning) {
+            void this.start();
         }
     }
 

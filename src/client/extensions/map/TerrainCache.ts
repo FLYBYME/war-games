@@ -9,8 +9,10 @@ export class TerrainCache {
     private static readonly VERSION = 1;
     private static readonly STORE_NAME = 'tiles';
     private db: IDBPDatabase | null = null;
+    public enabled = true;
 
     async init() {
+        if (!this.enabled) return;
         this.db = await openDB(TerrainCache.DB_NAME, TerrainCache.VERSION, {
             upgrade(db) {
                 if (!db.objectStoreNames.contains(TerrainCache.STORE_NAME)) {
@@ -23,12 +25,10 @@ export class TerrainCache {
     /**
      * getDb: Ensures the database is initialized and returns it.
      */
-    private async getDb(): Promise<IDBPDatabase> {
+    private async getDb(): Promise<IDBPDatabase | null> {
+        if (!this.enabled) return null;
         if (!this.db) {
             await this.init();
-        }
-        if (!this.db) {
-            throw new Error('TerrainCache: Failed to initialize IndexedDB');
         }
         return this.db;
     }
@@ -42,6 +42,7 @@ export class TerrainCache {
      */
     async getTile(z: number, x: number, y: number): Promise<Uint8Array | null> {
         const db = await this.getDb();
+        if (!db) return null;
         return (await db.get(TerrainCache.STORE_NAME, this.getKey(z, x, y))) || null;
     }
 
@@ -50,6 +51,7 @@ export class TerrainCache {
      */
     async putTile(z: number, x: number, y: number, data: Uint8Array): Promise<void> {
         const db = await this.getDb();
+        if (!db) return;
         await db.put(TerrainCache.STORE_NAME, data, this.getKey(z, x, y));
     }
 
@@ -58,6 +60,7 @@ export class TerrainCache {
      */
     async putTiles(entries: { z: number; x: number; y: number; data: Uint8Array }[]): Promise<void> {
         const db = await this.getDb();
+        if (!db) return;
         const tx = db.transaction(TerrainCache.STORE_NAME, 'readwrite');
         await Promise.all([
             ...entries.map(e => tx.store.put(e.data, this.getKey(e.z, e.x, e.y))),
@@ -70,6 +73,7 @@ export class TerrainCache {
      */
     async clear() {
         const db = await this.getDb();
+        if (!db) return;
         await db.clear(TerrainCache.STORE_NAME);
     }
 }

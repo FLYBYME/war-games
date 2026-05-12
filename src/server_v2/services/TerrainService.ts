@@ -39,7 +39,8 @@ export class TerrainService {
     constructor(
         private readonly workerService: WorkerService,
         private readonly spatialDb?: SpatialDatabase,
-        private readonly zeroCopyElev?: ZeroCopyElevationService
+        private readonly zeroCopyElev?: ZeroCopyElevationService,
+        private readonly harvesterService?: any // Use any to avoid circular dependency issues if they exist
     ) {
         if (!fs.existsSync(this.diskCacheDir)) {
             fs.mkdirSync(this.diskCacheDir, { recursive: true });
@@ -156,16 +157,38 @@ export class TerrainService {
                 }
             }
 
-            // 6. Zero-Wait Fallback: If in Master-mode and cache miss, return flat tile and trigger background harvest
+            // 6. Zero-Wait Fallback: If in Master-mode and cache miss, return low-res fallback and trigger background harvest
             if (this.spatialDb && !this.remoteNodeUrl) {
-                console.log(`[TerrainService] Triggering background bake for ${key}`);
-                // Trigger background bake (don't await)
-                void this.triggerBackgroundBake(floorLat, floorLon, targetResolution);
+                // Trigger JIT Harvester prioritized download
+                if (this.harvesterService) {
+                    this.harvesterService.requestPriorityTile(floorLat, floorLon);
+                } else {
+                    // Fallback to standard worker bake if harvester not present
+                    void this.triggerBackgroundBake(floorLat, floorLon, targetResolution);
+                }
 
-                // Return Flat/Sea-Level Fallback instantly and cache it so subsequent pixels don't re-trigger
-                const fallback = this.getFallbackTile(floorLat, floorLon, targetResolution);
-                this.ramCache.set(key, fallback);
-                return fallback;
+                // Attempt to find a lower-res fallback (e.g. res=32 Base Globe)
+                const fallbackRes = 32;
+                const lowResData = this.spatialDb.getDegreeTile(floorLat, floorLon, fallbackRes);
+                
+                if (lowResData) {
+                    console.log(`[TerrainService] L2 Hit (Base Globe Fallback): ${floorLat}, ${floorLon} @ res ${fallbackRes}`);
+                    const decoded = WgtFormat.decode(lowResData);
+                    const tile: TerrainTile = {
+                        lat: decoded.lat,
+                        lon: decoded.lon,
+                        resolution: decoded.resolution,
+                        data: decoded.data,
+                        format: decoded.format
+                    };
+                    this.ramCache.set(key, tile);
+                    return tile;
+                }
+
+                // Ultimate fallback: Flat tile
+                const flat = this.getFallbackTile(floorLat, floorLon, targetResolution);
+                this.ramCache.set(key, flat);
+                return flat;
             }
 
             // 7. Fallback: Worker (Standard Master-mode wait)

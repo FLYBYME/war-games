@@ -29,7 +29,8 @@ export const MapExtension: Extension = {
         const mapState = new MapState();
         const layerRegistry = new LayerRegistry();
         const terrainUrl = ide.settings.get<string>('map.terrainServer') || window.location.origin;
-        const pipeline = new MapDataPipeline(terrainUrl);
+        const enableCaching = ide.settings.getWithDefault<boolean>('map.enableCaching', true);
+        const pipeline = new MapDataPipeline(terrainUrl, enableCaching);
 
         // 2. Register Default Layers
         layerRegistry.register(new TerrainLayer(pipeline), {

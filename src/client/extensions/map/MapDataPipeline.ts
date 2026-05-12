@@ -29,12 +29,13 @@ export class MapDataPipeline {
     private persistentCache = new TerrainCache();
     private pendingBatchTiles = new Map<string, { z: number, x: number, y: number }>();
     private batchTimeout: any = null;
-    
+
     // We hit the binary endpoint directly to bypass SDK/JSON overhead
     private baseUrl: string;
 
-    constructor(baseUrl: string = '') {
+    constructor(baseUrl: string = '', enableCaching: boolean = true) {
         this.baseUrl = baseUrl;
+        this.persistentCache.enabled = enableCaching;
     }
 
     /**
@@ -46,7 +47,7 @@ export class MapDataPipeline {
         // 1. RAM Cache (L1)
         const cached = this.tileCache.get(key);
         if (cached) return cached;
-        
+
         // 2. Pending Requests
         const pending = this.pendingTiles.get(key);
         if (pending) return pending;
@@ -80,7 +81,7 @@ export class MapDataPipeline {
 
                 const buffer = await response.arrayBuffer();
                 const uint8 = new Uint8Array(buffer);
-                
+
                 // Save to L2
                 await this.persistentCache.putTile(z, x, y, uint8);
 
@@ -101,7 +102,7 @@ export class MapDataPipeline {
                 this.activeRequests--;
                 this.pendingTiles.delete(key);
                 if (this.activeRequests === 0) this.isLoading.set(false);
-                
+
                 const next = this.requestQueue.shift();
                 if (next) next();
             }
@@ -121,20 +122,20 @@ export class MapDataPipeline {
      */
     public async fetchViewport(tiles: { z: number; x: number; y: number }[]): Promise<void> {
         this.latestNeededTiles = tiles;
-        
+
         // 1. Filter out what we already have and add to pending batch IMMEDIATELY
         for (const t of tiles) {
             const key = `quad_${t.z}_${t.x}_${t.y}`;
             if (this.tileCache.has(key)) continue;
             if (this.pendingTiles.has(key)) continue;
-            
+
             this.pendingBatchTiles.set(key, t);
-            
+
             // Create a "Pre-Batch" promise that getQuadTile will wait on
-            let resolver: (val: WgtTile | null) => void = () => {};
+            let resolver: (val: WgtTile | null) => void = () => { };
             const promise: PendingTilePromise = new Promise<WgtTile | null>(resolve => { resolver = resolve; });
             promise.resolver = resolver;
-            
+
             this.pendingTiles.set(key, promise as PendingTilePromise);
         }
 
@@ -148,11 +149,11 @@ export class MapDataPipeline {
                 this.batchTimeout = null;
                 const resolvers = [...this.batchResolvers];
                 this.batchResolvers = [];
-                
+
                 // Re-verify what we still need and if it's still "relevant"
                 const missing: { z: number; x: number; y: number }[] = [];
                 const currentNeededKeys = new Set(this.latestNeededTiles.map(t => `quad_${t.z}_${t.x}_${t.y}`));
-                
+
                 for (const [key, t] of this.pendingBatchTiles.entries()) {
                     // Optimization: If the user panned/zoomed away, discard this tile from the batch
                     if (!currentNeededKeys.has(key)) {
@@ -179,7 +180,7 @@ export class MapDataPipeline {
                         missing.push(t);
                     }
                 }
-                
+
                 this.pendingBatchTiles.clear();
                 if (missing.length === 0) {
                     this.isLoading.set(false);
@@ -188,7 +189,7 @@ export class MapDataPipeline {
                 }
 
                 this.isLoading.set(true);
-                
+
                 // 3. Chunk into smaller batches (e.g. 16 tiles) to avoid server-side timeouts
                 const CHUNK_SIZE = 16;
                 const chunks: { z: number; x: number; y: number }[][] = [];
@@ -210,11 +211,12 @@ export class MapDataPipeline {
 
                         const buffer = await response.arrayBuffer();
                         const entries = TheaterBundleFormat.unpack(new Uint8Array(buffer));
+                        console.log(`🌐 SmartPipeline: Received ${entries.length} tiles Buffer size ${buffer.byteLength}`);
 
                         const saveTasks = entries.map(async (entry) => {
                             const key = `quad_${entry.z}_${entry.x}_${entry.y}`;
                             const decoded = WgtFormat.decode(entry.data);
-                            
+
                             const tile: WgtTile = {
                                 resolution: decoded.resolution,
                                 lat: decoded.lat,
@@ -223,7 +225,7 @@ export class MapDataPipeline {
                             };
 
                             this.tileCache.set(key, tile);
-                            
+
                             const p = this.pendingTiles.get(key);
                             if (p?.resolver) p.resolver(tile);
                             this.pendingTiles.delete(key);
@@ -249,7 +251,7 @@ export class MapDataPipeline {
                 try {
                     // Process all chunks in parallel
                     await Promise.all(chunks.map(processChunk));
-                    
+
                     // Final cleanup for any missing from all bundles (unlikely but safe)
                     missing.forEach(m => {
                         const key = `quad_${m.z}_${m.x}_${m.y}`;
@@ -278,7 +280,7 @@ export class MapDataPipeline {
 
         const cached = this.tileCache.get(key);
         if (cached) return cached;
-        
+
         const pending = this.pendingTiles.get(key);
         if (pending) return pending;
 
@@ -313,7 +315,7 @@ export class MapDataPipeline {
                 this.activeRequests--;
                 this.pendingTiles.delete(key);
                 if (this.activeRequests === 0) this.isLoading.set(false);
-                
+
                 const next = this.requestQueue.shift();
                 if (next) next();
             }

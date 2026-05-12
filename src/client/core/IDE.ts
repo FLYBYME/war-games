@@ -62,6 +62,11 @@ export class IDE {
                     default: `http://192.168.1.9:8080`,
                     description: 'The base URL of the terrain server.',
                 },
+                'map.enableCaching': {
+                    type: 'boolean',
+                    default: false,
+                    description: 'Enable persistent client-side storage for terrain tiles (IndexedDB).',
+                },
             },
         });
 

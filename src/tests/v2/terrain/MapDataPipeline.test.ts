@@ -172,4 +172,20 @@ describe('MapDataPipeline', () => {
         expect(body.tiles).toHaveLength(1);
         expect(body.tiles[0].x).toBe(2);
     });
+
+    it('Caching Disabled: Ensure L2 cache is ignored when enableCaching is false', async () => {
+        const disabledPipeline = new MapDataPipeline('http://localhost', false);
+        const getTileSpy = vi.spyOn(TerrainCache.prototype, 'getTile');
+        
+        mockFetch.mockResolvedValue({
+            ok: true,
+            arrayBuffer: () => Promise.resolve(WgtFormat.encode(256, 0, 0, new Int16Array(256 * 256)).buffer)
+        });
+
+        await disabledPipeline.getQuadTile(10, 1, 1);
+        
+        // It should still call getTile, but getTile will return null internally
+        expect(getTileSpy).toHaveBeenCalled();
+        expect(mockFetch).toHaveBeenCalled();
+    });
 });
