@@ -59,7 +59,7 @@ export class IDE {
                 },
                 'map.terrainServer': {
                     type: 'string',
-                    default: window.location.origin,
+                    default: `http://192.168.1.9:8080`,
                     description: 'The base URL of the terrain server.',
                 },
             },
@@ -91,7 +91,7 @@ export class IDE {
 
         const apiBase = this.settings.get<string>('core.apiBase');
         const terrainBase = this.settings.get<string>('map.terrainServer') || window.location.origin;
-        
+
         this.client = new WarGamesClientV2(apiBase, terrainBase);
         this.matches = new MatchService(this.client);
         this.selection = new SelectionService();

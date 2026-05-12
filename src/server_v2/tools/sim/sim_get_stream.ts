@@ -8,13 +8,13 @@ import { SimulationEvent } from '../../../engine/core/Types.js';
  */
 export const sim_get_stream = defineTool(simGetStreamContract, async function* (input, ctx) {
     const match = ctx.app.matchService.getMatch(input.matchId);
-    console.log(`[sim_get_stream] Streaming world ${match.world.id}`);
-    
+    console.log(`[sim_get_stream] Streaming world ${input.matchId}`);
+
     const queue: SimulationEvent[] = [];
     let resolver: (() => void) | null = null;
 
     const handler = (event: SimulationEvent) => {
-        console.log(`[SSE Handler] Received event: ${event.type}`);
+        //console.log(`[SSE Handler] Received event: ${event.type}`);
         queue.push(event);
         if (resolver) {
             resolver();

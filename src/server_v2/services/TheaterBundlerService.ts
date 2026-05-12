@@ -8,7 +8,7 @@ import { TheaterBundleFormat, BundleEntry } from '../../engine/environment/utils
  * many tiles in a single POST request.
  */
 export class TheaterBundlerService {
-    constructor(private readonly baker: QuadTreeBaker) {}
+    constructor(private readonly baker: QuadTreeBaker) { }
 
     /**
      * createBundle: Fetches and packs a list of tiles into a TheaterBundle.
@@ -20,7 +20,10 @@ export class TheaterBundlerService {
         // Fetch all tiles in parallel
         const tasks = tiles.map(async (t) => {
             try {
+                const start = performance.now();
                 const data = await this.baker.getTile(t.z, t.x, t.y);
+                const end = performance.now();
+                console.log(`TheaterBundlerService: Fetched tile z${t.z}/x${t.x}/y${t.y} in ${end - start}ms`);
                 return { z: t.z, x: t.x, y: t.y, data };
             } catch (err) {
                 console.error(`TheaterBundlerService: Failed to bake tile z${t.z}/x${t.x}/y${t.y}`, err);
@@ -40,6 +43,10 @@ export class TheaterBundlerService {
         }
 
         // Pack into binary format
-        return TheaterBundleFormat.pack(entries);
+        const start = performance.now();
+        const bundle = TheaterBundleFormat.pack(entries);
+        const end = performance.now();
+        console.log(`TheaterBundlerService: Packed ${entries.length} tiles into bundle in ${end - start}ms`);
+        return bundle;
     }
 }
