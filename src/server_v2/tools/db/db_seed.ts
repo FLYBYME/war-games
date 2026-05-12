@@ -1,18 +1,16 @@
 import { defineTool } from '../../core/tool_builder.js';
 import { dbSeedContract } from '../../../sdk_v2/contracts/index.js';
 import { db } from '../../db/db.js';
-import { 
-    profiles as profilesTable, 
-    weapons as weaponsTable, 
+import {
+    profiles as profilesTable,
+    weapons as weaponsTable,
     scenarios as scenariosTable,
     matches as matchesTable,
     bugs as bugsTable,
     bugComments as bugCommentsTable,
     mapRegions as mapRegionsTable
 } from '../../db/schema.js';
-import { profiles } from '../../../../dump/data/profiles.js';
-import { weaponProfiles } from '../../../../dump/data/weapons.js';
-import { scenarios } from '../../../../dump/data/scenarios.js';
+import { profiles, weaponProfiles, scenarios } from '../../data/tactical_seed.js';
 
 const SEEDED_REGIONS = [
     {
@@ -35,7 +33,7 @@ const SEEDED_REGIONS = [
     }
 ];
 
-export const db_seed = defineTool(dbSeedContract, async (input, ctx) => {
+export const db_seed = defineTool(dbSeedContract, async (input, _ctx) => {
     if (input.clearExisting) {
         // Delete in order to satisfy FK constraints
         db.delete(bugCommentsTable).run();
@@ -87,7 +85,7 @@ export const db_seed = defineTool(dbSeedContract, async (input, ctx) => {
     let scenariosCount = 0;
     for (const scenario of scenarios) {
         db.insert(scenariosTable).values({
-            id: scenario.id as string,
+            id: scenario.id ?? scenario.name,
             name: scenario.name,
             description: scenario.description,
             manifest: scenario,

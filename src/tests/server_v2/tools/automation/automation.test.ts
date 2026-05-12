@@ -22,9 +22,12 @@ describe('Automation Tools Unit Tests', () => {
     describe('automation_list_events', () => {
         it('should list pending and triggered scenario events', async () => {
             const handle = createMockMatchHandle();
+            const events = [{ id: 'e1', description: 'Pending Event', tick: 100 }];
+            const triggeredEvents = [{ id: 'e2', description: 'Done Event', tick: 50 }];
+            
             const autoSystem = {
-                events: [{ id: 'e1', description: 'Pending Event', tick: 100 }],
-                triggeredEvents: [{ id: 'e2', description: 'Done Event', tick: 50 }]
+                getPendingEvents: vi.fn(() => events),
+                getTriggeredEvents: vi.fn(() => triggeredEvents)
             };
             (handle as any).world.getSystem = vi.fn(() => autoSystem);
 
@@ -44,8 +47,7 @@ describe('Automation Tools Unit Tests', () => {
             const handle = createMockMatchHandle();
             const event = { id: 'e1', description: 'Pending' };
             const autoSystem = {
-                events: [event],
-                triggeredEvents: [] as any[]
+                triggerEvent: vi.fn(() => true)
             };
             (handle as any).world.getSystem = vi.fn(() => autoSystem);
 
@@ -58,8 +60,7 @@ describe('Automation Tools Unit Tests', () => {
             }, ctx);
 
             expect(result.success).toBe(true);
-            expect(autoSystem.events).toHaveLength(0);
-            expect(autoSystem.triggeredEvents).toHaveLength(1);
+            expect(autoSystem.triggerEvent).toHaveBeenCalledWith('e1');
         });
     });
 });

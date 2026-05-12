@@ -53,10 +53,33 @@ export class WarGamesClientV2 {
             const { value, done } = await reader.read();
             if (done) break;
             buffer += decoder.decode(value, { stream: true });
+            
+            // Standard SSE splits by double-newline, but we handle single newlines as well
             const lines = buffer.split('\n');
             buffer = lines.pop() || '';
+            
             for (const line of lines) {
-                if (line.trim()) yield JSON.parse(line) as TOut;
+                const trimmed = line.trim();
+                if (!trimmed) continue;
+                
+                // Handle standard SSE "data: " prefix
+                if (trimmed.startsWith('data: ')) {
+                    const json = trimmed.substring(6).trim();
+                    if (json) {
+                        try {
+                            yield JSON.parse(json) as TOut;
+                        } catch (err) {
+                            console.error('Failed to parse SSE data chunk:', json, err);
+                        }
+                    }
+                } else if (trimmed.startsWith('{')) {
+                    // Fallback for plain JSON-line streams
+                    try {
+                        yield JSON.parse(trimmed) as TOut;
+                    } catch (err) {
+                        console.error('Failed to parse JSON line chunk:', trimmed, err);
+                    }
+                }
             }
         }
     }

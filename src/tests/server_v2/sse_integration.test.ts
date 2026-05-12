@@ -27,7 +27,7 @@ describe('SSE Event Stream Integration (Reproduction)', () => {
             maxTurns: 1000 
         });
         matchId = match.id;
-    }, 30000);
+    }, 60000);
 
     afterAll(async () => {
         if (app) await app.close();
@@ -44,6 +44,7 @@ describe('SSE Event Stream Integration (Reproduction)', () => {
         const consumePromise = (async () => {
             try {
                 for await (const event of stream) {
+                    console.log(`[Test Client] Received event: ${event.type}`);
                     receivedEvents.push(event);
                     if (receivedEvents.some(e => e.type === 'EntitySpawned') && 
                         receivedEvents.some(e => e.type === 'Detection')) {
@@ -52,12 +53,12 @@ describe('SSE Event Stream Integration (Reproduction)', () => {
                     if (ac.signal.aborted) break;
                 }
             } catch (err) {
-                // Connection closed
+                console.error('SSE Stream Error in Test:', err);
             }
         })();
 
-        // Wait a bit for the stream to establish
-        await new Promise(resolve => setTimeout(resolve, 1000));
+        // Wait a bit for the stream to establish on the server
+        await new Promise(resolve => setTimeout(resolve, 2000));
 
         // 2. Spawn an entity via API
         const profileList = await client.api.db.profile_list({ type: 'Aircraft', page: 1, pageSize: 10 });

@@ -42,6 +42,7 @@ export async function createServer() {
         const tool = globalServerToolRegistry.get(route.toolKey);
         if (!tool) continue;
 
+        console.log(`[Server] Registering route: ${route.method} ${route.url} (${route.toolKey})`);
         const handler = createHandler(tool, serverContext);
 
         app.route({
