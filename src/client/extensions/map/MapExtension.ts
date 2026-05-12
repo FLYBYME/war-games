@@ -10,6 +10,7 @@ import { UnitsLayer } from './layers/UnitsLayer';
 import { WEZLayer } from './layers/WEZLayer';
 import { TracksLayer } from './layers/TracksLayer';
 import { ThreatLayer } from './layers/ThreatLayer';
+import { CoverageLayer } from './layers/CoverageLayer';
 import { MapDataPipeline } from './MapDataPipeline';
 import * as uiLib from '../../ui-lib';
 import { worldToLatLon } from './CoordUtils';
@@ -30,14 +31,19 @@ export const MapExtension: Extension = {
         // 1. Initialize Extension-Level State
         const mapState = new MapState();
         const layerRegistry = new LayerRegistry();
-        const terrainUrl = ide.settings.get<string>('map.terrainServer') || window.location.origin;
-        const enableCaching = ide.settings.getWithDefault<boolean>('map.enableCaching', true);
-        const pipeline = new MapDataPipeline(terrainUrl, enableCaching);
+        const terrainServer = ide.settings.get<string>('map.terrainServer') || window.location.origin;
+        const apiBase = ide.settings.get<string>('core.apiBase') || '/api/v2';
+        const enableCaching = ide.settings.get<boolean>('map.enableCaching') ?? false;
+        const pipeline = new MapDataPipeline(terrainServer, apiBase, enableCaching);
 
         // 2. Register Default Layers
         const terrainMeta = { id: 'terrain', label: 'Elevation Data', group: 'Basemap', defaultOn: false };
         layerRegistry.register(new TerrainLayer(pipeline), terrainMeta);
         mapState.getLayerVisibility(terrainMeta.id, terrainMeta.defaultOn);
+
+        const coverageMeta = { id: 'coverage', label: 'Server Coverage', group: 'Basemap', defaultOn: false };
+        layerRegistry.register(new CoverageLayer(`${terrainServer}${apiBase}/terrain`), coverageMeta);
+        mapState.getLayerVisibility(coverageMeta.id, coverageMeta.defaultOn);
 
         const gridMeta = { id: 'grid', label: 'Coordinate Grid', group: 'Overlays', defaultOn: true };
         layerRegistry.register(new GridLayer(), gridMeta);

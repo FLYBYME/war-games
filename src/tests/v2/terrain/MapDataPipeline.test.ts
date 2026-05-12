@@ -18,7 +18,7 @@ describe('MapDataPipeline', () => {
         vi.spyOn(TerrainCache.prototype, 'putTile').mockResolvedValue(undefined);
         vi.spyOn(TerrainCache.prototype, 'init').mockResolvedValue(undefined);
 
-        pipeline = new MapDataPipeline('http://localhost');
+        pipeline = new MapDataPipeline('http://localhost', '/api/v2');
         vi.useFakeTimers();
     });
 
@@ -174,7 +174,7 @@ describe('MapDataPipeline', () => {
     });
 
     it('Caching Disabled: Ensure L2 cache is ignored when enableCaching is false', async () => {
-        const disabledPipeline = new MapDataPipeline('http://localhost', false);
+        const disabledPipeline = new MapDataPipeline('http://localhost', '/api/v2', false);
         const getTileSpy = vi.spyOn(TerrainCache.prototype, 'getTile');
         
         mockFetch.mockResolvedValue({

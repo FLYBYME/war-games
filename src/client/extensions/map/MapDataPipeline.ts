@@ -33,9 +33,13 @@ export class MapDataPipeline {
 
     // We hit the binary endpoint directly to bypass SDK/JSON overhead
     private baseUrl: string;
+    private apiBase: string;
+    private terrainServer: string;
 
-    constructor(baseUrl: string = '', enableCaching: boolean = true) {
-        this.baseUrl = baseUrl;
+    constructor(terrainServer: string, apiBase: string, enableCaching: boolean = true) {
+        this.terrainServer = terrainServer;
+        this.apiBase = apiBase;
+        this.baseUrl = `${terrainServer}${apiBase}/terrain`;
         this.persistentCache.enabled = enableCaching;
 
         setInterval(() => this.pollServerStats(), 5000);
@@ -44,7 +48,7 @@ export class MapDataPipeline {
 
     private async pollServerStats() {
         try {
-            const resp = await fetch(`${this.baseUrl}/worker/stats`);
+            const resp = await fetch(`${this.terrainServer}${this.apiBase}/worker/stats`);
             if (resp.ok) {
                 const data = await resp.json();
                 this.serverStats.set(data);

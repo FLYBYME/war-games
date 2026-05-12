@@ -219,6 +219,10 @@ export async function createWorkerNode(port: number = 8080) {
         return harvesterService.getStatus();
     });
 
+    app.get('/api/v2/harvester/coverage', async () => {
+        return harvesterService.getCoverage();
+    });
+
     app.post('/api/v2/harvester/start', async () => {
         void harvesterService.start();
         return { status: 'STARTED' };

@@ -200,6 +200,14 @@ export class HarvesterService {
         };
     }
 
+    public getCoverage() {
+        return this.db.prepare(`
+            SELECT lat, lon, status 
+            FROM tiles 
+            WHERE status != 'PENDING'
+        `).all() as { lat: number, lon: number, status: string }[];
+    }
+
     public stop() {
         this.isRunning = false;
     }
