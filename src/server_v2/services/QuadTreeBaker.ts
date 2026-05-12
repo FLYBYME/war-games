@@ -22,21 +22,21 @@ export class QuadTreeBaker {
         // 2. Create the destination buffer (256x256)
         const destData = new Int16Array(this.TILE_SIZE * this.TILE_SIZE);
 
+        const start = performance.now();
         // 3. Sample the grid
         for (let row = 0; row < this.TILE_SIZE; row++) {
             const lat = bounds.maxLat - (row / (this.TILE_SIZE - 1)) * (bounds.maxLat - bounds.minLat);
             for (let col = 0; col < this.TILE_SIZE; col++) {
                 const lon = bounds.minLon + (col / (this.TILE_SIZE - 1)) * (bounds.maxLon - bounds.minLon);
 
-                const start = performance.now();
                 // Fetch elevation (uses L1/L2 cache in TerrainService)
                 // Note: This automatically handles 1x1 degree stitching internally via TerrainService
                 const elevation = await this.terrainService.getElevation(lat, lon);
-                const end = performance.now();
-                console.log(`[QuadTreeBaker] Fetched elevation for lat${lat}/lon${lon} in ${end - start}ms`);
                 destData[row * this.TILE_SIZE + col] = Math.round(elevation);
             }
         }
+        const end = performance.now();
+        console.log(`[QuadTreeBaker] Fetched tile z${z}/x${x}/y${y} in ${end - start}ms`);
 
         // 4. Encode to binary WGTv2
         return WgtFormat.encode(
