@@ -17,10 +17,13 @@ export class QuadTreeBaker {
         // 1. Calculate geodetic bounds of the QuadTree tile
         const bounds = this.getTileBounds(z, x, y);
 
-        console.log(`[QuadTreeBaker] Fetching tile z${z}/x${x}/y${y}`);
+        console.log(`[QuadTreeBaker] Fetching tile z${z}/x${x}/y${y} `);
 
         // 2. Create the destination buffer (256x256)
         const destData = new Int16Array(this.TILE_SIZE * this.TILE_SIZE);
+
+        let index = 0;
+        const maxIndex = this.TILE_SIZE * this.TILE_SIZE;
 
         const start = performance.now();
         // 3. Sample the grid
@@ -29,6 +32,10 @@ export class QuadTreeBaker {
             for (let col = 0; col < this.TILE_SIZE; col++) {
                 const lon = bounds.minLon + (col / (this.TILE_SIZE - 1)) * (bounds.maxLon - bounds.minLon);
 
+                index++;
+                if (index > maxIndex) {
+                    throw new Error(`[QuadTreeBaker] Fetched tile z${z}/x${x}/y${y} in ${index} iterations`);
+                }
                 // Fetch elevation (uses L1/L2 cache in TerrainService)
                 // Note: This automatically handles 1x1 degree stitching internally via TerrainService
                 const elevation = await this.terrainService.getElevation(lat, lon);
