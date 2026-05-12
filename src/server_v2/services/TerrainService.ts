@@ -69,7 +69,7 @@ export class TerrainService {
             return this.activeJobs.get(key)!;
         }
 
-        console.log(`[TerrainService] Cache miss for ${key}, starting fetch...`);
+        //console.log(`[TerrainService] Cache miss for ${key}, starting fetch...`);
 
         const job = (async () => {
             // 3. SQLite/Spatial Database (L2 - Optimized)
@@ -150,9 +150,9 @@ export class TerrainService {
 
             // 6. Zero-Wait Fallback: If in Master-mode and cache miss, return flat tile and trigger background harvest
             if (this.spatialDb && !this.remoteNodeUrl) {
-                console.log(`[TerrainService] Triggering background bake for ${key}`);
+                // console.log(`[TerrainService] Triggering background bake for ${key}`);
                 // Trigger background bake (don't await)
-                this.triggerBackgroundBake(floorLat, floorLon, targetResolution);
+                await this.triggerBackgroundBake(floorLat, floorLon, targetResolution);
 
                 // Return Flat/Sea-Level Fallback instantly
                 return this.getFallbackTile(floorLat, floorLon, targetResolution);
