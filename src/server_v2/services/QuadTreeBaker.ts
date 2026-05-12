@@ -21,10 +21,6 @@ export class QuadTreeBaker {
         // 2. Create the destination buffer (256x256)
         const destData = new Int16Array(this.TILE_SIZE * this.TILE_SIZE);
 
-        let index = 0;
-        const maxIndex = this.TILE_SIZE * this.TILE_SIZE;
-        console.log(`[QuadTreeBaker] Fetching tile z${z}/x${x}/y${y} ` + this.TILE_SIZE * this.TILE_SIZE);
-
         const start = performance.now();
         // 3. Sample the grid
         for (let row = 0; row < this.TILE_SIZE; row++) {
@@ -32,18 +28,17 @@ export class QuadTreeBaker {
             for (let col = 0; col < this.TILE_SIZE; col++) {
                 const lon = bounds.minLon + (col / (this.TILE_SIZE - 1)) * (bounds.maxLon - bounds.minLon);
 
-                index++;
-                if (index > maxIndex) {
-                    throw new Error(`[QuadTreeBaker] Fetched tile z${z}/x${x}/y${y} in ${index} iterations`);
+                // Try sync fast-path first to avoid 65k promise allocations
+                let elevation = this.terrainService.getElevationSync(lat, lon);
+                if (elevation === null) {
+                    elevation = await this.terrainService.getElevation(lat, lon);
                 }
-                // Fetch elevation (uses L1/L2 cache in TerrainService)
-                // Note: This automatically handles 1x1 degree stitching internally via TerrainService
-                const elevation = await this.terrainService.getElevation(lat, lon);
+                
                 destData[row * this.TILE_SIZE + col] = Math.round(elevation);
             }
         }
         const end = performance.now();
-        console.log(`[QuadTreeBaker] Fetched tile z${z}/x${x}/y${y} in ${end - start}ms`);
+        console.log(`[QuadTreeBaker] Generated tile z${z}/x${x}/y${y} in ${end - start}ms`);
 
         // 4. Encode to binary WGTv2
         return WgtFormat.encode(

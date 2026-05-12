@@ -206,17 +206,45 @@ export class TerrainService {
     }
 
     /**
-     * getElevation: High-speed point query.
-     * Uses ZeroCopy disk sampling if available on Master node.
+     * getElevationSync: Synchronous high-speed point query.
+     * Returns elevation from RAM cache or ZeroCopy disk if available, otherwise null.
      */
-    public async getElevation(lat: number, lon: number): Promise<number> {
+    public getElevationSync(lat: number, lon: number): number | null {
         // 1. FAST PATH: ZeroCopy direct disk sampling (Master Mode)
         if (this.zeroCopyElev) {
             const elev = this.zeroCopyElev.getElevationAt(lat, lon);
             if (elev !== null) return elev;
         }
 
-        // 2. RAM/CACHE PATH: Fallback to loaded tiles
+        // 2. RAM PATH: Check if tile is already in RAM
+        const floorLat = Math.floor(lat);
+        const floorLon = Math.floor(lon);
+        const key = `${floorLat},${floorLon}_1201`;
+        
+        const tile = this.ramCache.get(key);
+        if (!tile) return null;
+
+        const res = tile.resolution;
+        const dLat = lat - floorLat;
+        const dLon = lon - floorLon;
+
+        const x = Math.round(dLon * (res - 1));
+        const y = Math.round((1 - dLat) * (res - 1));
+
+        const idx = y * res + x;
+        return tile.data[idx] ?? 0;
+    }
+
+    /**
+     * getElevation: High-speed point query.
+     * Uses ZeroCopy disk sampling if available on Master node.
+     */
+    public async getElevation(lat: number, lon: number): Promise<number> {
+        // Try synchronous path first
+        const syncElev = this.getElevationSync(lat, lon);
+        if (syncElev !== null) return syncElev;
+
+        // Fallback to loaded tiles
         const tile = await this.getTile(lat, lon, 1201);
         const res = tile.resolution;
 
