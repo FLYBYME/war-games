@@ -73,27 +73,31 @@ export class TerrainService {
 
         const job = (async () => {
             // 3. SQLite/Spatial Database (L2 - Optimized)
-            if (this.spatialDb) {
-                const cachedData = this.spatialDb.getDegreeTile(floorLat, floorLon, targetResolution);
-                if (cachedData) {
-                    console.log(`[TerrainService] L2 Hit (SpatialDB): ${key}`);
-                    const decoded = WgtFormat.decode(cachedData);
-                    const tile: TerrainTile = {
-                        lat: decoded.lat,
-                        lon: decoded.lon,
-                        resolution: decoded.resolution,
-                        data: decoded.data,
-                        format: decoded.format
-                    };
-                    this.ramCache.set(key, tile);
-                    return tile;
+            try {
+                if (this.spatialDb) {
+                    const cachedData = this.spatialDb.getDegreeTile(floorLat, floorLon, targetResolution);
+                    if (cachedData) {
+                        console.log(`[TerrainService] L2 Hit (SpatialDB): ${key}`);
+                        const decoded = WgtFormat.decode(cachedData);
+                        const tile: TerrainTile = {
+                            lat: decoded.lat,
+                            lon: decoded.lon,
+                            resolution: decoded.resolution,
+                            data: decoded.data,
+                            format: decoded.format
+                        };
+                        this.ramCache.set(key, tile);
+                        return tile;
+                    }
                 }
+            } catch (err) {
+                console.error(`TerrainService: L2 SpatialDB error for ${key}`, err);
             }
 
             // 4. Legacy File Disk Cache (L2 - Migration Fallback)
-            const diskPath = path.join(this.diskCacheDir, `res_${targetResolution}`, `${floorLat}`, `${floorLon}.wgt`);
-            if (fs.existsSync(diskPath)) {
-                try {
+            try {
+                const diskPath = path.join(this.diskCacheDir, `res_${targetResolution}`, `${floorLat}`, `${floorLon}.wgt`);
+                if (fs.existsSync(diskPath)) {
                     const buffer = fs.readFileSync(diskPath);
                     console.log(`[TerrainService] L2 Hit (Legacy Disk): ${key}`);
                     const decoded = WgtFormat.decode(buffer);
@@ -107,14 +111,18 @@ export class TerrainService {
 
                     // Migrate to SQLite if available
                     if (this.spatialDb) {
-                        this.spatialDb.putDegreeTile(floorLat, floorLon, targetResolution, buffer);
+                        try {
+                            this.spatialDb.putDegreeTile(floorLat, floorLon, targetResolution, buffer);
+                        } catch (e) {
+                            console.error(`TerrainService: Migration to SpatialDB failed for ${key}`, e);
+                        }
                     }
 
                     this.ramCache.set(key, tile);
                     return tile;
-                } catch (err) {
-                    console.error(`TerrainService: Failed to read disk cache at ${diskPath}`, err);
                 }
+            } catch (err) {
+                console.error(`TerrainService: Legacy disk error for ${key}`, err);
             }
 
             // 5. Remote Node (L3) - Only if on Laptop (client-mode)
@@ -150,12 +158,14 @@ export class TerrainService {
 
             // 6. Zero-Wait Fallback: If in Master-mode and cache miss, return flat tile and trigger background harvest
             if (this.spatialDb && !this.remoteNodeUrl) {
-                // console.log(`[TerrainService] Triggering background bake for ${key}`);
+                console.log(`[TerrainService] Triggering background bake for ${key}`);
                 // Trigger background bake (don't await)
-                await this.triggerBackgroundBake(floorLat, floorLon, targetResolution);
+                void this.triggerBackgroundBake(floorLat, floorLon, targetResolution);
 
-                // Return Flat/Sea-Level Fallback instantly
-                return this.getFallbackTile(floorLat, floorLon, targetResolution);
+                // Return Flat/Sea-Level Fallback instantly and cache it so subsequent pixels don't re-trigger
+                const fallback = this.getFallbackTile(floorLat, floorLon, targetResolution);
+                this.ramCache.set(key, fallback);
+                return fallback;
             }
 
             // 7. Fallback: Worker (Standard Master-mode wait)

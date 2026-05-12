@@ -111,11 +111,17 @@ export class MapDataPipeline {
         return promise;
     }
 
+    private batchResolvers: (() => void)[] = [];
+
+    private latestNeededTiles: { z: number; x: number; y: number }[] = [];
+
     /**
      * fetchViewport: Intelligently batches requests for a set of tiles.
      * Uses a short debounce to group overlapping calls from the renderer.
      */
     public async fetchViewport(tiles: { z: number; x: number; y: number }[]): Promise<void> {
+        this.latestNeededTiles = tiles;
+        
         // 1. Filter out what we already have and add to pending batch IMMEDIATELY
         for (const t of tiles) {
             const key = `quad_${t.z}_${t.x}_${t.y}`;
@@ -132,88 +138,120 @@ export class MapDataPipeline {
             this.pendingTiles.set(key, promise as PendingTilePromise);
         }
 
-        // 2. Debounce the actual network request
-        if (this.batchTimeout) return;
+        // 2. Throttling: Accumulate requests and fire every 300ms
+        return new Promise(resolve => {
+            this.batchResolvers.push(resolve);
 
-        this.batchTimeout = setTimeout(async () => {
-            this.batchTimeout = null;
-            
-            // Re-verify what we still need (some might have loaded from IDB in the meantime)
-            const missing: { z: number; x: number; y: number }[] = [];
-            for (const [key, t] of this.pendingBatchTiles.entries()) {
-                const cachedData = await this.persistentCache.getTile(t.z, t.x, t.y);
-                if (cachedData) {
-                    const decoded = WgtFormat.decode(cachedData);
-                    const tile = {
-                        resolution: decoded.resolution,
-                        lat: decoded.lat,
-                        lon: decoded.lon,
-                        data: decoded.data
-                    };
-                    this.tileCache.set(key, tile);
-                    const p = this.pendingTiles.get(key);
-                    if (p?.resolver) p.resolver(tile);
-                    this.pendingTiles.delete(key);
-                } else {
-                    missing.push(t);
-                }
-            }
-            
-            this.pendingBatchTiles.clear();
-            if (missing.length === 0) {
-                this.isLoading.set(false);
-                return;
-            }
+            if (this.batchTimeout) return;
 
-            this.isLoading.set(true);
-            
-            // 3. Chunk into smaller batches (e.g. 16 tiles) to avoid server-side timeouts
-            const CHUNK_SIZE = 16;
-            const chunks: { z: number; x: number; y: number }[][] = [];
-            for (let i = 0; i < missing.length; i += CHUNK_SIZE) {
-                chunks.push(missing.slice(i, i + CHUNK_SIZE));
-            }
+            this.batchTimeout = setTimeout(async () => {
+                this.batchTimeout = null;
+                const resolvers = [...this.batchResolvers];
+                this.batchResolvers = [];
+                
+                // Re-verify what we still need and if it's still "relevant"
+                const missing: { z: number; x: number; y: number }[] = [];
+                const currentNeededKeys = new Set(this.latestNeededTiles.map(t => `quad_${t.z}_${t.x}_${t.y}`));
+                
+                for (const [key, t] of this.pendingBatchTiles.entries()) {
+                    // Optimization: If the user panned/zoomed away, discard this tile from the batch
+                    if (!currentNeededKeys.has(key)) {
+                        const p = this.pendingTiles.get(key);
+                        if (p?.resolver) p.resolver(null);
+                        this.pendingTiles.delete(key);
+                        continue;
+                    }
 
-            console.log(`🌐 SmartPipeline: Batching ${missing.length} tiles in ${chunks.length} chunks...`);
-
-            const processChunk = async (chunk: { z: number; x: number; y: number }[]) => {
-                try {
-                    const response = await fetch(`${this.baseUrl}/api/v2/terrain/theater/bundle`, {
-                        method: 'POST',
-                        headers: { 'Content-Type': 'application/json' },
-                        body: JSON.stringify({ tiles: chunk })
-                    });
-
-                    if (!response.ok) throw new Error(`Bundle failed: ${response.status}`);
-
-                    const buffer = await response.arrayBuffer();
-                    const entries = TheaterBundleFormat.unpack(new Uint8Array(buffer));
-
-                    const saveTasks = entries.map(async (entry) => {
-                        const key = `quad_${entry.z}_${entry.x}_${entry.y}`;
-                        const decoded = WgtFormat.decode(entry.data);
-                        
-                        const tile: WgtTile = {
+                    const cachedData = await this.persistentCache.getTile(t.z, t.x, t.y);
+                    if (cachedData) {
+                        const decoded = WgtFormat.decode(cachedData);
+                        const tile = {
                             resolution: decoded.resolution,
                             lat: decoded.lat,
                             lon: decoded.lon,
                             data: decoded.data
                         };
-
                         this.tileCache.set(key, tile);
-                        
                         const p = this.pendingTiles.get(key);
                         if (p?.resolver) p.resolver(tile);
                         this.pendingTiles.delete(key);
+                    } else {
+                        missing.push(t);
+                    }
+                }
+                
+                this.pendingBatchTiles.clear();
+                if (missing.length === 0) {
+                    this.isLoading.set(false);
+                    resolvers.forEach(res => res());
+                    return;
+                }
 
-                        return this.persistentCache.putTile(entry.z, entry.x, entry.y, entry.data);
-                    });
+                this.isLoading.set(true);
+                
+                // 3. Chunk into smaller batches (e.g. 16 tiles) to avoid server-side timeouts
+                const CHUNK_SIZE = 16;
+                const chunks: { z: number; x: number; y: number }[][] = [];
+                for (let i = 0; i < missing.length; i += CHUNK_SIZE) {
+                    chunks.push(missing.slice(i, i + CHUNK_SIZE));
+                }
 
-                    await Promise.all(saveTasks);
-                } catch (err) {
-                    console.error('MapDataPipeline: Chunk fetch failed', err);
-                    // Mark chunk tiles as failed
-                    chunk.forEach(m => {
+                console.log(`🌐 SmartPipeline: Batching ${missing.length} tiles in ${chunks.length} chunks...`);
+
+                const processChunk = async (chunk: { z: number; x: number; y: number }[]) => {
+                    try {
+                        const response = await fetch(`${this.baseUrl}/api/v2/terrain/theater/bundle`, {
+                            method: 'POST',
+                            headers: { 'Content-Type': 'application/json' },
+                            body: JSON.stringify({ tiles: chunk })
+                        });
+
+                        if (!response.ok) throw new Error(`Bundle failed: ${response.status}`);
+
+                        const buffer = await response.arrayBuffer();
+                        const entries = TheaterBundleFormat.unpack(new Uint8Array(buffer));
+
+                        const saveTasks = entries.map(async (entry) => {
+                            const key = `quad_${entry.z}_${entry.x}_${entry.y}`;
+                            const decoded = WgtFormat.decode(entry.data);
+                            
+                            const tile: WgtTile = {
+                                resolution: decoded.resolution,
+                                lat: decoded.lat,
+                                lon: decoded.lon,
+                                data: decoded.data
+                            };
+
+                            this.tileCache.set(key, tile);
+                            
+                            const p = this.pendingTiles.get(key);
+                            if (p?.resolver) p.resolver(tile);
+                            this.pendingTiles.delete(key);
+
+                            return this.persistentCache.putTile(entry.z, entry.x, entry.y, entry.data);
+                        });
+
+                        await Promise.all(saveTasks);
+                    } catch (err) {
+                        console.error('MapDataPipeline: Chunk fetch failed', err);
+                        // Mark chunk tiles as failed
+                        chunk.forEach(m => {
+                            const key = `quad_${m.z}_${m.x}_${m.y}`;
+                            const p = this.pendingTiles.get(key);
+                            if (p?.resolver) {
+                                p.resolver(null);
+                                this.pendingTiles.delete(key);
+                            }
+                        });
+                    }
+                };
+
+                try {
+                    // Process all chunks in parallel
+                    await Promise.all(chunks.map(processChunk));
+                    
+                    // Final cleanup for any missing from all bundles (unlikely but safe)
+                    missing.forEach(m => {
                         const key = `quad_${m.z}_${m.x}_${m.y}`;
                         const p = this.pendingTiles.get(key);
                         if (p?.resolver) {
@@ -221,29 +259,15 @@ export class MapDataPipeline {
                             this.pendingTiles.delete(key);
                         }
                     });
+
+                } catch (err) {
+                    console.error('MapDataPipeline: Batch fetch failed', err);
+                } finally {
+                    this.isLoading.set(false);
+                    resolvers.forEach(res => res());
                 }
-            };
-
-            try {
-                // Process all chunks in parallel
-                await Promise.all(chunks.map(processChunk));
-                
-                // Final cleanup for any missing from all bundles (unlikely but safe)
-                missing.forEach(m => {
-                    const key = `quad_${m.z}_${m.x}_${m.y}`;
-                    const p = this.pendingTiles.get(key);
-                    if (p?.resolver) {
-                        p.resolver(null);
-                        this.pendingTiles.delete(key);
-                    }
-                });
-
-            } catch (err) {
-                console.error('MapDataPipeline: Batch fetch failed', err);
-            } finally {
-                this.isLoading.set(false);
-            }
-        }, 100); // 100ms debounce to catch rapid panning frames
+            }, 300);
+        });
     }
 
     /**

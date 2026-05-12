@@ -14,6 +14,7 @@ export class TerrainLayer implements MapLayer {
     private pipeline: MapDataPipeline;
     private tileContainers = new Map<string, Container>();
     private activeTiles = new Set<string>();
+    private lastNeededKeys = '';
 
     constructor(pipeline: MapDataPipeline) {
         this.pipeline = pipeline;
@@ -46,31 +47,31 @@ export class TerrainLayer implements MapLayer {
         const newVisibleTiles = new Set<string>();
         const neededTiles: { z: number; x: number; y: number }[] = [];
 
-        // 4. Request tiles for the viewport + Buffer (Overscan)
-        const BUFFER = 1; // 1 tile extra in all directions
-        for (let x = xMin - BUFFER; x <= xMax + BUFFER; x++) {
-            for (let y = yMin - BUFFER; y <= yMax + BUFFER; y++) {
+        // 4. Request tiles for the viewport (No overscan for now to keep requests low)
+        for (let x = xMin; x <= xMax; x++) {
+            for (let y = yMin; y <= yMax; y++) {
                 const key = `${z}_${x}_${y}`;
-                const isVisible = x >= xMin && x <= xMax && y >= yMin && y <= yMax;
-                
-                if (isVisible) {
-                    newVisibleTiles.add(key);
-                }
-
+                newVisibleTiles.add(key);
                 neededTiles.push({ z, x, y });
             }
         }
 
-        // Trigger smart batch fetch
-        void this.pipeline.fetchViewport(neededTiles).then(() => {
-            // After batch is ready, trigger individual renders for visible tiles
-            for (const key of newVisibleTiles) {
-                if (!this.tileContainers.has(key)) {
-                    const [tz, tx, ty] = key.split('_').map(Number);
-                    void this.loadTile(tz, tx, ty, origin);
+        // Optimization: Only trigger pipeline if the set of needed tiles has changed
+        const neededKeyString = Array.from(newVisibleTiles).sort().join(',');
+        if (neededKeyString !== this.lastNeededKeys) {
+            this.lastNeededKeys = neededKeyString;
+            
+            // Trigger smart batch fetch
+            void this.pipeline.fetchViewport(neededTiles).then(() => {
+                // After batch is ready, trigger individual renders for visible tiles
+                for (const key of newVisibleTiles) {
+                    if (!this.tileContainers.has(key)) {
+                        const [tz, tx, ty] = key.split('_').map(Number);
+                        void this.loadTile(tz, tx, ty, origin);
+                    }
                 }
-            }
-        });
+            });
+        }
 
         // 5. Cleanup tiles no longer visible
         for (const key of this.activeTiles) {
