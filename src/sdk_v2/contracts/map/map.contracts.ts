@@ -256,3 +256,43 @@ export const mapConvertCoordinatesContract = defineContract({
     outputSchema: MapConvertCoordinatesOutputSchema,
     rest: { method: 'POST', path: '/map/convert' }
 });
+
+// ─── map_get_worker_stats ──────────────────────────────────────────────────
+
+export const MapGetWorkerStatsInputSchema = z.object({});
+
+export const MapGetWorkerStatsOutputSchema = z.object({
+    harvester: z.object({
+        status: z.enum(['RUNNING', 'IDLE']),
+        percentComplete: z.number(),
+        stats: z.array(z.object({
+            status: z.string(),
+            count: z.number()
+        })),
+        throttle: z.string(),
+        duration: z.string()
+    }).describe("Status of the Harvester service"),
+    cache: z.object({
+        quadCount: z.number(),
+        degreeCount: z.number(),
+        dbSize: z.number(),
+        duration: z.string()
+    }).describe("Status of the Spatial Database cache"),
+    memory: z.object({
+        rss: z.number(),
+        heapTotal: z.number(),
+        heapUsed: z.number(),
+        external: z.number(),
+        arrayBuffers: z.number().optional()
+    }).describe("Node.js memory usage"),
+    uptime: z.number().describe("Uptime of the worker node in seconds")
+});
+
+export const mapGetWorkerStatsContract = defineContract({
+    domain: 'map',
+    action: 'get_worker_stats',
+    description: 'Get internal health, memory, and cache stats for the regional map worker node.',
+    inputSchema: MapGetWorkerStatsInputSchema,
+    outputSchema: MapGetWorkerStatsOutputSchema,
+    rest: { method: 'GET', path: '/worker/stats' }
+});

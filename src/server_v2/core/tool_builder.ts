@@ -35,7 +35,7 @@ export class ServerToolRegistry {
                 const isRegional = 
                     domain === 'worker' || 
                     (domain === 'env' && (action === 'sample_geodetic' || action === 'get_terrain_tile' || action === 'get_cache_stats' || action === 'prefetch_terrain')) ||
-                    (domain === 'map' && (action === 'get_los_geodetic' || action === 'get_elevation_profile_geodetic' || action === 'calculate_distance' || action === 'convert'));
+                    (domain === 'map' && (action === 'get_los_geodetic' || action === 'get_elevation_profile_geodetic' || action === 'calculate_distance' || action === 'convert' || action === 'get_worker_stats'));
                 
                 if (isRegional) filtered.set(key, tool);
             } else if (role === 'SIM_ENGINE') {
@@ -95,6 +95,8 @@ export interface IMatchHandle {
 import { TerrainService } from '../services/TerrainService.js';
 import { WorkerService } from '../services/WorkerService.js';
 import { AgentService } from '../services/AgentService.js';
+import { HarvesterService } from '../services/HarvesterService.js';
+import { SpatialDatabase } from '../services/SpatialDatabase.js';
 
 /**
  * IServerApp: The application context available to all server tool handlers.
@@ -104,6 +106,8 @@ export interface IServerApp {
     readonly terrainService: TerrainService;
     readonly workerService: WorkerService;
     readonly agentService: AgentService;
+    readonly harvesterService?: HarvesterService;
+    readonly spatialDb?: SpatialDatabase;
     readonly log: any;
 }
 

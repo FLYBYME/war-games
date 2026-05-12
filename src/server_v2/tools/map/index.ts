@@ -9,3 +9,4 @@ export * from './map_get_elevation_profile.js';
 export * from './map_get_los_geodetic.js';
 export * from './map_get_elevation_profile_geodetic.js';
 export * from './map_convert.js';
+export * from './map_get_worker_stats.js';

@@ -70,6 +70,8 @@ export async function createWorkerNode(port: number = 8080) {
         app: {
             terrainService,
             workerService,
+            harvesterService,
+            spatialDb,
             // Mocked services for Worker Node
             matchService: {
                 getMatch: () => { throw new Error("MatchService not available on Regional Worker Node"); },
@@ -120,15 +122,6 @@ export async function createWorkerNode(port: number = 8080) {
         uptime: process.uptime(),
         version: '3.0.0'
     }));
-
-    app.get('/api/v2/worker/stats', async () => {
-        return {
-            harvester: harvesterService.getStatus(),
-            cache: spatialDb.getStats(),
-            memory: process.memoryUsage(),
-            uptime: process.uptime()
-        };
-    });
 
     // ─── 1. SIM STREAM: 1x1 Degree Raw Tiles ─────────────────────────────────
     
@@ -206,31 +199,6 @@ export async function createWorkerNode(port: number = 8080) {
             app.log.error(err);
             return reply.status(500).send({ error: err.message });
         }
-    });
-
-    // ─── 3. MATH ORACLE (Legacy Routes - Redirecting to Tools) ──────────────
-    // Note: The Tool System now handles /api/v2/map/... and /api/v2/env/...
-    // We keep these manual routes only if legacy compatibility is strictly required,
-    // otherwise the Tool System routes generated above will take precedence or coexist.
-
-    // ─── 4. HARVESTER ────────────────────────────────────────────────────────
-    
-    app.get('/api/v2/harvester/status', async () => {
-        return harvesterService.getStatus();
-    });
-
-    app.get('/api/v2/harvester/coverage', async () => {
-        return harvesterService.getCoverage();
-    });
-
-    app.post('/api/v2/harvester/start', async () => {
-        void harvesterService.start();
-        return { status: 'STARTED' };
-    });
-
-    app.post('/api/v2/harvester/stop', async () => {
-        harvesterService.stop();
-        return { status: 'STOPPED' };
     });
 
     // ─── Startup ─────────────────────────────────────────────────────────────

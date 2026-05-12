@@ -53,33 +53,10 @@ export class WarGamesClientV2 {
             const { value, done } = await reader.read();
             if (done) break;
             buffer += decoder.decode(value, { stream: true });
-            
-            // Standard SSE splits by double-newline, but we handle single newlines as well
             const lines = buffer.split('\n');
             buffer = lines.pop() || '';
-            
             for (const line of lines) {
-                const trimmed = line.trim();
-                if (!trimmed) continue;
-                
-                // Handle standard SSE "data: " prefix
-                if (trimmed.startsWith('data: ')) {
-                    const json = trimmed.substring(6).trim();
-                    if (json) {
-                        try {
-                            yield JSON.parse(json) as TOut;
-                        } catch (err) {
-                            console.error('Failed to parse SSE data chunk:', json, err);
-                        }
-                    }
-                } else if (trimmed.startsWith('{')) {
-                    // Fallback for plain JSON-line streams
-                    try {
-                        yield JSON.parse(trimmed) as TOut;
-                    } catch (err) {
-                        console.error('Failed to parse JSON line chunk:', trimmed, err);
-                    }
-                }
+                if (line.trim()) yield JSON.parse(line) as TOut;
             }
         }
     }
@@ -207,6 +184,7 @@ export class WarGamesClientV2 {
             get_los_geodetic: async (args: z.infer<typeof Contracts.MapGetLOSGeodeticInputSchema>): Promise<z.infer<typeof Contracts.MapGetLOSGeodeticOutputSchema>> => this.request('map', 'POST', `/map/los/geodetic`, args as Record<string, unknown>),
             get_elevation_profile_geodetic: async (args: z.infer<typeof Contracts.MapGetElevationProfileGeodeticInputSchema>): Promise<z.infer<typeof Contracts.MapGetElevationProfileGeodeticOutputSchema>> => this.request('map', 'POST', `/map/elevation-profile/geodetic`, args as Record<string, unknown>),
             convert: async (args: z.infer<typeof Contracts.MapConvertCoordinatesInputSchema>): Promise<z.infer<typeof Contracts.MapConvertCoordinatesOutputSchema>> => this.request('map', 'POST', `/map/convert`, args as Record<string, unknown>),
+            get_worker_stats: async (args: z.infer<typeof Contracts.MapGetWorkerStatsInputSchema>): Promise<z.infer<typeof Contracts.MapGetWorkerStatsOutputSchema>> => this.request('map', 'GET', `/worker/stats`, args as Record<string, unknown>),
         },
         match: {
             list: async (args: z.infer<typeof Contracts.MatchListInputSchema>): Promise<z.infer<typeof Contracts.MatchListOutputSchema>> => this.request('match', 'GET', `/matches`, args as Record<string, unknown>),

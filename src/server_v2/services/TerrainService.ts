@@ -45,10 +45,6 @@ export class TerrainService {
         if (!fs.existsSync(this.diskCacheDir)) {
             fs.mkdirSync(this.diskCacheDir, { recursive: true });
         }
-
-        const currentDir = path.dirname(fileURLToPath(import.meta.url));
-        const WORKER_PATH = path.resolve(currentDir, '../workers/terrain.worker.ts');
-        this.workerService.createPool('terrain', WORKER_PATH, 2);
     }
 
     /**
@@ -162,9 +158,6 @@ export class TerrainService {
                 // Trigger JIT Harvester prioritized download
                 if (this.harvesterService) {
                     this.harvesterService.requestPriorityTile(floorLat, floorLon);
-                } else {
-                    // Fallback to standard worker bake if harvester not present
-                    void this.triggerBackgroundBake(floorLat, floorLon, targetResolution);
                 }
 
                 // Attempt to find a lower-res fallback (e.g. res=32 Base Globe)
@@ -184,60 +177,18 @@ export class TerrainService {
                     this.ramCache.set(key, tile);
                     return tile;
                 }
-
-                // Ultimate fallback: Flat tile
-                const flat = this.getFallbackTile(floorLat, floorLon, targetResolution);
-                this.ramCache.set(key, flat);
-                return flat;
             }
 
-            // 7. Fallback: Worker (Standard Master-mode wait)
-            console.log(`[TerrainService] Executing worker bake for ${key}`);
-            return this.executeWorkerBake(floorLat, floorLon, targetResolution);
+            // 7. Ultimate fallback: Flat tile
+            const flat = this.getFallbackTile(floorLat, floorLon, targetResolution);
+            this.ramCache.set(key, flat);
+            return flat;
         })().finally(() => {
             this.activeJobs.delete(key);
         });
 
         this.activeJobs.set(key, job);
         return job;
-    }
-
-    private async triggerBackgroundBake(lat: number, lon: number, res: number) {
-        try {
-            const tile = await this.executeWorkerBake(lat, lon, res);
-            console.log(`✅ SmartServer: Background bake complete for ${lat}, ${lon}`);
-        } catch (err) {
-            console.error(`❌ SmartServer: Background bake failed for ${lat}, ${lon}`, err);
-        }
-    }
-
-    private async executeWorkerBake(lat: number, lon: number, targetResolution: number): Promise<TerrainTile> {
-        const pool = this.workerService.getPool('terrain');
-        const msg = await pool.execute<any>({ lat, lon, targetRes: targetResolution });
-
-        if (!msg.success) {
-            console.error(`[TerrainService] Worker bake FAILED for ${lat},${lon}: ${msg.error}`);
-            throw new Error(msg.error);
-        }
-
-        console.log(`[TerrainService] Worker bake SUCCESS for ${lat},${lon}`);
-        const encoded = targetResolution === 1201 ? msg.engineEncoded : msg.uiEncoded;
-        const decoded = WgtFormat.decode(encoded);
-        const tile: TerrainTile = {
-            lat: msg.lat,
-            lon: msg.lon,
-            resolution: decoded.resolution,
-            data: decoded.data,
-            format: decoded.format
-        };
-
-        // Save to SQLite (L2)
-        if (this.spatialDb) {
-            this.spatialDb.putDegreeTile(lat, lon, targetResolution, Buffer.from(encoded));
-        }
-
-        this.ramCache.set(`${lat},${lon}_${targetResolution}`, tile);
-        return tile;
     }
 
     private getFallbackTile(lat: number, lon: number, res: number): TerrainTile {

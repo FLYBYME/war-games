@@ -1060,6 +1060,17 @@ export function registerGeneratedCommands(program: Command, client: WarGamesClie
         }
     });
     ZodToCliMapper.mapSchemaToOptions(map_convert, Contracts.MapConvertCoordinatesInputSchema);
+    const map_get_worker_stats = map.command('get_worker_stats').description(`Get internal health, memory, and cache stats for the regional map worker node.`).action(async (o) => {
+        try {
+            const res = await client.api.map.get_worker_stats(ZodToCliMapper.parseOptions(o as Record<string, unknown>, Contracts.MapGetWorkerStatsInputSchema));
+            console.dir(res, { depth: null });
+        } catch (err: unknown) {
+            const message = err instanceof Error ? err.message : String(err);
+            console.error(`\n${C.red}${C.bold}✖ Error:${C.reset} ${message}`);
+            process.exit(1);
+        }
+    });
+    ZodToCliMapper.mapSchemaToOptions(map_get_worker_stats, Contracts.MapGetWorkerStatsInputSchema);
     let match = program.commands.find(c => c.name() === 'match');
     if (!match) match = program.command('match').description('MATCH domain tools');
     const match_list = match.command('list').description(`Retrieve a paginated list of matches with optional filtering.`).action(async (o) => {
