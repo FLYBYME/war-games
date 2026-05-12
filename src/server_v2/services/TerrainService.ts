@@ -216,12 +216,8 @@ export class TerrainService {
             if (elev !== null) return elev;
         }
 
-        console.log(`[TerrainService] Fetching tile z12/x${Math.floor(lon)}/y${Math.floor(lat)}`);
-        const start = performance.now();
         // 2. RAM/CACHE PATH: Fallback to loaded tiles
         const tile = await this.getTile(lat, lon, 1201);
-        const end = performance.now();
-        console.log(`[TerrainService] Fetched tile z12/x${Math.floor(lon)}/y${Math.floor(lat)} in ${end - start}ms`);
         const res = tile.resolution;
 
         const dLat = lat - Math.floor(lat);
