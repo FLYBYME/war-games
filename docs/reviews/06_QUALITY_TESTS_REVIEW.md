@@ -1,0 +1,29 @@
+# Deep Codebase Review: Quality, Standards & Tests (war-games)
+
+## 1. Standards Compliance Audit
+
+### 1.1. The Absolute Ban on `any`
+**Status: CRITICAL FAILURE**
+The codebase is currently riddled with `any` usages, directly violating the primary directive of `GEMINI.md`.
+- **Lint Count:** 756 errors reported by ESLint, with a vast majority being `@typescript-eslint/no-explicit-any`.
+- **Contract Violations:** `src/sdk_v2/contracts/map/map.contracts.ts` and `src/sdk_v2/contracts/agent/agent.contracts.ts` use `z.any()` for coordinate conversion payloads and tool arguments. This disables type safety for the AI agent integration and SDK users.
+- **Core Logic:** `CommandRegistry.ts` and `EventBus.ts` use `any` for generic payloads, bypassing the strict typing required for the IDE's core infrastructure.
+- **Test Infrastructure:** Almost all mocks in `src/tests/` use `any` (e.g., `let app: any;`, `let mockClient: any;`). While testing often requires flexibility, the project lacks a typed mocking strategy (like `MockProxy` from `vitest-mock-extended`).
+
+### 1.2. Type Assertions and Non-Nulls
+**Status: MAJOR DEBT**
+- **Non-Null Assertions (`!`):** Heavily used in engine tests (e.g., `NavigationAutopilot.test.ts`) to access components. This masks potential component missing errors and causes brittle tests.
+- **Casting (`as Type`):** 
+    - The generated SDK (`WarGamesClientV2.ts`) uses `as Record<string, unknown>` and `as TOut`. While partially justified by the generic nature of the generator, it represents a boundary where type safety is asserted rather than proven.
+    - Widespread `as any` casting in tests to bypass compiler checks for partially mocked objects.
+
+### 1.3. Unified Tool Contract (V2) Compliance
+**Status: PARTIAL COMPLIANCE**
+- **Missing Descriptions:** `GEMINI.md` Section 6 requires every field in an `inputSchema` to have a `.describe()` annotation. Several contracts (e.g., `agent.contracts.ts` within `toolCalls` sub-objects) omit these, which will degrade AI agent performance.
+- **Strict Payloads:** The use of `z.any()` in `map_convert_coordinates` is a direct violation of the "No Unknowns/Any" rule for contracts.
+
+### 1.4. Block-Scoped Switch Cases
+**Status: STABLE**
+A review of `LogisticsSystem.ts` and `ScenarioAutomationSystem.ts` shows that for the most part, developers are correctly using curly braces `{}` when declaring `const` or `let` within `case` statements. However, many simple cases omit braces, which, while not a direct violation unless variables are declared, remains inconsistent.
+
+---\n\n## 2. Test Suite Integrity\n\n### 2.1. Test Failures & Flakiness\n**Status: UNSTABLE**\nCurrent test run results: **3 failed tests, 1 failed suite.**\n- **SSE Integration Failure:** `src/tests/server_v2/sse_integration.test.ts` timed out. This indicates a high risk of flakiness in the Server-Sent Events stream, likely due to buffering or race conditions in the test harness.\n- **Terrain Logic Errors:** `QuadTreeBaker.test.ts` failed on boundary wrapping (z5) and downsampling accuracy. This suggests critical bugs in the terrain tiling logic that could manifest as map gaps or incorrect elevations in the UI.\n- **Performance:** SSE tests are hitting 60s hook timeouts, significantly slowing down the CI pipeline.\n\n### 2.2. Mocking Strategy\nThe project relies on manual `vi.fn()` and `any` casting. There is no unified `mock_factory` that returns strictly typed mocks, leading to \"type-blind\" tests where changes to core interfaces do not trigger test compile errors.\n\n---\n\n## 3. Build & Configuration\n\n### 3.1. Tooling & Workflow\n- **TypeScript:** The project is using TS 5.9.3, which is ahead of the `@typescript-eslint` supported range (<5.6.0). This generates constant warnings during linting.\n- **ESLint:** Properly configured with strict rules, but currently ignored or bypassed (756 errors). The project is effectively \"unlinted\" at this stage.\n- **Vite/Vitest:** Successfully integrated, but coverage is likely missing for large parts of the `src/client` UI library, as evidenced by the high pass rate of UI tests despite the deep integration issues found in the SDK.\n\n---\n\n## 4. General Hygiene\n\n### 4.1. Dead Code & Unused Variables\n- **Unused Args:** Many extension methods (e.g., `IngestTerrainCommand.ts`, `StartServerCommand.ts`) have unused parameters that should be prefixed with `_` per standards.\n- **Imports:** Numerous files have unused imports (`Theme`, `ScrollArea`, `MatchServiceEvents`) which bloat the bundle and clutter the developer experience.\n\n---\n\n## 5. Prioritized Technical Debt (Action Plan)\n\n| Priority | Item | Impact |\n| :--- | :--- | :--- |\n| **P0** | **Fix failed Terrain/SSE Tests** | Prevents core system regression; fixes broken map tiling. |\n| **P0** | **Remove `z.any()` from Contracts** | Ensures AI Agents and SDK users have type-safe interfaces. |\n| **P1** | **Resolve 756 Lint Errors** | Re-establishes the baseline for code quality and prevents further \"any\" creep. |\n| **P1** | **Eliminate `!` in Engine Tests** | Increases test stability and reduces runtime crashes during test runs. |\n| **P2** | **Standardize Mocking** | Implement a typed mocking utility to replace `any` in tests. |\n| **P2** | **Align TS/ESLint Versions** | Fixes the \"unsupported version\" warnings and ensures linter reliability. |\n| **P3** | **Audit `.describe()` Coverage** | Complete all missing schema descriptions for AI readiness. |\n\n## Conclusion\nWhile the project has a strong architectural foundation (V2 Contracts, ECS Engine), it is currently in a state of **Standards Bankruptcy**. The safety guarantees of TypeScript have been largely disabled by widespread `any` usage and failing lint rules. Immediate intervention is required to stabilize the test suite and enforce the `GEMINI.md` mandates before further feature development occurs.\n

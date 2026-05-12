@@ -57,12 +57,22 @@ export function createMockMatchHandle(overrides: Partial<IMatchHandle> = {}): IM
         getNearbyEntities: vi.fn(() => []),
         addEntity: vi.fn((e: any) => entities.set(e.id, e)),
         removeEntity: vi.fn((id: string) => entities.delete(id)),
-        getSystem: vi.fn(() => ({
-            getProjection: vi.fn(() => ({
-                project: vi.fn((pos: any) => ({ lat: pos.x, lon: pos.y })),
-                unproject: vi.fn((lat: number, lon: number) => ({ x: lat, y: lon, z: 0 }))
-            }))
-        })) as any,
+        getSystem: vi.fn((ctor: any) => {
+            if (ctor.name === 'ScenarioAutomationSystem') {
+                return {
+                    getPendingEvents: vi.fn(() => []),
+                    getTriggeredEvents: vi.fn(() => []),
+                    getResults: vi.fn(() => []),
+                    triggerEvent: vi.fn(() => true)
+                };
+            }
+            return {
+                getProjection: vi.fn(() => ({
+                    project: vi.fn((pos: any) => ({ lat: pos.x, lon: pos.y })),
+                    unproject: vi.fn((lat: number, lon: number) => ({ x: lat, y: lon, z: 0 }))
+                }))
+            };
+        }) as any,
         recordEvent: vi.fn(),
         random: {
             integer: vi.fn(() => Math.floor(Math.random() * 1000000))

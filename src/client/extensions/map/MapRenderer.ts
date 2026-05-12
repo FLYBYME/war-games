@@ -19,10 +19,12 @@ export class MapRenderer {
     private subscriptions: (() => void)[] = [];
     private state: MapState;
     private layerRegistry: LayerRegistry;
+    private pipeline: any;
 
-    constructor(state: MapState, layerRegistry: LayerRegistry) {
+    constructor(state: MapState, layerRegistry: LayerRegistry, pipeline: any) {
         this.state = state;
         this.layerRegistry = layerRegistry;
+        this.pipeline = pipeline;
         this.app = new Application();
         this.viewport = null!;
     }
@@ -103,7 +105,23 @@ export class MapRenderer {
             // Re-render layers on viewport changes (for resolution scaling)
             this.viewport.on('zoomed', () => {
                 const vs = this.state.viewState.get();
-                if (vs) this.update(vs);
+                if (vs) {
+                    this.state.mapScale.set(this.viewport.scale.x);
+                    this.update(vs);
+                }
+            });
+
+            // Track mouse movement for telemetry
+            this.viewport.on('pointermove', (e) => {
+                const vs = this.state.viewState.get();
+                if (vs && vs.origin) {
+                    const worldPos = this.viewport.toWorld(e.global.x, e.global.y);
+                    const latLon = worldToLatLon(worldPos.x, worldPos.y, vs.origin);
+                    this.state.pointerLatLon.set(latLon);
+                    
+                    const elev = this.pipeline.getElevation(latLon.lat, latLon.lon);
+                    this.state.pointerElevation.set(elev);
+                }
             });
         })();
 
@@ -115,7 +133,8 @@ export class MapRenderer {
         this.viewport.addChild(layer.container);
         
         // Setup visibility subscription
-        const sig = this.state.getLayerVisibility(layer.id);
+        const metadata = this.layerRegistry.getMetadata(layer.id);
+        const sig = this.state.getLayerVisibility(layer.id, metadata?.defaultOn ?? true);
         this.subscriptions.push(sig.subscribe(visible => {
             layer.container.visible = visible;
             if (visible) {

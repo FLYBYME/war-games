@@ -21,13 +21,20 @@ export class GridLayer implements MapLayer {
         this.graphics.clear();
         const origin = state.origin;
 
-        // Determine grid spacing based on zoom
-        let spacing = 1.0; // 1 degree
-        if (viewScale > 0.05) spacing = 0.1;
-        if (viewScale > 0.5) spacing = 0.01;
-
         const nw = worldToLatLon(visibleWorldBounds.x, visibleWorldBounds.y, origin);
         const se = worldToLatLon(visibleWorldBounds.x + visibleWorldBounds.width, visibleWorldBounds.y + visibleWorldBounds.height, origin);
+
+        // Determine grid spacing based on zoom level
+        // We want roughly 5-10 lines on screen
+        const latRange = Math.abs(nw.lat - se.lat);
+        let spacing = 10.0;
+        
+        if (latRange < 0.05) spacing = 0.001;      // ~100m
+        else if (latRange < 0.2) spacing = 0.01;   // ~1km
+        else if (latRange < 2) spacing = 0.1;      // ~10km
+        else if (latRange < 20) spacing = 1.0;     // ~100km
+        else if (latRange < 100) spacing = 5.0;
+        else spacing = 10.0;
 
         const startLat = Math.floor(Math.min(nw.lat, se.lat) / spacing) * spacing;
         const endLat = Math.ceil(Math.max(nw.lat, se.lat) / spacing) * spacing;
@@ -50,6 +57,6 @@ export class GridLayer implements MapLayer {
             this.graphics.moveTo(p1.x, p1.y).lineTo(p2.x, p2.y);
         }
 
-        this.graphics.stroke({ width: strokeWidth, color: 0x444444, alpha: 0.5 });
+        this.graphics.stroke({ width: strokeWidth, color: 0x666666, alpha: 0.8 });
     }
 }

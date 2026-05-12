@@ -33,58 +33,78 @@ export const MapExtension: Extension = {
         const pipeline = new MapDataPipeline(terrainUrl, enableCaching);
 
         // 2. Register Default Layers
-        layerRegistry.register(new TerrainLayer(pipeline), {
-            id: 'terrain',
-            label: 'Elevation Data',
-            group: 'Basemap',
-            defaultOn: true
-        });
+        const terrainMeta = { id: 'terrain', label: 'Elevation Data', group: 'Basemap', defaultOn: false };
+        layerRegistry.register(new TerrainLayer(pipeline), terrainMeta);
+        mapState.getLayerVisibility(terrainMeta.id, terrainMeta.defaultOn);
 
-        layerRegistry.register(new GridLayer(), {
-            id: 'grid',
-            label: 'Coordinate Grid',
-            group: 'Overlays',
-            defaultOn: true
-        });
+        const gridMeta = { id: 'grid', label: 'Coordinate Grid', group: 'Overlays', defaultOn: true };
+        layerRegistry.register(new GridLayer(), gridMeta);
+        mapState.getLayerVisibility(gridMeta.id, gridMeta.defaultOn);
 
-        layerRegistry.register(new UnitsLayer(), {
-            id: 'units',
-            label: 'Active Units',
-            group: 'Entities',
-            defaultOn: true
-        });
+        const unitsMeta = { id: 'units', label: 'Active Units', group: 'Entities', defaultOn: true };
+        layerRegistry.register(new UnitsLayer(), unitsMeta);
+        mapState.getLayerVisibility(unitsMeta.id, unitsMeta.defaultOn);
 
-        layerRegistry.register(new WEZLayer(), {
-            id: 'wez',
-            label: 'Weapon Envelopes',
-            group: 'Overlays',
-            defaultOn: false
-        });
+        const wezMeta = { id: 'wez', label: 'Weapon Envelopes', group: 'Overlays', defaultOn: false };
+        layerRegistry.register(new WEZLayer(), wezMeta);
+        mapState.getLayerVisibility(wezMeta.id, wezMeta.defaultOn);
 
-        layerRegistry.register(new TracksLayer(), {
-            id: 'tracks',
-            label: 'Entity Tracks',
-            group: 'Overlays',
-            defaultOn: false
-        });
+        const tracksMeta = { id: 'tracks', label: 'Entity Tracks', group: 'Overlays', defaultOn: false };
+        layerRegistry.register(new TracksLayer(), tracksMeta);
+        mapState.getLayerVisibility(tracksMeta.id, tracksMeta.defaultOn);
 
-        layerRegistry.register(new ThreatLayer(), {
-            id: 'threats',
-            label: 'Threat Contacts',
-            group: 'Intelligence',
-            defaultOn: false
-        });
+        const threatMeta = { id: 'threats', label: 'Threat Contacts', group: 'Intelligence', defaultOn: false };
+        layerRegistry.register(new ThreatLayer(), threatMeta);
+        mapState.getLayerVisibility(threatMeta.id, threatMeta.defaultOn);
 
         // 3. Register the Main View Provider (Center Panel)
         const mapViewProvider: ViewProvider = {
             id: 'map.view',
             name: 'Tactical Map',
             resolveView: async (container, disposables) => {
-                const renderer = new MapRenderer(mapState, layerRegistry);
+                const renderer = new MapRenderer(mapState, layerRegistry, pipeline);
                 await renderer.init(container);
 
+                // Add Telemetry Overlay
+                const overlay = document.createElement('div');
+                overlay.style.position = 'absolute';
+                overlay.style.bottom = '10px';
+                overlay.style.left = '10px';
+                overlay.style.pointerEvents = 'none';
+                overlay.style.color = '#00ff00';
+                overlay.style.fontFamily = 'monospace';
+                overlay.style.fontSize = '12px';
+                overlay.style.background = 'rgba(0,0,0,0.5)';
+                overlay.style.padding = '5px';
+                overlay.style.borderLeft = '2px solid #00ff00';
+                container.appendChild(overlay);
+
+                const updateOverlay = () => {
+                    const pos = mapState.pointerLatLon.get();
+                    const elev = mapState.pointerElevation.get();
+                    const scale = mapState.mapScale.get();
+                    
+                    // Simple scale bar calculation (meters per 100px)
+                    const mPerPx = 1 / scale;
+                    const scaleKm = (mPerPx * 100) / 1000;
+                    
+                    overlay.innerHTML = `
+                        LAT: ${pos?.lat.toFixed(4) ?? '---'} 
+                        LON: ${pos?.lon.toFixed(4) ?? '---'} 
+                        ALT: ${elev !== null ? elev.toFixed(1) + 'm' : '---'}<br/>
+                        SCALE: [ ${scaleKm.toFixed(2)} km ]
+                    `;
+                };
+
+                disposables.push(mapState.pointerLatLon.subscribe(updateOverlay));
+                disposables.push(mapState.pointerElevation.subscribe(updateOverlay));
+                disposables.push(mapState.mapScale.subscribe(updateOverlay));
+
                 disposables.push({
-                    dispose: () => renderer.destroy()
+                    dispose: () => {
+                        renderer.destroy();
+                        overlay.remove();
+                    }
                 });
 
                 // Wire UnitsLayer click-to-select → IDE.selection
@@ -161,14 +181,58 @@ export const MapExtension: Extension = {
         };
 
         ide.views.registerProvider('left-panel', layerManagerProvider);
+        
+        // 4.5 Register Map Analytics (Right Panel)
+        const mapAnalyticsProvider: ViewProvider = {
+            id: 'map.analytics',
+            name: 'Map Analytics',
+            resolveView: (container, disposables) => {
+                const column = new uiLib.Column({ padding: 'md', gap: 'md', fill: true });
+                
+                const renderStats = () => {
+                    const stats = pipeline.getStats();
+                    const vs = mapState.viewState.get();
+                    
+                    column.updateProps({
+                        children: [
+                            new uiLib.Heading({ text: 'PIPELINE METRICS', level: 4 }),
+                            new uiLib.Text({ text: `L1 Cache: ${stats.cacheSize} tiles` }),
+                            new uiLib.Text({ text: `Active Requests: ${stats.activeRequests}` }),
+                            new uiLib.Text({ text: `Queue Depth: ${stats.queueDepth}` }),
+                            new uiLib.Divider(),
+                            new uiLib.Heading({ text: 'VIEWPORT STATS', level: 4 }),
+                            new uiLib.Text({ text: `Origin: ${vs?.origin?.lat.toFixed(2)}, ${vs?.origin?.lon.toFixed(2)}` }),
+                            new uiLib.Text({ text: `Entities: ${vs?.units.length ?? 0}` }),
+                            new uiLib.Text({ text: `Scale: ${mapState.mapScale.get().toFixed(6)}` }),
+                        ]
+                    });
+                };
 
-        // 5. Register Activity Bar Icon
+                const timer = setInterval(renderStats, 1000);
+                disposables.push({ dispose: () => clearInterval(timer) });
+                
+                renderStats();
+                column.mount(container);
+            }
+        };
+
+        ide.views.registerProvider('right-panel', mapAnalyticsProvider);
+
+        // 5. Register Activity Bar Icons
         ide.activityBar.registerItem({
             id: 'map.layer-manager',
             location: 'left-panel',
             icon: 'fas fa-layer-group',
             title: 'Map Layers',
             order: 10
+        });
+
+        ide.activityBar.registerItem({
+            id: 'map.analytics',
+            location: 'right-panel',
+            icon: 'fas fa-chart-line',
+            title: 'Map Analytics',
+            order: 20
         });
 
         // 6. Register Commands and Menu Items

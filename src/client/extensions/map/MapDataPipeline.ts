@@ -324,4 +324,42 @@ export class MapDataPipeline {
         this.pendingTiles.set(key, promise as PendingTilePromise);
         return promise;
     }
+
+    /**
+     * getStats: Returns current pipeline telemetry.
+     */
+    public getStats() {
+        return {
+            cacheSize: this.tileCache.size,
+            activeRequests: this.activeRequests,
+            queueDepth: this.requestQueue.length
+        };
+    }
+
+    /**
+     * getElevation: Samples elevation from the most detailed cached tile.
+     */
+    public getElevation(lat: number, lon: number): number | null {
+        // Find all tiles containing this point
+        const tiles = Array.from(this.tileCache.values()).filter(t => {
+            return Math.abs(t.lat - lat) < 1.0 && Math.abs(t.lon - lon) < 1.0;
+        });
+
+        if (tiles.length === 0) return null;
+
+        // Pick the one with highest resolution
+        const best = tiles.reduce((prev, curr) => (curr.resolution > prev.resolution) ? curr : prev);
+        
+        // Sampling logic (approximate mapping)
+        const res = best.resolution;
+        const dLat = lat - Math.floor(lat);
+        const dLon = lon - Math.floor(lon);
+        
+        const sx = Math.floor(dLon * (res - 1));
+        const sy = Math.floor((1 - dLat) * (res - 1));
+        
+        if (sx < 0 || sx >= res || sy < 0 || sy >= res) return null;
+        
+        return best.data[sy * res + sx];
+    }
 }

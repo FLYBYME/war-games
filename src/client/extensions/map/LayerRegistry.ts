@@ -33,6 +33,10 @@ export class LayerRegistry {
         return this.layers.get(id)?.layer;
     }
 
+    public getMetadata(id: string): LayerMetadata | undefined {
+        return this.layers.get(id)?.metadata;
+    }
+
     public getAllLayers(): MapLayer[] {
         return Array.from(this.layers.values()).map(l => l.layer);
     }

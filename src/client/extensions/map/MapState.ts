@@ -70,7 +70,7 @@ export interface MapViewState {
  */
 export class MapState {
     public viewState = new Signal<MapViewState>({
-        origin: null,
+        origin: { lat: 0, lon: 0 },
         units: [],
         tracks: [],
         currentTick: 0,
@@ -80,12 +80,17 @@ export class MapState {
     public selectedEntityId = new Signal<string | null>(null);
     public hoveredEntityId = new Signal<string | null>(null);
 
+    // Telemetry Signals
+    public pointerLatLon = new Signal<{ lat: number; lon: number } | null>(null);
+    public pointerElevation = new Signal<number | null>(null);
+    public mapScale = new Signal<number>(1);
+
     private layerVisibility = new Map<string, Signal<boolean>>();
 
-    public getLayerVisibility(layerId: string): Signal<boolean> {
+    public getLayerVisibility(layerId: string, defaultVisible = true): Signal<boolean> {
         let sig = this.layerVisibility.get(layerId);
         if (!sig) {
-            sig = new Signal<boolean>(true);
+            sig = new Signal<boolean>(defaultVisible);
             this.layerVisibility.set(layerId, sig);
         }
         return sig;
