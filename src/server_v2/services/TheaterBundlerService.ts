@@ -17,6 +17,8 @@ export class TheaterBundlerService {
     async createBundle(tiles: { z: number; x: number; y: number }[]): Promise<Uint8Array> {
         const entries: BundleEntry[] = [];
 
+
+
         // Fetch all tiles in parallel
         const tasks = tiles.map(async (t) => {
             try {
